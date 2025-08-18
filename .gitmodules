@@ -1,0 +1,3 @@
+[submodule "3rdparty/Vopts"]
+	path = 3rdparty/Vopts
+	url = https://github.com/dashygo097/Vopts.git
