@@ -1,0 +1,60 @@
+.navbar {
+  display: flex;
+  background: linear-gradient(135deg, #444, #222);
+  padding: 12px 20px;
+  gap: 12px;
+  border-radius: 32px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: background 0.3s ease;
+}
+
+.navbar-header {
+  margin-right: auto;
+  font-size: 28px;
+  font-weight: 100;
+  color: #e3d7ff;
+  font-family: "Brush Script MT", "Lucida Handwriting", cursive;
+  background: linear-gradient(90deg, #e4e4e4, #f4f4f4);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 1px 2px 4px rgba(0, 0, 0, 0.5);
+  text-transform: capitalize;
+}
+
+.navbar-header-subtitle {
+  font-size: 12px;
+  color: #ffffff;
+  background: linear-gradient(90deg, #ffffff, #ffffff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 100;
+  margin-left: 32px;
+  margin-top: -16px;
+}
+
+.navbar-home,
+.navbar-notes,
+.navbar-about {
+  border-radius: 8px;
+  border: 1px solid transparent;
+  box-shadow: 1px 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+.navbar-home {
+  margin-left: auto;
+}
+
+.navbar-home.active,
+.navbar-about.active,
+.navbar-notes.active {
+  background-color: #c4a4ff;
+}
+
+.navbar-home:hover,
+.navbar-about:hover,
+.navbar-notes:hover {
+  border-color: #946ccf;
+}
