@@ -10,7 +10,7 @@ git submodule update --init --recursive
 
 ### 使用上位机软件
 
-###### 你需要安装node环境
+###### 你需要安装node环境以及npm包管理器
 
 ```bash
 cd frontend
