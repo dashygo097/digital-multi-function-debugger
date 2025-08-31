@@ -16,5 +16,5 @@ git submodule update --init --recursive
 cd frontend
 npm install # 安装必要的modules
 
-npm run start
+npm run start # run application
 ```
