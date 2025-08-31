@@ -1,2 +1,10 @@
 .vscode/
 .DS_Store
+
+# Logs
+*.log
+
+# Frontend
+frontend/node_modules/
+frontend/logs/
+frontend/.vite/
