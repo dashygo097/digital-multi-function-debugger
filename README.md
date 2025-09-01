@@ -37,6 +37,8 @@ cd scripts
 bash tb.sh # or the corresponding script using fzf (tb_fzf.sh)
 ```
 
+##### NOTE: You should put your testbenchs under testbenchs/ (or you might want to change the shell scirpts of $TB_DIR)
+
 ### README!!!
 
 > You should put documents under docs/ <br/>
