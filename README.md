@@ -39,6 +39,6 @@ bash tb.sh # or the corresponding script using fzf (tb_fzf.sh)
 
 ### README!!!
 
-> You should put documents under docs/
-> Put your sources files under src/ (hdl, dsl etc.)
+> You should put documents under docs/ <br/>
+> Put your sources files under src/ (hdl, dsl etc.) <br/>
 > Put .bat or .sh or .tcl scripts under scritps/
