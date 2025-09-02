@@ -22,7 +22,7 @@ class Waveform extends React.Component<WaveformProps> {
 
   render() {
     return (
-      <LineChart width={700} height={300} data={this.props.data}>
+      <LineChart width={300} height={180} data={this.props.data}>
         <CartesianGrid strokeDasharray="3 3" />
         <XAxis dataKey="time" />
         <YAxis />
@@ -30,7 +30,7 @@ class Waveform extends React.Component<WaveformProps> {
         <Line
           type="monotone"
           dataKey="value"
-          stroke={this.props.color || "#8884d8"}
+          stroke={this.props.color || "#1494fd"}
           dot={false}
         />
       </LineChart>
@@ -40,4 +40,3 @@ class Waveform extends React.Component<WaveformProps> {
 
 export default Waveform;
 export type { DataPoint };
-export { MAX_POINTS };

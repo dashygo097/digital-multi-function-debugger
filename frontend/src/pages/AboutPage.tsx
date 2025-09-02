@@ -20,6 +20,8 @@ class AboutPage extends React.Component<AboutPageProps> {
           这是2025a嵌赛FPGA赛道的上位机软件，使用React+TypeScript+Electron编写。
         </p>
         <VersionInfo name="Node.js" version="123.123.123" />
+        <VersionInfo name="React" version="18.2.0" />
+        <VersionInfo name="Electron" version="25.3.1" />
       </div>
     );
   }
