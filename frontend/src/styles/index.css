@@ -1,12 +1,10 @@
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
+  line-height: 1.4;
   font-weight: 400;
-
   color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
+  color: rgba(255, 255, 255, 0.95);
   background-color: #444444;
-
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -21,18 +19,19 @@ body {
 h1 {
   font-size: clamp(2.5rem, 6vw, 3.2em);
   line-height: 1.08;
-  font-family: "Inter", "Helvetica Neue", Arial, sans-serif;
   font-weight: 700;
-  color: #3274ed;
   letter-spacing: 0.03em;
   margin-bottom: 0.6em;
+  text-align: center;
+
+  background: linear-gradient(90deg, #a1a1a1 0%, #b4b4b4 50%, #f4f4f4 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+
   text-shadow:
     0 4px 14px rgba(50, 116, 237, 0.2),
     0 1px 2px rgba(30, 40, 90, 0.08);
-
-  background: linear-gradient(90deg, #337dee 0%, #8ca9ed 50%, #50d6c2 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
 }
 
 @media (prefers-color-scheme: light) {

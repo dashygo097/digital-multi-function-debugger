@@ -1,4 +1,5 @@
 import React from "react";
+import "../styles/version.css";
 
 interface VersionInfoProps {
   name: string;
