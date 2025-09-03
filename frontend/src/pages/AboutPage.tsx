@@ -17,11 +17,17 @@ class AboutPage extends React.Component<AboutPageProps> {
       <div className="about-page">
         <h1>About This App</h1>
         <p>
-          这是2025a嵌赛FPGA赛道的上位机软件，使用React+TypeScript+Electron编写。
+          This is the upper computer software for the 2025A Embedded Competition
+          FPGA track, developed using React + TypeScript + Electron.
         </p>
-        <VersionInfo name="Node.js" version="123.123.123" />
-        <VersionInfo name="React" version="18.2.0" />
-        <VersionInfo name="Electron" version="25.3.1" />
+        <VersionInfo
+          names={["Node.js", "Chrome", "Electron"]}
+          versions={[
+            window.versions.node(),
+            window.versions.chrome(),
+            window.versions.electron(),
+          ]}
+        />
       </div>
     );
   }

@@ -4,7 +4,9 @@ import "./styles/index.css";
 
 import PageRouter from "./pages/PageRouter";
 
-interface AppProps {}
+interface AppProps {
+  placeholder?: string;
+}
 
 class App extends React.Component<AppProps> {
   constructor(props: AppProps) {

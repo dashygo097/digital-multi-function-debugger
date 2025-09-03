@@ -39,13 +39,23 @@ class NavBar extends React.Component<NavBarProps, NavBarState> {
           to="/"
           className={`navbar-home ${this.state.onPage === "home" ? "active" : ""}`}
         >
-          <Button onClick={this.handleGoToHomeOnClick}>Home</Button>
+          <Button
+            onClick={this.handleGoToHomeOnClick}
+            className="navbar-button"
+          >
+            Home
+          </Button>
         </Link>
         <Link
           to="/about"
           className={`navbar-about ${this.state.onPage === "about" ? "active" : ""}`}
         >
-          <Button onClick={this.handleGoToAboutOnClick}>About</Button>
+          <Button
+            onClick={this.handleGoToAboutOnClick}
+            className="navbar-button"
+          >
+            About
+          </Button>
         </Link>
       </nav>
     );

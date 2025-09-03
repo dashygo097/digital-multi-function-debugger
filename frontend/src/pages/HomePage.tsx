@@ -2,8 +2,7 @@ import React from "react";
 
 import { withRouter } from "../utils/withRouter";
 import Waveform from "../components/Waveform";
-
-const MAX_POINTS = 100;
+import InputTracer from "../components/InputTracer";
 
 interface HomePageProps {
   navigate: (path: string) => void;
@@ -20,6 +19,7 @@ class HomePage extends React.Component<HomePageProps> {
       <div className="page-home">
         <h1>Waveform Example</h1>
         <Waveform data={[]} />
+        <InputTracer name="hehe" />
       </div>
     );
   }
