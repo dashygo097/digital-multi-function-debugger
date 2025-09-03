@@ -1,15 +1,13 @@
-import { app, BrowserWindow } from "electron";
+import { app, BrowserWindow, ipcMain, Notification } from "electron";
 import path from "node:path";
-import started from "electron-squirrel-startup";
 
-if (started) {
-  app.quit();
-}
-
-const createWindow = () => {
+const createMainWindow = () => {
   const mainWindow = new BrowserWindow({
-    width: 800,
-    height: 600,
+    width: 1000,
+    height: 750,
+    frame: true,
+    transparent: false,
+    backgroundMaterial: "mica",
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
     },
@@ -23,19 +21,44 @@ const createWindow = () => {
     );
   }
 
+  mainWindow.webContents.session.on(
+    "select-serial-port",
+    (event, portList, webContents, callback) => {
+      mainWindow.webContents.session.on("serial-port-added", (event, port) => {
+        console.log("serial-port-added FIRED WITH", port);
+      });
+
+      mainWindow.webContents.session.on(
+        "serial-port-removed",
+        (event, port) => {
+          console.log("serial-port-removed FIRED WITH", port);
+        },
+      );
+
+      event.preventDefault();
+      if (portList && portList.length > 0) {
+        callback(portList[0].portId);
+      } else {
+        callback("");
+      }
+    },
+  );
+
   mainWindow.webContents.openDevTools();
 };
 
-app.on("ready", createWindow);
-
-app.on("window-all-closed", () => {
-  if (process.platform !== "darwin") {
-    app.quit();
-  }
+app.on("ready", () => {
+  createMainWindow();
 });
 
 app.on("activate", () => {
   if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow();
+    createMainWindow();
+  }
+});
+
+app.on("window-all-closed", () => {
+  if (process.platform !== "darwin") {
+    app.quit();
   }
 });
