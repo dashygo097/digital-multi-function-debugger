@@ -1,25 +1,80 @@
 import React from "react";
 
 import { withRouter } from "../utils/withRouter";
-import Waveform from "../components/Waveform";
+import Waveform, { DataPoint } from "../components/Waveform";
 import InputTracer from "../components/InputTracer";
+
+const MAX_DATA_POINTS = 100;
 
 interface HomePageProps {
   navigate: (path: string) => void;
 }
 
-class HomePage extends React.Component<HomePageProps> {
-  timerId?: NodeJS.Timeout;
+interface HomePageState {
+  data: DataPoint[];
+  inputValue: string;
+}
+
+class HomePage extends React.Component<HomePageProps, HomePageState> {
   constructor(props: HomePageProps) {
     super(props);
+    this.state = {
+      data: [],
+      inputValue: "",
+    };
   }
+
+  componentDidMount() {
+    const initialData: DataPoint[] = [];
+    for (let i = 0; i < 20; i++) {
+      initialData.push({ time: i, value: Math.sin(i / 3) * 10 + 10 });
+    }
+    this.setState({ data: initialData });
+  }
+
+  handleInputChange = (value: string) => {
+    this.setState({ inputValue: value });
+  };
+
+  handleInputSubmit = () => {
+    const value = parseFloat(this.state.inputValue);
+    if (!isNaN(value)) {
+      this.addDataPoint(value);
+
+      this.setState({ inputValue: "" });
+    }
+  };
+
+  addDataPoint = (yValue: number) => {
+    this.setState((prevState) => {
+      const newX =
+        prevState.data.length > 0
+          ? prevState.data[prevState.data.length - 1].value + 1
+          : 0;
+
+      const newDataPoint: DataPoint = { time: newX, value: yValue };
+
+      let newData = [...prevState.data, newDataPoint];
+
+      if (newData.length > MAX_DATA_POINTS) {
+        newData = newData.slice(newData.length - MAX_DATA_POINTS);
+      }
+
+      return { data: newData };
+    });
+  };
 
   render() {
     return (
       <div className="page-home">
         <h1>Waveform Example</h1>
-        <Waveform data={[]} />
-        <InputTracer name="hehe" />
+        <Waveform data={this.state.data} />
+        <InputTracer
+          name="hehe"
+          value={this.state.inputValue}
+          onChange={this.handleInputChange}
+          onSubmit={this.handleInputSubmit}
+        />
       </div>
     );
   }

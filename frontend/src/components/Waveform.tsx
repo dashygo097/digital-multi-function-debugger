@@ -11,13 +11,16 @@ import {
 type DataPoint = { time: number; value: number };
 
 interface WaveformProps {
-  color?: string;
   data: DataPoint[];
+  color?: string;
 }
 
 class Waveform extends React.Component<WaveformProps> {
   constructor(props: WaveformProps) {
     super(props);
+    this.state = {
+      data: [],
+    };
   }
 
   render() {

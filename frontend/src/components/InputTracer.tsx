@@ -2,19 +2,17 @@ import React from "react";
 
 interface InputTracerProps {
   name: string;
-  className?: string;
   value?: string;
   placeholder?: string;
+  className?: string;
   onChange?: (value: string) => void;
+  onSubmit?: () => void;
 }
 
 class InputTracer extends React.Component<InputTracerProps> {
   private inputRef: React.RefObject<HTMLInputElement>;
   constructor(props: InputTracerProps) {
     super(props);
-    this.state = {
-      focused: false,
-    };
     this.inputRef = React.createRef();
   }
 
@@ -26,9 +24,10 @@ class InputTracer extends React.Component<InputTracerProps> {
 
   handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === "Enter") {
-      const prev = this.inputRef.current?.value || "";
+      if (this.props.onSubmit) {
+        this.props.onSubmit();
+      }
       this.clearValue();
-      return prev;
     }
   };
 
