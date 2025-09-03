@@ -1,9 +1,9 @@
 import React from "react";
-import "../styles/version.css";
+import "../styles/info.css";
 
 interface VersionInfoProps {
-  name: string;
-  version: string;
+  names: string[];
+  versions: string[];
 }
 
 class VersionInfo extends React.Component<VersionInfoProps> {
@@ -14,7 +14,11 @@ class VersionInfo extends React.Component<VersionInfoProps> {
   render() {
     return (
       <div className="info-version">
-        {this.props.name} - v{this.props.version}
+        {this.props.names.map((name, index) => (
+          <div key={index}>
+            {this.props.names[index]} (v{this.props.versions[index]})
+          </div>
+        ))}
       </div>
     );
   }

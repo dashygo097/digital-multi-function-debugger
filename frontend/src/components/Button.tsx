@@ -1,42 +1,42 @@
 import React from "react";
-import "../styles/button.css";
 
 interface ButtonProps {
   children?: React.ReactNode;
-  icon?: React.ReactNode;
-  onClick?: () => void;
   type?: "button" | "submit" | "reset";
   className?: string;
+  onClick?: () => void;
 }
 
 interface ButtonState {
-  disabled?: boolean;
-  active?: boolean;
   loading?: boolean;
 }
 
 class Button extends React.Component<ButtonProps, ButtonState> {
   constructor(props: ButtonProps) {
     super(props);
-    this.state = {};
+    this.state = {
+      loading: false,
+    };
   }
+
+  handleClick = () => {
+    if (this.props.onClick) {
+      this.setState({ loading: true });
+      Promise.resolve(this.props.onClick()).finally(() => {
+        this.setState({ loading: false });
+      });
+    }
+  };
 
   render() {
     return (
       <button
         type={this.props.type || "button"}
         className={this.props.className}
-        onClick={this.props.onClick}
-        disabled={this.state.disabled}
+        onClick={this.handleClick}
+        disabled={this.state.loading}
       >
-        {this.state.loading ? (
-          "Loading..."
-        ) : (
-          <>
-            {this.props.icon}
-            {this.props.children}
-          </>
-        )}
+        {this.state.loading ? "Loading..." : <>{this.props.children}</>}
       </button>
     );
   }
