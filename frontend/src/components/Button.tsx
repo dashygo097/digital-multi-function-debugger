@@ -7,16 +7,9 @@ interface ButtonProps {
   onClick?: () => void;
 }
 
-interface ButtonState {
-  loading?: boolean;
-}
-
-class Button extends React.Component<ButtonProps, ButtonState> {
+class Button extends React.Component<ButtonProps> {
   constructor(props: ButtonProps) {
     super(props);
-    this.state = {
-      loading: false,
-    };
   }
 
   handleClick = () => {
@@ -34,9 +27,8 @@ class Button extends React.Component<ButtonProps, ButtonState> {
         type={this.props.type || "button"}
         className={this.props.className}
         onClick={this.handleClick}
-        disabled={this.state.loading}
       >
-        {this.state.loading ? "Loading..." : <>{this.props.children}</>}
+        <>{this.props.children}</>
       </button>
     );
   }

@@ -27,7 +27,7 @@ class HomePage extends React.Component<HomePageProps, HomePageState> {
   componentDidMount() {
     const initialData: DataPoint[] = [];
     for (let i = 0; i < 20; i++) {
-      initialData.push({ time: i, value: Math.sin(i / 3) * 10 + 10 });
+      initialData.push({ x: i, y: Math.sin(i / 3) * 10 + 10 });
     }
     this.setState({ data: initialData });
   }
@@ -40,7 +40,6 @@ class HomePage extends React.Component<HomePageProps, HomePageState> {
     const value = parseFloat(this.state.inputValue);
     if (!isNaN(value)) {
       this.addDataPoint(value);
-
       this.setState({ inputValue: "" });
     }
   };
@@ -49,10 +48,10 @@ class HomePage extends React.Component<HomePageProps, HomePageState> {
     this.setState((prevState) => {
       const newX =
         prevState.data.length > 0
-          ? prevState.data[prevState.data.length - 1].value + 1
+          ? prevState.data[prevState.data.length - 1].y + 1
           : 0;
 
-      const newDataPoint: DataPoint = { time: newX, value: yValue };
+      const newDataPoint: DataPoint = { x: newX, y: yValue };
 
       let newData = [...prevState.data, newDataPoint];
 

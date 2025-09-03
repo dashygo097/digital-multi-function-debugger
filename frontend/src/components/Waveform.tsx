@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   LineChart,
   Line,
@@ -8,7 +8,7 @@ import {
   Tooltip,
 } from "recharts";
 
-type DataPoint = { time: number; value: number };
+type DataPoint = { x: number; y: number };
 
 interface WaveformProps {
   data: DataPoint[];
@@ -18,21 +18,21 @@ interface WaveformProps {
 class Waveform extends React.Component<WaveformProps> {
   constructor(props: WaveformProps) {
     super(props);
-    this.state = {
-      data: [],
-    };
   }
 
   render() {
     return (
       <LineChart width={300} height={180} data={this.props.data}>
         <CartesianGrid strokeDasharray="3 3" />
-        <XAxis dataKey="time" />
+        <XAxis
+          dataKey="x"
+          tickFormatter={(tick) => (tick % 10 === 0 ? tick : "")}
+        />
         <YAxis />
         <Tooltip />
         <Line
           type="monotone"
-          dataKey="value"
+          dataKey="y"
           stroke={this.props.color || "#1494fd"}
           dot={false}
         />
