@@ -1,9 +1,12 @@
-import React, { useMemo } from "react";
+import React from "react";
 import {
-  LineChart,
+  ScatterChart,
+  Scatter,
   Line,
   XAxis,
   YAxis,
+  ZAxis,
+  Brush,
   CartesianGrid,
   Tooltip,
 } from "recharts";
@@ -15,6 +18,18 @@ interface WaveformProps {
   color?: string;
 }
 
+const CustomTooltip = ({ active, payload }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="custom-tooltip">
+        <p className="label">{`x: ${payload[0].payload.x}`}</p>
+        <p className="intro">{`y: ${payload[0].payload.y.toFixed(3)}`}</p>
+      </div>
+    );
+  }
+  return null;
+};
+
 class Waveform extends React.Component<WaveformProps> {
   constructor(props: WaveformProps) {
     super(props);
@@ -22,21 +37,30 @@ class Waveform extends React.Component<WaveformProps> {
 
   render() {
     return (
-      <LineChart width={300} height={180} data={this.props.data}>
-        <CartesianGrid strokeDasharray="3 3" />
-        <XAxis
-          dataKey="x"
-          tickFormatter={(tick) => (tick % 10 === 0 ? tick : "")}
-        />
-        <YAxis />
-        <Tooltip />
-        <Line
+      <ScatterChart
+        width={480}
+        height={280}
+        data={this.props.data}
+        margin={{
+          top: 20,
+          right: 20,
+          bottom: 20,
+          left: 20,
+        }}
+      >
+        <CartesianGrid />
+        <XAxis type="number" dataKey="x" />
+        <YAxis type="number" dataKey="y" />
+        <ZAxis type="number" dataKey="y" range={[20, 20]} />
+        <Tooltip content={<CustomTooltip />} />
+        <Line type="monotone" dataKey="y" stroke="#f4f4f4" dot={false} />
+        <Scatter
           type="monotone"
-          dataKey="y"
-          stroke={this.props.color || "#1494fd"}
-          dot={false}
+          stroke={this.props.color || "#f4f4f4"}
+          line={{ strokeWidth: 2 }}
         />
-      </LineChart>
+        <Brush />
+      </ScatterChart>
     );
   }
 }
