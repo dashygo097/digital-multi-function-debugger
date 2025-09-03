@@ -46,10 +46,7 @@ class HomePage extends React.Component<HomePageProps, HomePageState> {
 
   addDataPoint = (yValue: number) => {
     this.setState((prevState) => {
-      const newX =
-        prevState.data.length > 0
-          ? prevState.data[prevState.data.length - 1].y + 1
-          : 0;
+      const newX = prevState.data.length + 1;
 
       const newDataPoint: DataPoint = { x: newX, y: yValue };
 
