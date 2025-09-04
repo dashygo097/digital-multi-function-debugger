@@ -21,6 +21,15 @@ npm install # 安装必要的modules
 npm run start # run application
 ```
 
+###### 稍后会release Windows/Linux/MacOS 各自的distribution, 当然你也可以手动完成(e.g. Linux/MacOS)：
+
+```bash
+cd frontend
+npm install # 安装必要的modules
+
+npm run make # will make a zip distributable for your platform.
+```
+
 ### Run AutoTestBench Script with Verilator and Gtkwave
 
 ##### For regular autotest impled in verilog:
