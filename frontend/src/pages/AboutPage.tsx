@@ -16,7 +16,7 @@ class AboutPage extends React.Component<AboutPageProps> {
     return (
       <div className="about-page">
         <h1>About This App</h1>
-        <p>
+        <p className="info-about">
           This is the upper computer software for the 2025A Embedded Competition
           FPGA track, developed using React + TypeScript + Electron.
         </p>
