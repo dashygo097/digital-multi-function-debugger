@@ -1,0 +1,47 @@
+@keyframes pulse {
+
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 768px) {
+  .info-about {
+    margin: 0 var(--spacing-md);
+    padding: var(--spacing-md);
+    font-size: 1rem;
+  }
+
+  .navbar {
+    flex-direction: column;
+    gap: var(--spacing-xs);
+  }
+
+  .navbar-header {
+    font-size: 20px;
+  }
+
+  .navbar-button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  body {
+    margin: var(--spacing-xs);
+  }
+
+  .info-about {
+    margin: 0 var(--spacing-sm);
+    padding: var(--spacing-sm);
+  }
+
+  h1 {
+    font-size: clamp(1.8rem, 5vw, 2.5em);
+  }
+}
