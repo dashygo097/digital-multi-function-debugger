@@ -2,11 +2,14 @@
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.4;
   font-weight: 400;
+
   color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.95);
-  background-color: #444444;
+  background: linear-gradient(135deg, #25272a 0%, #131f32 100%);
+
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  transition: background-color 0.3s ease;
 }
 
 body {
@@ -18,33 +21,21 @@ body {
 
 h1 {
   font-size: clamp(2.5rem, 6vw, 3.2em);
-  line-height: 1.08;
-  font-weight: 700;
+  font-weight: 200;
   letter-spacing: 0.03em;
-  margin-bottom: 0.6em;
+  line-height: 1.08;
   text-align: center;
 
-  background: linear-gradient(90deg, #a1a1a1 0%, #b4b4b4 50%, #f4f4f4 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  margin-bottom: 0.6em;
   background-clip: text;
 
-  text-shadow:
-    0 4px 14px rgba(50, 116, 237, 0.2),
-    0 1px 2px rgba(30, 40, 90, 0.08);
+  background: -webkit-linear-gradient(left, #afafaf, #afafaf);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+
+  transition: all 0.8s cubic-bezier(0.175, 0.885, 0.32, 0.975);
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-
-  a:hover {
-    color: #747bff;
-  }
-
-  button {
-    background-color: #f9f9f9;
-  }
+h1:hover {
+  transform: scale(1.05);
 }

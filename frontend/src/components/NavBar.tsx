@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { withRouter } from "../utils/withRouter";
 import Button from "./Button";
 import NavHeader from "./NavHeader";
+import GitHubIcon from "./GithubIcon";
 import "../styles/navbar.css";
 
 interface NavBarProps {
@@ -21,9 +22,14 @@ class NavBar extends React.Component<NavBarProps, NavBarState> {
     };
   }
 
-  handleGoToHomeOnClick = () => {
+  handleGoToMainOnClick = () => {
     this.props.navigate("/");
-    this.setState({ onPage: "home" });
+    this.setState({ onPage: "main" });
+  };
+
+  handleGoToDocOnClick = () => {
+    this.props.navigate("/doc");
+    this.setState({ onPage: "docs" });
   };
 
   handleGoToAboutOnClick = () => {
@@ -37,13 +43,21 @@ class NavBar extends React.Component<NavBarProps, NavBarState> {
         <NavHeader title={this.state.onPage} subtitle="dashygo097@" />
         <Link
           to="/"
-          className={`navbar-home ${this.state.onPage === "home" ? "active" : ""}`}
+          className={`navbar-home ${this.state.onPage === "main" ? "active" : ""}`}
         >
           <Button
-            onClick={this.handleGoToHomeOnClick}
+            onClick={this.handleGoToMainOnClick}
             className="navbar-button"
           >
-            Home
+            Main
+          </Button>
+        </Link>
+        <Link
+          to="/doc"
+          className={`navbar-doc ${this.state.onPage === "docs" ? "active" : ""}`}
+        >
+          <Button onClick={this.handleGoToDocOnClick} className="navbar-button">
+            Docs
           </Button>
         </Link>
         <Link
@@ -57,6 +71,7 @@ class NavBar extends React.Component<NavBarProps, NavBarState> {
             About
           </Button>
         </Link>
+        <GitHubIcon />
       </nav>
     );
   }
