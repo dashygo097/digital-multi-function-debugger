@@ -6,17 +6,17 @@ import InputTracer from "../components/InputTracer";
 
 const MAX_DATA_POINTS = 100;
 
-interface HomePageProps {
+interface MainPageProps {
   navigate: (path: string) => void;
 }
 
-interface HomePageState {
+interface MainPageState {
   data: DataPoint[];
   inputValue: string;
 }
 
-class HomePage extends React.Component<HomePageProps, HomePageState> {
-  constructor(props: HomePageProps) {
+class MainPage extends React.Component<MainPageProps, MainPageState> {
+  constructor(props: MainPageProps) {
     super(props);
     this.state = {
       data: [],
@@ -75,5 +75,5 @@ class HomePage extends React.Component<HomePageProps, HomePageState> {
     );
   }
 }
-const WrappedHomePage = withRouter(HomePage);
-export default WrappedHomePage;
+const WrappedMainPage = withRouter(MainPage);
+export default WrappedMainPage;

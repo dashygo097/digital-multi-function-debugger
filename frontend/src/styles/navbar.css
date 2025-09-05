@@ -43,7 +43,7 @@
 }
 
 .navbar-home,
-.navbar-notes,
+.navbar-doc,
 .navbar-about {
   border-radius: 8px;
   border: 1px solid transparent;
@@ -55,21 +55,23 @@
 }
 
 .navbar-home.active,
-.navbar-about.active,
-.navbar-notes.active {
+.navbar-doc.active,
+.navbar-about.active {
   background-color: #c4a4ff;
 }
 
 .navbar-home:hover,
-.navbar-about:hover,
-.navbar-notes:hover {
+.navbar-doc:hover,
+.navbar-about:hover {
   border-color: #946ccf;
 }
 
 .navbar-button {
+  width: 80px;
   border-radius: 6px;
   border: 1px solid transparent;
-  padding: 0.6em 1.2em;
+  padding: 0.6em;
+  text-align: center;
   font-size: 1em;
   font-weight: 500;
   font-family: inherit;
