@@ -3,6 +3,8 @@ import React from "react";
 import { withRouter } from "../utils/withRouter";
 import Waveform, { DataPoint } from "../components/Waveform";
 import InputTracer from "../components/InputTracer";
+import SelectList from "../components/SelectList";
+import SerialPortList from "../components/SerialPortList";
 
 const MAX_DATA_POINTS = 100;
 
@@ -71,6 +73,11 @@ class MainPage extends React.Component<MainPageProps, MainPageState> {
           onChange={this.handleInputChange}
           onSubmit={this.handleInputSubmit}
         />
+        <SelectList
+          label="123"
+          options={["Option 1", "Option 2", "Option 3"]}
+        />
+        <SerialPortList />
       </div>
     );
   }
