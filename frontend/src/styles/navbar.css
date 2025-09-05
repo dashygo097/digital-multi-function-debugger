@@ -1,29 +1,34 @@
 .navbar {
   display: flex;
+  padding: 12px 20px;
+  gap: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 32px;
+
   background: linear-gradient(
     135deg,
     ragba(0, 0, 0, 0.1),
     rgba(255, 255, 255, 0)
   );
-  padding: 12px 20px;
-  gap: 12px;
-  border-radius: 32px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+
   transition: all 0.8s cubic-bezier(0.175, 0.885, 0.32, 0.975);
 }
 
 .navbar-header {
-  margin-right: auto;
+  text-shadow: 1px 2px 4px rgba(0, 0, 0, 0.5);
+  text-transform: capitalize;
   font-size: 24px;
-  font-weight: 100;
+  font-weight: 500;
+
+  margin-right: auto;
+
   background: linear-gradient(90deg, #a1a1a1, #f4f4f4);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  text-shadow: 1px 2px 4px rgba(0, 0, 0, 0.5);
-  text-transform: capitalize;
+
   transition: all 0.8s cubic-bezier(0.175, 0.885, 0.32, 0.975);
 }
 
@@ -33,12 +38,14 @@
 
 .navbar-header-subtitle {
   font-size: 10px;
-  background: linear-gradient(90deg, #a1a1a1, #ffffff);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
   font-weight: 100;
   margin-left: 32px;
   margin-top: -10px;
+
+  background: linear-gradient(90deg, #a1a1a1, #ffffff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+
   transition: all 0.8s cubic-bezier(0.175, 0.885, 0.32, 0.975);
 }
 
@@ -67,15 +74,18 @@
 }
 
 .navbar-button {
-  width: 80px;
-  border-radius: 6px;
-  border: 1px solid transparent;
-  padding: 0.6em;
   text-align: center;
   font-size: 1em;
   font-weight: 500;
   font-family: inherit;
+
+  width: 80px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  padding: 0.6em;
+
   background-color: #1c1c1c;
+
   cursor: pointer;
   transition: all 0.8s cubic-bezier(0.175, 0.885, 0.32, 0.975);
 }

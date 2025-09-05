@@ -2,12 +2,14 @@
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.4;
   font-weight: 400;
+
   color-scheme: light dark;
   background-color: rgba(55, 55, 55, 0.95);
 
-  transition: background-color 0.3s ease;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  transition: background-color 0.3s ease;
 }
 
 body {
@@ -19,16 +21,17 @@ body {
 
 h1 {
   font-size: clamp(2.5rem, 6vw, 3.2em);
-  line-height: 1.08;
   font-weight: 200;
   letter-spacing: 0.03em;
-  margin-bottom: 0.6em;
+  line-height: 1.08;
   text-align: center;
-  background: -webkit-linear-gradient(left, #afafaf, #afafaf);
 
+  margin-bottom: 0.6em;
+  background-clip: text;
+
+  background: -webkit-linear-gradient(left, #afafaf, #afafaf);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  background-clip: text;
 
   transition: all 0.8s cubic-bezier(0.175, 0.885, 0.32, 0.975);
 }
