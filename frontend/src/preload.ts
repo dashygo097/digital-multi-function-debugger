@@ -5,7 +5,3 @@ contextBridge.exposeInMainWorld("versions", {
   chrome: () => process.versions.chrome,
   electron: () => process.versions.electron,
 });
-
-contextBridge.exposeInMainWorld("electronAPI", {
-  setTitle: (arg: string) => ipcRenderer.send("set-title", arg),
-});

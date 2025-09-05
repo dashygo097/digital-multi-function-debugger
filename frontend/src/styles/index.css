@@ -4,7 +4,7 @@
   font-weight: 400;
 
   color-scheme: light dark;
-  background-color: rgba(55, 55, 55, 0.95);
+  background: linear-gradient(135deg, #25272a 0%, #131f32 100%);
 
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;

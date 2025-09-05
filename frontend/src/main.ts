@@ -21,29 +21,6 @@ const createMainWindow = () => {
     );
   }
 
-  mainWindow.webContents.session.on(
-    "select-serial-port",
-    (event, portList, webContents, callback) => {
-      mainWindow.webContents.session.on("serial-port-added", (event, port) => {
-        console.log("serial-port-added FIRED WITH", port);
-      });
-
-      mainWindow.webContents.session.on(
-        "serial-port-removed",
-        (event, port) => {
-          console.log("serial-port-removed FIRED WITH", port);
-        },
-      );
-
-      event.preventDefault();
-      if (portList && portList.length > 0) {
-        callback(portList[0].portId);
-      } else {
-        callback("");
-      }
-    },
-  );
-
   mainWindow.webContents.openDevTools();
 };
 
