@@ -65,7 +65,7 @@ class MainPage extends React.Component<MainPageProps, MainPageState> {
   render() {
     return (
       <div className="page-home">
-        <h1>Waveform Example</h1>
+        <h1>Control Panel</h1>
         <Waveform data={this.state.data} />
         <InputTracer
           name="hehe"

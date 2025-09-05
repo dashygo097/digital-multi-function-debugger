@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React from "react";
+import "../styles/serial.css";
 
 interface SerialPortInfo {
   path: string;
@@ -10,97 +11,128 @@ interface SerialPortInfo {
   vendorId?: string;
 }
 
-const getWebSerialPorts = async (): Promise<SerialPortInfo[]> => {
-  if ("serial" in navigator) {
-    try {
-      const ports = await (navigator as any).serial.getPorts();
-      return ports.map((port: any, index: number) => ({
-        path: `Web Serial Port ${index + 1}`,
-        manufacturer: "Unknown",
-        serialNumber: "N/A",
-        pnpId: "Web Serial API",
-        locationId: "N/A",
-        productId: "N/A",
-        vendorId: "N/A",
-      }));
-    } catch (error) {
-      console.error("Web Serial API error:", error);
-      return [];
+interface SerialPortsListProps {}
+
+interface SerialPortsListState {
+  ports: SerialPortInfo[];
+  error: string;
+  isLoading: boolean;
+  useWebSerial: boolean;
+}
+
+class SerialPortsList extends React.Component<
+  SerialPortsListProps,
+  SerialPortsListState
+> {
+  private intervalId: NodeJS.Timeout | null = null;
+
+  constructor(props: SerialPortsListProps) {
+    super(props);
+    this.state = {
+      ports: [],
+      error: "",
+      isLoading: true,
+      useWebSerial: false,
+    };
+  }
+
+  componentDidMount() {
+    this.listSerialPorts();
+    this.intervalId = setInterval(() => {
+      this.listSerialPorts();
+    }, 5000);
+  }
+
+  componentWillUnmount() {
+    if (this.intervalId) {
+      clearInterval(this.intervalId);
     }
   }
-  return [];
-};
 
-const SerialPortsList: React.FC = () => {
-  const [ports, setPorts] = useState<SerialPortInfo[]>([]);
-  const [error, setError] = useState<string>("");
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [useWebSerial, setUseWebSerial] = useState<boolean>(false);
+  getWebSerialPorts = async (): Promise<SerialPortInfo[]> => {
+    if ("serial" in navigator) {
+      try {
+        const ports = await (navigator as any).serial.getPorts();
+        return ports.map((port: any, index: number) => ({
+          path: `Web Serial Port ${index + 1}`,
+          manufacturer: "Unknown",
+          serialNumber: "N/A",
+          pnpId: "Web Serial API",
+          locationId: "N/A",
+          productId: "N/A",
+          vendorId: "N/A",
+        }));
+      } catch (error) {
+        console.error("Web Serial API error:", error);
+        return [];
+      }
+    }
+    return [];
+  };
 
-  const listSerialPorts = useCallback(async () => {
+  listSerialPorts = async () => {
     try {
-      setIsLoading(true);
+      this.setState({ isLoading: true });
 
       let portList: SerialPortInfo[] = [];
 
-      if (useWebSerial) {
-        portList = await getWebSerialPorts();
+      if (this.state.useWebSerial) {
+        portList = await this.getWebSerialPorts();
         if (portList.length === 0) {
-          setError(
-            'No Web Serial ports found. Click "Request Port Access" to connect a device.',
-          );
+          this.setState({
+            error:
+              'No Web Serial ports found. Click "Request Port Access" to connect a device.',
+          });
         } else {
-          setError("");
+          this.setState({ error: "" });
         }
       } else {
         await new Promise((resolve) => setTimeout(resolve, 500)); // Simulate async operation
         portList = [];
 
         if (portList.length === 0) {
-          setError("No ports discovered");
+          this.setState({ error: "No ports discovered" });
         } else {
-          setError("");
+          this.setState({ error: "" });
         }
       }
 
-      setPorts(portList);
+      this.setState({ ports: portList });
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : "Unknown error occurred";
-      setError(errorMessage);
-      setPorts([]);
+      this.setState({ error: errorMessage, ports: [] });
     } finally {
-      setIsLoading(false);
-    }
-  }, [useWebSerial]);
-
-  const requestWebSerialAccess = async () => {
-    if ("serial" in navigator) {
-      try {
-        await (navigator as any).serial.requestPort();
-        setUseWebSerial(true);
-        listSerialPorts();
-      } catch (error) {
-        setError(
-          "Failed to access Web Serial API. User may have cancelled the request.",
-        );
-      }
-    } else {
-      setError("Web Serial API is not supported in this browser.");
+      this.setState({ isLoading: false });
     }
   };
 
-  useEffect(() => {
-    listSerialPorts();
+  requestWebSerialAccess = async () => {
+    if ("serial" in navigator) {
+      try {
+        await (navigator as any).serial.requestPort();
+        this.setState({ useWebSerial: true }, () => {
+          this.listSerialPorts();
+        });
+      } catch (error) {
+        this.setState({
+          error:
+            "Failed to access Web Serial API. User may have cancelled the request.",
+        });
+      }
+    } else {
+      this.setState({
+        error: "Web Serial API is not supported in this browser.",
+      });
+    }
+  };
 
-    const intervalId = setInterval(() => {
-      listSerialPorts();
-    }, 2000);
+  toggleWebSerial = () => {
+    this.setState({ useWebSerial: !this.state.useWebSerial });
+  };
 
-    return () => clearInterval(intervalId);
-  }, [listSerialPorts]);
-
-  const renderPortsTable = () => {
+  renderPortsTable = () => {
+    const { ports } = this.state;
     if (ports.length === 0) return null;
 
     const headers = [
@@ -114,15 +146,12 @@ const SerialPortsList: React.FC = () => {
     ];
 
     return (
-      <div className="overflow-x-auto">
-        <table className="min-w-full border-collapse border border-gray-300">
+      <div className="table-container">
+        <table className="ports-table">
           <thead>
-            <tr className="bg-gray-100">
+            <tr className="table-header">
               {headers.map((header) => (
-                <th
-                  key={header}
-                  className="border border-gray-300 px-4 py-2 text-left font-semibold"
-                >
+                <th key={header} className="table-header-cell">
                   {header}
                 </th>
               ))}
@@ -130,28 +159,14 @@ const SerialPortsList: React.FC = () => {
           </thead>
           <tbody>
             {ports.map((port, index) => (
-              <tr key={`${port.path}-${index}`} className="hover:bg-gray-50">
-                <td className="border border-gray-300 px-4 py-2">
-                  {port.path}
-                </td>
-                <td className="border border-gray-300 px-4 py-2">
-                  {port.manufacturer || "-"}
-                </td>
-                <td className="border border-gray-300 px-4 py-2">
-                  {port.serialNumber || "-"}
-                </td>
-                <td className="border border-gray-300 px-4 py-2">
-                  {port.pnpId || "-"}
-                </td>
-                <td className="border border-gray-300 px-4 py-2">
-                  {port.locationId || "-"}
-                </td>
-                <td className="border border-gray-300 px-4 py-2">
-                  {port.productId || "-"}
-                </td>
-                <td className="border border-gray-300 px-4 py-2">
-                  {port.vendorId || "-"}
-                </td>
+              <tr key={`${port.path}-${index}`} className="table-row">
+                <td className="table-cell">{port.path}</td>
+                <td className="table-cell">{port.manufacturer || "-"}</td>
+                <td className="table-cell">{port.serialNumber || "-"}</td>
+                <td className="table-cell">{port.pnpId || "-"}</td>
+                <td className="table-cell">{port.locationId || "-"}</td>
+                <td className="table-cell">{port.productId || "-"}</td>
+                <td className="table-cell">{port.vendorId || "-"}</td>
               </tr>
             ))}
           </tbody>
@@ -160,67 +175,65 @@ const SerialPortsList: React.FC = () => {
     );
   };
 
-  return (
-    <div className="p-6 max-w-6xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">Serial Ports</h1>
+  render() {
+    const { ports, error, isLoading, useWebSerial } = this.state;
 
-      {isLoading && (
-        <div className="flex items-center mb-4">
-          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500 mr-2"></div>
-          <span className="text-gray-600">Loading serial ports...</span>
-        </div>
-      )}
+    return (
+      <div className="serial-ports-container">
+        <h1 className="title">Serial Ports</h1>
 
-      {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-          <strong>Error:</strong> {error}
-        </div>
-      )}
-
-      <div className="mb-4 flex gap-2 flex-wrap">
-        <button
-          onClick={listSerialPorts}
-          className="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded transition-colors"
-          disabled={isLoading}
-        >
-          {isLoading ? "Refreshing..." : "Refresh Now"}
-        </button>
-
-        <button
-          onClick={() => setUseWebSerial(!useWebSerial)}
-          className="bg-gray-500 hover:bg-gray-600 text-white font-medium py-2 px-4 rounded transition-colors"
-        >
-          {useWebSerial ? "Use Mock Data" : "Use Web Serial API"}
-        </button>
-
-        {!useWebSerial && (
-          <button
-            onClick={requestWebSerialAccess}
-            className="bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded transition-colors"
-          >
-            Request Port Access
-          </button>
+        {error && (
+          <div className="error-container">
+            <strong>Error:</strong> {error}
+          </div>
         )}
-      </div>
 
-      <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded">
-        <p className="text-sm text-blue-800">
-          {useWebSerial
-            ? "Using Web Serial API (Chrome/Edge only). Click 'Request Port Access' to connect to real devices."
-            : "Using mock data for demonstration. Toggle to Web Serial API to connect to real devices."}
-        </p>
-      </div>
+        <div className="button-container">
+          <button
+            onClick={this.listSerialPorts}
+            className={`button button-primary ${isLoading ? "button-disabled" : ""}`}
+            disabled={isLoading}
+          >
+            {isLoading ? "Refreshing..." : "Refresh Now"}
+          </button>
 
-      {!isLoading && !error && (
-        <div className="mb-4 text-sm text-gray-600">
-          Found {ports.length} serial port{ports.length !== 1 ? "s" : ""}
-          <span className="ml-2 text-xs">(Auto-refreshes every 2 seconds)</span>
+          <button
+            onClick={this.toggleWebSerial}
+            className="button button-secondary"
+          >
+            {useWebSerial ? "Use Mock Data" : "Use Web Serial API"}
+          </button>
+
+          {!useWebSerial && (
+            <button
+              onClick={this.requestWebSerialAccess}
+              className="button button-success"
+            >
+              Request Port Access
+            </button>
+          )}
         </div>
-      )}
 
-      <div id="ports">{renderPortsTable()}</div>
-    </div>
-  );
-};
+        {!isLoading && !error && (
+          <div className="ports-count">
+            Found {ports.length} serial port{ports.length !== 1 ? "s" : ""}
+            <span className="auto-refresh-text">
+              (Auto-refreshes every 2 seconds)
+            </span>
+          </div>
+        )}
+
+        {isLoading && (
+          <div className="loading-container">
+            <div className="loading-spinner"></div>
+            <span className="loading-text">Loading serial ports...</span>
+          </div>
+        )}
+
+        <div id="ports">{this.renderPortsTable()}</div>
+      </div>
+    );
+  }
+}
 
 export default SerialPortsList;
