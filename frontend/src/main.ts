@@ -9,8 +9,47 @@ const createMainWindow = () => {
     transparent: false,
     backgroundMaterial: "mica",
     webPreferences: {
+      sandbox: true,
       preload: path.join(__dirname, "preload.js"),
     },
+  });
+
+  mainWindow.webContents.session.on(
+    "select-serial-port",
+    (event, portList, webContents, callback) => {
+      mainWindow.webContents.session.on("serial-port-added", (event, port) => {
+        console.log("Serial port added:", port);
+      });
+      mainWindow.webContents.session.on(
+        "serial-port-removed",
+        (event, port) => {
+          console.log("Serial port removed:", port);
+        },
+      );
+
+      event.preventDefault();
+      if (portList && portList.length > 0) {
+        callback(portList[0].portId);
+      } else {
+        callback("");
+      }
+    },
+  );
+
+  mainWindow.webContents.session.setPermissionCheckHandler(
+    (webContents, permission, requestingOrigin, details) => {
+      if (permission === "serial" && details.securityOrigin === "file:///") {
+        return true;
+      }
+      return false;
+    },
+  );
+
+  mainWindow.webContents.session.setDevicePermissionHandler((details) => {
+    if (details.deviceType === "serial" && details.origin === "file://") {
+      return true;
+    }
+    return false;
   });
 
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
