@@ -100,7 +100,7 @@ const createMainWindow = () => {
     });
   });
 
-  ipcMain.handle("usb-get-device", () => {
+  ipcMain.handle("usb-get-devices", () => {
     return usbDevices;
   });
 
