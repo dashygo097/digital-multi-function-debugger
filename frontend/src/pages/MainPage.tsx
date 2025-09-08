@@ -65,7 +65,7 @@ class MainPage extends React.Component<MainPageProps, MainPageState> {
 
   render() {
     return (
-      <div className="page-home">
+      <div className="page-main">
         <h1>Control Panel</h1>
         <USBDeviceList />
         <SerialPortList />

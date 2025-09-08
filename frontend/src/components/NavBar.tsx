@@ -18,7 +18,7 @@ class NavBar extends React.Component<NavBarProps, NavBarState> {
   constructor(props: NavBarProps) {
     super(props);
     this.state = {
-      onPage: window.location.pathname.replace("/", "") || "home",
+      onPage: window.location.pathname.replace("/", "") || "main",
     };
   }
 
