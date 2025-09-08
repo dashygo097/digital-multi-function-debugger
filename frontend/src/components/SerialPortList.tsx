@@ -1,7 +1,6 @@
 import React from "react";
 import Button from "./Button";
 import SelectList from "./SelectList";
-import "../styles/serial.css";
 
 interface SerialPortListProps {
   className?: string;

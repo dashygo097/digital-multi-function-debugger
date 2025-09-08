@@ -4,6 +4,7 @@ import { withRouter } from "../../utils/withRouter";
 import Waveform, { DataPoint } from "../../components/Waveform";
 import USBDeviceList from "../../components/USBDeviceList";
 import SerialPortList from "../../components/SerialPortList";
+import "../../styles/main.css";
 
 const MAX_DATA_POINTS = 100;
 
