@@ -30,6 +30,7 @@
   -webkit-text-fill-color: transparent;
 
   transition: all 0.8s cubic-bezier(0.175, 0.885, 0.32, 0.975);
+  cursor: pointer;
 }
 
 .navbar-header:hover {
