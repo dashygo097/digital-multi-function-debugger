@@ -9,3 +9,7 @@ contextBridge.exposeInMainWorld("versions", {
 contextBridge.exposeInMainWorld("usbAPI", {
   getDevices: () => ipcRenderer.invoke("usb-get-devices"),
 });
+
+contextBridge.exposeInMainWorld("serialAPI", {
+  getPorts: () => ipcRenderer.invoke("serial-get-ports"),
+});
