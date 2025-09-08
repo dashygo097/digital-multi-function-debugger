@@ -1,9 +1,9 @@
 import React from "react";
 
 interface SelectListProps {
-  label: string;
   options?: string[];
   className?: string;
+  onChange?: (value: string) => void;
 }
 
 class SelectList extends React.Component<SelectListProps> {
@@ -11,19 +11,20 @@ class SelectList extends React.Component<SelectListProps> {
     super(props);
   }
 
+  handleChange(event: React.ChangeEvent<HTMLSelectElement>) {
+    console.log(event.target.value);
+  }
+
   render() {
     return (
-      <div>
-        <label>{this.props.label}</label>
-        <select>
-          {this.props.options?.map((option, index) => (
-            <option key={index} value={option}>
-              {" "}
-              {option}
-            </option>
-          ))}
-        </select>
-      </div>
+      <select className={this.props.className} onChange={this.handleChange}>
+        {this.props.options?.map((option, index) => (
+          <option key={index} value={option}>
+            {" "}
+            {option}
+          </option>
+        ))}
+      </select>
     );
   }
 }

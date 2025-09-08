@@ -4,6 +4,7 @@ import { withRouter } from "../utils/withRouter";
 import Waveform, { DataPoint } from "../components/Waveform";
 import InputTracer from "../components/InputTracer";
 import SelectList from "../components/SelectList";
+import USBDevices from "../components/USBDevices";
 
 const MAX_DATA_POINTS = 100;
 
@@ -65,6 +66,7 @@ class MainPage extends React.Component<MainPageProps, MainPageState> {
     return (
       <div className="page-home">
         <h1>Control Panel</h1>
+        <USBDevices />
       </div>
     );
   }
