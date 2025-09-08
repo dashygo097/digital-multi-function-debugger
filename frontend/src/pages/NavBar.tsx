@@ -2,9 +2,9 @@ import React from "react";
 import { Link } from "react-router-dom";
 
 import { withRouter } from "../utils/withRouter";
-import Button from "./Button";
+import Button from "../components/Button";
 import NavHeader from "./NavHeader";
-import GitHubIcon from "./GithubIcon";
+import GitHubIcon from "../components/GithubIcon";
 import "../styles/navbar.css";
 
 interface NavBarProps {
