@@ -7,5 +7,5 @@ contextBridge.exposeInMainWorld("versions", {
 });
 
 contextBridge.exposeInMainWorld("usbAPI", {
-  getDevices: () => ipcRenderer.invoke("usb-get-device"),
+  getDevices: () => ipcRenderer.invoke("usb-get-devices"),
 });
