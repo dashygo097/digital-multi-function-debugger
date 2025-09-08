@@ -53,8 +53,16 @@ class USBDeviceList extends React.Component<
   render() {
     return (
       <div id={this.props.className}>
-        <Button onClick={() => this.updateDevices()}>Refresh</Button>
-        <SelectList options={this.state.devices.map(getDeviceDetails)} />
+        <Button
+          onClick={() => this.updateDevices()}
+          className={`${this.props.className}-button`}
+        >
+          Refresh
+        </Button>
+        <SelectList
+          options={this.state.devices.map(getDeviceDetails)}
+          className={`${this.props.className}-selectList`}
+        />
       </div>
     );
   }

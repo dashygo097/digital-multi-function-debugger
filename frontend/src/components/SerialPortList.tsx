@@ -53,8 +53,16 @@ class SerialPortList extends React.Component<
   render() {
     return (
       <div id={this.props.className}>
-        <Button onClick={() => this.updatePorts()}>Refresh</Button>
-        <SelectList options={this.state.ports.map(getPortDetails)} />
+        <Button
+          onClick={() => this.updatePorts()}
+          className={`${this.props.className}-button`}
+        >
+          Refresh
+        </Button>
+        <SelectList
+          options={this.state.ports.map(getPortDetails)}
+          className={`${this.props.className}-selectlist`}
+        />
       </div>
     );
   }
