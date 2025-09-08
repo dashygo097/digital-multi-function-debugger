@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, Notification } from "electron";
+import { app, BrowserWindow, ipcMain } from "electron";
 import path from "node:path";
 
 const createMainWindow = () => {
@@ -12,14 +12,14 @@ const createMainWindow = () => {
     },
   });
 
-  let usbDeviceLists: Electron.USBDevice[] = [];
+  let usbDevices: Electron.USBDevice[] = [];
   let grantedDeviceThroughPermHandler: Electron.USBDevice;
 
   mainWindow.webContents.session.on(
     "select-usb-device",
     (event, details, callback) => {
       console.log("select-usb-device triggered:", details);
-      usbDeviceLists = details.deviceList;
+      usbDevices = details.deviceList;
 
       event.preventDefault();
 
@@ -44,14 +44,12 @@ const createMainWindow = () => {
 
   mainWindow.webContents.session.on("usb-device-added", (event, device) => {
     console.log("Detected new USB device:", device);
-    usbDeviceLists.push(device);
+    usbDevices.push(device);
   });
 
   mainWindow.webContents.session.on("usb-device-removed", (event, device) => {
     console.log("USB device removed:", device);
-    usbDeviceLists = usbDeviceLists.filter(
-      (d) => d.deviceId !== device.deviceId,
-    );
+    usbDevices = usbDevices.filter((d) => d.deviceId !== device.deviceId);
   });
 
   mainWindow.webContents.session.setPermissionCheckHandler(
@@ -100,6 +98,10 @@ const createMainWindow = () => {
     return details.protectedClasses.filter((usbClass) => {
       return usbClass.indexOf("audio") === -1;
     });
+  });
+
+  ipcMain.handle("usb-get-device", () => {
+    return usbDevices;
   });
 
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {

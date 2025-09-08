@@ -46,6 +46,7 @@ class InputTracer extends React.Component<InputTracerProps> {
         placeholder={this.props.placeholder}
         onChange={this.handleChange}
         onKeyDown={this.handleKeyDown}
+        className={this.props.className}
       />
     );
   }
