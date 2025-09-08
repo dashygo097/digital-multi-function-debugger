@@ -13,6 +13,7 @@ const createMainWindow = () => {
   });
 
   let usbDevices: Electron.USBDevice[] = [];
+  let serialPorts: Electron.SerialPort[] = [];
   let grantedDeviceThroughPermHandler: Electron.USBDevice;
 
   mainWindow.webContents.session.on(
@@ -41,15 +42,37 @@ const createMainWindow = () => {
       }
     },
   );
-
   mainWindow.webContents.session.on("usb-device-added", (event, device) => {
     console.log("Detected new USB device:", device);
     usbDevices.push(device);
   });
-
   mainWindow.webContents.session.on("usb-device-removed", (event, device) => {
     console.log("USB device removed:", device);
     usbDevices = usbDevices.filter((d) => d.deviceId !== device.deviceId);
+  });
+
+  mainWindow.webContents.session.on(
+    "select-serial-port",
+    (event, portList, webContents, callback) => {
+      console.log("select-serial-port triggered:", portList);
+      serialPorts = portList;
+
+      event.preventDefault();
+      if (portList && portList.length > 0) {
+        callback(portList[0].portId);
+      } else {
+        callback("");
+      }
+    },
+  );
+
+  mainWindow.webContents.session.on("serial-port-added", (event, port) => {
+    console.log("Detected new Serial Port:", port);
+    serialPorts.push(port);
+  });
+  mainWindow.webContents.session.on("serial-port-removed", (event, port) => {
+    console.log("Serial Port removed:", port);
+    serialPorts = serialPorts.filter((p) => p.portId !== port.portId);
   });
 
   mainWindow.webContents.session.setPermissionCheckHandler(
@@ -65,11 +88,21 @@ const createMainWindow = () => {
             requestingOrigin.startsWith(origin) ||
             details?.securityOrigin?.startsWith(origin),
         );
+      } else if (permission === "serial") {
+        const validOrigins = [
+          "file:///",
+          MAIN_WINDOW_VITE_DEV_SERVER_URL,
+        ].filter(Boolean);
+
+        return validOrigins.some(
+          (origin) =>
+            requestingOrigin.startsWith(origin) ||
+            details?.securityOrigin?.startsWith(origin),
+        );
       }
       return false;
     },
   );
-
   mainWindow.webContents.session.setDevicePermissionHandler((details) => {
     if (details.deviceType === "usb") {
       const validOrigins = [
@@ -90,10 +123,28 @@ const createMainWindow = () => {
           grantedDeviceThroughPermHandler.deviceId === details.device.deviceId
         );
       }
+    } else if (details.deviceType === "serial") {
+      const validOrigins = [
+        " file://",
+        MAIN_WINDOW_VITE_DEV_SERVER_URL?.replace(/\/$/, ""),
+      ].filter(Boolean);
+
+      const isValidOrigin = validOrigins.some((origin) =>
+        details.origin.startsWith(origin),
+      );
+
+      if (isValidOrigin) {
+        if (!grantedDeviceThroughPermHandler) {
+          grantedDeviceThroughPermHandler = details.device;
+          return true;
+        }
+        return (
+          grantedDeviceThroughPermHandler.deviceId === details.device.deviceId
+        );
+      }
     }
     return false;
   });
-
   mainWindow.webContents.session.setUSBProtectedClassesHandler((details) => {
     return details.protectedClasses.filter((usbClass) => {
       return usbClass.indexOf("audio") === -1;
@@ -102,6 +153,9 @@ const createMainWindow = () => {
 
   ipcMain.handle("usb-get-devices", () => {
     return usbDevices;
+  });
+  ipcMain.handle("serial-get-ports", () => {
+    return serialPorts;
   });
 
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {

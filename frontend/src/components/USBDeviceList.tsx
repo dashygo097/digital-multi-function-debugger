@@ -2,16 +2,19 @@ import React from "react";
 import Button from "./Button";
 import SelectList from "./SelectList";
 
-interface USBDevicesProps {
+interface USBDeviceListProps {
   className?: string;
 }
 
-interface USBDevicesState {
+interface USBDeviceListState {
   devices: Electron.USBDevice[];
 }
 
-class USBDevices extends React.Component<USBDevicesProps, USBDevicesState> {
-  constructor(props: USBDevicesProps) {
+class USBDeviceList extends React.Component<
+  USBDeviceListProps,
+  USBDeviceListState
+> {
+  constructor(props: USBDeviceListProps) {
     super(props);
     this.state = {
       devices: [],
@@ -61,4 +64,4 @@ function getDeviceDetails(device: Electron.USBDevice) {
   return device.productName || `Unknown device ${device.deviceId}`;
 }
 
-export default USBDevices;
+export default USBDeviceList;
