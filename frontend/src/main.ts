@@ -3,14 +3,28 @@ import path from "node:path";
 
 const createMainWindow = () => {
   const mainWindow = new BrowserWindow({
+    title: "Control Panel",
     width: 1000,
     height: 750,
+    autoHideMenuBar: true,
+    center: true,
+    vibrancy: "under-window",
+    visualEffectState: "active",
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
+      sandbox: true,
       nodeIntegration: false,
       contextIsolation: true,
     },
   });
+
+  if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
+    mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
+  } else {
+    mainWindow.loadFile(
+      path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`),
+    );
+  }
 
   let usbDevices: Electron.USBDevice[] = [];
   let serialPorts: Electron.SerialPort[] = [];
@@ -157,14 +171,6 @@ const createMainWindow = () => {
   ipcMain.handle("serial-get-ports", () => {
     return serialPorts;
   });
-
-  if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
-    mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
-  } else {
-    mainWindow.loadFile(
-      path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`),
-    );
-  }
 
   mainWindow.webContents.openDevTools();
   return mainWindow;
