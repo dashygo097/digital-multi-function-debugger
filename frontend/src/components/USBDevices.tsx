@@ -19,20 +19,20 @@ class USBDevices extends React.Component<USBDevicesProps, USBDevicesState> {
   }
 
   async componentDidMount() {
-    this.updateDevices();
+    this.getDevices();
     this.startAutoUpdate();
   }
 
-  async requestUSBPermission() {
+  async updateDevices() {
     try {
       await navigator.usb.requestDevice({ filters: [] });
-      await this.updateDevices();
+      await this.getDevices();
     } catch (error) {
       console.log("Permission request cancelled or failed:", error);
     }
   }
 
-  async updateDevices() {
+  async getDevices() {
     try {
       const devices = await window.usbAPI.getDevices();
       this.setState(() => ({ devices }));
@@ -43,16 +43,13 @@ class USBDevices extends React.Component<USBDevicesProps, USBDevicesState> {
 
   startAutoUpdate() {
     this.updateInterval = setInterval(() => {
-      this.updateDevices();
+      this.getDevices();
     }, 2000);
   }
 
   render() {
     return (
       <div id={this.props.className}>
-        <Button onClick={() => this.requestUSBPermission()}>
-          Request USB Access
-        </Button>
         <Button onClick={() => this.updateDevices()}>Refresh</Button>
         <SelectList options={this.state.devices.map(getDeviceDetails)} />
       </div>
