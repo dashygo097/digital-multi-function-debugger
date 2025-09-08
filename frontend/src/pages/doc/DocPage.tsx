@@ -1,6 +1,6 @@
 import React from "react";
 
-import { withRouter } from "../utils/withRouter";
+import { withRouter } from "../../utils/withRouter";
 
 interface DocPageProps {
   navigate: (path: string) => void;
@@ -15,7 +15,6 @@ class DocPage extends React.Component<DocPageProps> {
     return (
       <div className="doc-page">
         <h1>Documentations</h1>
-        <p className="info-doc"></p>
       </div>
     );
   }

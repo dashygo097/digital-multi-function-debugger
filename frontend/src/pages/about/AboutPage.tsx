@@ -1,7 +1,7 @@
 import React from "react";
 
-import { withRouter } from "../utils/withRouter";
-import VersionInfo from "../components/VersionInfo";
+import { withRouter } from "../../utils/withRouter";
+import VersionInfo from "./VersionInfo";
 
 interface AboutPageProps {
   navigate: (path: string) => void;
@@ -16,7 +16,7 @@ class AboutPage extends React.Component<AboutPageProps> {
     return (
       <div className="about-page">
         <h1>About This App</h1>
-        <p className="info-about">
+        <p className="about-info">
           This is the upper computer software for the 2025A Embedded Competition
           FPGA track, developed using React + TypeScript + Electron.
         </p>

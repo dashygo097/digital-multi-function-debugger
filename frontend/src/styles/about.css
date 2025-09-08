@@ -1,4 +1,4 @@
-.info-about {
+.about-info {
   font-size: 1.2rem;
   align-items: center;
 
@@ -16,11 +16,11 @@
   cursor: pointer;
 }
 
-.info-about:hover {
+.about-info:hover {
   transform: scale(1.05);
 }
 
-.info-version {
+.about-versions {
   font-size: 0.95rem;
   align-items: center;
 
@@ -42,11 +42,11 @@
   cursor: pointer;
 }
 
-.info-version:hover {
+.about-versions:hover {
   transform: translateX(0);
 }
 
-.info-version::before {
+.about-versions::before {
   content: "";
 
   display: inline-block;
@@ -59,7 +59,7 @@
   animation: pulse 2.5s infinite;
 }
 
-.info-version::after {
+.about-versions::after {
   content: "i";
   font-size: 14px;
   font-style: italic;

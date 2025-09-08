@@ -1,6 +1,6 @@
 import React from "react";
 
-import { withRouter } from "../utils/withRouter";
+import { withRouter } from "../../utils/withRouter";
 
 interface NotFoundProps {
   navigate: (path: string) => void;
@@ -12,7 +12,7 @@ class NotFound extends React.Component<NotFoundProps> {
   }
   render() {
     return (
-      <div className="not-found">
+      <div className="page-not-found">
         <h1>404 - Page Not Found D:</h1>
         <p>The page you are looking for does not exist.</p>
       </div>

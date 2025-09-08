@@ -1,11 +1,11 @@
 import React from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
-import WrappedNavBar from "../components/NavBar";
-import WrappedMainPage from "./MainPage";
-import WrappedAboutPage from "./AboutPage";
-import WrappedNotFound from "./NotFound";
-import WrappedDocPage from "./DocPage";
+import WrappedNavBar from "./NavBar";
+import WrappedMainPage from "./main/MainPage";
+import WrappedAboutPage from "./about/AboutPage";
+import WrappedNotFound from "./notfound/NotFound";
+import WrappedDocPage from "./doc/DocPage";
 
 const PageRouter: React.FC = () => {
   return (
