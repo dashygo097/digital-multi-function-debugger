@@ -1,8 +1,8 @@
 import React from "react";
 
-import { withRouter } from "../../utils/withRouter";
-import { USBDeviceList, SerialPortList } from "../../components";
-import "../../styles/main.css";
+import { withRouter } from "@utils/index";
+import { USBDeviceList, SerialPortList, DataPoint } from "@components/index";
+import "@styles/main.css";
 
 const MAX_DATA_POINTS = 100;
 

@@ -1,6 +1,6 @@
 import React from "react";
 
-import { withRouter } from "../../utils/withRouter";
+import { withRouter } from "@utils/index";
 
 interface DocPageProps {
   navigate: (path: string) => void;

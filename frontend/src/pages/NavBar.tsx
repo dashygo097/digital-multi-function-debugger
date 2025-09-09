@@ -1,8 +1,8 @@
 import React from "react";
 import { Link } from "react-router-dom";
 
-import { withRouter } from "../utils/withRouter";
-import { Button, GitHubIcon } from "../components";
+import { withRouter } from "@utils/withRouter";
+import { Button, GitHubIcon } from "@components";
 import NavHeader from "./NavHeader";
 import "../styles/navbar.css";
 
