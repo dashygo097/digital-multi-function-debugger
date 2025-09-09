@@ -10,7 +10,10 @@ interface GitHubIconState {
   loading: boolean;
 }
 
-class GitHubIcon extends React.Component<GitHubIconProps, GitHubIconState> {
+export class GitHubIcon extends React.Component<
+  GitHubIconProps,
+  GitHubIconState
+> {
   constructor(props: GitHubIconProps) {
     super(props);
     this.state = {
@@ -51,5 +54,3 @@ class GitHubIcon extends React.Component<GitHubIconProps, GitHubIconState> {
     );
   }
 }
-
-export default GitHubIcon;
