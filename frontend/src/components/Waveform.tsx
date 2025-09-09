@@ -18,7 +18,10 @@ interface WaveformProps {
   color?: string;
 }
 
-const CustomTooltip = ({ active, payload }: any) => {
+const CustomTooltip = (
+  active: boolean,
+  payload: Array<{ payload: DataPoint; value: number }>,
+) => {
   if (active && payload && payload.length) {
     return (
       <div className="custom-tooltip">

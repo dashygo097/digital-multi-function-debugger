@@ -1,20 +1,17 @@
 import React from "react";
 import { Link } from "react-router-dom";
 
-import { withRouter } from "@utils/withRouter";
+import { WithRouter, WithRouterProps } from "@utils";
 import { Button, GitHubIcon } from "@components";
 import NavHeader from "./NavHeader";
-import "../styles/navbar.css";
+import "@styles/navbar.css";
 
-interface NavBarProps {
-  navigate: (path: string) => void;
-}
 interface NavBarState {
   onPage: string;
 }
 
-class NavBar extends React.Component<NavBarProps, NavBarState> {
-  constructor(props: NavBarProps) {
+class NavBar extends React.Component<WithRouterProps, NavBarState> {
+  constructor(props: WithRouterProps) {
     super(props);
     this.state = {
       onPage: window.location.pathname.replace("/", "") || "main",
@@ -76,5 +73,5 @@ class NavBar extends React.Component<NavBarProps, NavBarState> {
   }
 }
 
-const WrappedNavBar = withRouter(NavBar);
+const WrappedNavBar = WithRouter(NavBar);
 export default WrappedNavBar;

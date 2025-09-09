@@ -1,14 +1,10 @@
 import React from "react";
 
-import { withRouter } from "@utils/index";
+import { WithRouter, WithRouterProps } from "@utils";
 import VersionInfo from "./VersionInfo";
 
-interface AboutPageProps {
-  navigate: (path: string) => void;
-}
-
-class AboutPage extends React.Component<AboutPageProps> {
-  constructor(props: AboutPageProps) {
+class AboutPage extends React.Component<WithRouterProps> {
+  constructor(props: WithRouterProps) {
     super(props);
   }
 
@@ -33,5 +29,5 @@ class AboutPage extends React.Component<AboutPageProps> {
   }
 }
 
-const WrappedAboutPage = withRouter(AboutPage);
+const WrappedAboutPage = WithRouter(AboutPage);
 export default WrappedAboutPage;

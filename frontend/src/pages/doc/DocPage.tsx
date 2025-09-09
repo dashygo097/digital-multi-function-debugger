@@ -1,13 +1,9 @@
 import React from "react";
 
-import { withRouter } from "@utils/index";
+import { WithRouter, WithRouterProps } from "@utils";
 
-interface DocPageProps {
-  navigate: (path: string) => void;
-}
-
-class DocPage extends React.Component<DocPageProps> {
-  constructor(props: DocPageProps) {
+class DocPage extends React.Component<WithRouterProps> {
+  constructor(props: WithRouterProps) {
     super(props);
   }
 
@@ -20,5 +16,5 @@ class DocPage extends React.Component<DocPageProps> {
   }
 }
 
-const WrappedDocPage = withRouter(DocPage);
+const WrappedDocPage = WithRouter(DocPage);
 export default WrappedDocPage;
