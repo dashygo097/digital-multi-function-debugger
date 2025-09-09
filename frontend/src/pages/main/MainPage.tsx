@@ -1,22 +1,18 @@
 import React from "react";
 
-import { withRouter } from "@utils/index";
-import { USBDeviceList, SerialPortList, DataPoint } from "@components/index";
+import { WithRouter, WithRouterProps } from "@utils";
+import { USBDeviceList, SerialPortList, DataPoint } from "@components";
 import "@styles/main.css";
 
 const MAX_DATA_POINTS = 100;
-
-interface MainPageProps {
-  navigate: (path: string) => void;
-}
 
 interface MainPageState {
   data: DataPoint[];
   inputValue: string;
 }
 
-class MainPage extends React.Component<MainPageProps, MainPageState> {
-  constructor(props: MainPageProps) {
+class MainPage extends React.Component<WithRouterProps, MainPageState> {
+  constructor(props: WithRouterProps) {
     super(props);
     this.state = {
       data: [],
@@ -70,5 +66,5 @@ class MainPage extends React.Component<MainPageProps, MainPageState> {
     );
   }
 }
-const WrappedMainPage = withRouter(MainPage);
+const WrappedMainPage = WithRouter(MainPage);
 export default WrappedMainPage;

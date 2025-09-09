@@ -1,13 +1,9 @@
 import React from "react";
 
-import { withRouter } from "@utils/index";
+import { WithRouter, WithRouterProps } from "@utils";
 
-interface NotFoundProps {
-  navigate: (path: string) => void;
-}
-
-class NotFound extends React.Component<NotFoundProps> {
-  constructor(props: NotFoundProps) {
+class NotFound extends React.Component<WithRouterProps> {
+  constructor(props: WithRouterProps) {
     super(props);
   }
   render() {
@@ -20,5 +16,5 @@ class NotFound extends React.Component<NotFoundProps> {
   }
 }
 
-const WrappedNotFound = withRouter(NotFound);
+const WrappedNotFound = WithRouter(NotFound);
 export default WrappedNotFound;

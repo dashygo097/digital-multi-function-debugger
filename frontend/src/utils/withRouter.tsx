@@ -1,8 +1,14 @@
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import React from "react";
 
-export function withRouter(Component: React.ComponentType) {
-  return function WrappedComponent(props: React.ComponentProps<any>) {
+export interface WithRouterProps {
+  navigate?: ReturnType<typeof useNavigate>;
+  params?: ReturnType<typeof useParams>;
+  location?: ReturnType<typeof useLocation>;
+}
+
+export function WithRouter(Component: React.ComponentType<WithRouterProps>) {
+  return function WrappedComponent(props: WithRouterProps) {
     const navigate = useNavigate();
     const params = useParams();
     const location = useLocation();
