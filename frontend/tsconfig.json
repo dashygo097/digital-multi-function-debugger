@@ -12,9 +12,10 @@
     "outDir": "dist",
     "moduleResolution": "node",
     "resolveJsonModule": true,
-    "path": {
-      "@components/*": ["components/*"],
-      "@components": ["components/index"]
+    "paths": {
+      "@components/*": ["src/components/*"],
+      "@utils/*": ["src/utils/*"],
+      "@styles/*": ["src/styles/*"]
     }
   }
 }

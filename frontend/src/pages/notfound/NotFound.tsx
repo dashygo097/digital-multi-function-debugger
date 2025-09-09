@@ -1,6 +1,6 @@
 import React from "react";
 
-import { withRouter } from "../../utils/withRouter";
+import { withRouter } from "@utils/index";
 
 interface NotFoundProps {
   navigate: (path: string) => void;
