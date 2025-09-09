@@ -9,7 +9,7 @@ interface InputTracerProps {
   onSubmit?: () => void;
 }
 
-class InputTracer extends React.Component<InputTracerProps> {
+export class InputTracer extends React.Component<InputTracerProps> {
   private inputRef: React.RefObject<HTMLInputElement>;
   constructor(props: InputTracerProps) {
     super(props);
@@ -51,5 +51,3 @@ class InputTracer extends React.Component<InputTracerProps> {
     );
   }
 }
-
-export default InputTracer;

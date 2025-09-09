@@ -11,7 +11,7 @@ interface ButtonState {
   loading: boolean;
 }
 
-class Button extends React.Component<ButtonProps, ButtonState> {
+export class Button extends React.Component<ButtonProps, ButtonState> {
   constructor(props: ButtonProps) {
     super(props);
     this.state = {
@@ -40,5 +40,3 @@ class Button extends React.Component<ButtonProps, ButtonState> {
     );
   }
 }
-
-export default Button;

@@ -5,7 +5,7 @@ interface SelectListProps {
   className?: string;
 }
 
-class SelectList extends React.Component<SelectListProps> {
+export class SelectList extends React.Component<SelectListProps> {
   constructor(props: SelectListProps) {
     super(props);
   }
@@ -22,5 +22,3 @@ class SelectList extends React.Component<SelectListProps> {
     );
   }
 }
-
-export default SelectList;

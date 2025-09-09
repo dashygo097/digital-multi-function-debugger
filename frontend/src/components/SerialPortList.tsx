@@ -1,6 +1,6 @@
 import React from "react";
-import Button from "./Button";
-import SelectList from "./SelectList";
+import { Button } from "./Button";
+import { SelectList } from "./SelectList";
 
 interface SerialPortListProps {
   className?: string;
@@ -10,7 +10,7 @@ interface SerialPortListState {
   ports: Electron.SerialPort[];
 }
 
-class SerialPortList extends React.Component<
+export class SerialPortList extends React.Component<
   SerialPortListProps,
   SerialPortListState
 > {
@@ -71,5 +71,3 @@ class SerialPortList extends React.Component<
 function getPortDetails(device: Electron.SerialPort) {
   return device.displayName;
 }
-
-export default SerialPortList;
