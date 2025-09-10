@@ -1,7 +1,12 @@
 import React from "react";
 
 import { WithRouter, WithRouterProps } from "@utils";
-import { USBDeviceList, SerialPortList, DataPoint } from "@components";
+import {
+  USBDeviceList,
+  SerialPortList,
+  DataPoint,
+  WaveForm,
+} from "@components";
 import "@styles/main.css";
 
 const MAX_DATA_POINTS = 100;
