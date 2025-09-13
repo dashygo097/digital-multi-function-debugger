@@ -1,7 +1,7 @@
 
 `timescale 1 ns / 1 ps
 
-module axi_slave_mmap_4x32_r4 #(
+module axi_slave_mmap_r4 #(
     parameter integer C_S_AXI_DATA_WIDTH = 32,
     parameter integer C_S_AXI_ADDR_WIDTH = 4
 ) (
