@@ -184,7 +184,7 @@ module tb_axi_slave ();
   initial begin
     $display("Starting AXI4-Lite Slave Testbench");
     $display("=====================================");
-    $dumpfile("axi_slave.vcd");
+    $dumpfile("axi_lite_slave_mmap.vcd");
     $dumpvars(0, tb_axi_slave);
 
     // Reset sequence
