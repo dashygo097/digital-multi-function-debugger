@@ -46,7 +46,7 @@ module tb_axi_slave ();
   integer test_count = 0;
 
   // Instantiate the AXI Slave
-  axi_slave_mmap_4x32_r4 uut (
+  axi_lite_slave_mmap_4x32_r4 uut (
       .clock(S_AXI_ACLK),
       .reset(!S_AXI_ARESETN),
       .S_AXI_AWADDR(S_AXI_AWADDR),
