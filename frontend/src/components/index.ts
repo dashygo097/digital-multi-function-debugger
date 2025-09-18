@@ -5,3 +5,4 @@ export * from "./SelectList";
 export * from "./InputTracer";
 export * from "./USBDeviceList";
 export * from "./SerialPortList";
+export * from "./DigitalWaveformChart";
