@@ -1,5 +1,5 @@
 export * from "./Button";
-export * from "./Waveform";
+export * from "./AnalogWaveformChart";
 export * from "./GithubIcon";
 export * from "./SelectList";
 export * from "./InputTracer";
