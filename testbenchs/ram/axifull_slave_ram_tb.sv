@@ -78,7 +78,7 @@ module axifull_slave_tb;
   end
 
   // DUT instantiation
-  axi_full_slave_ram_32x32_i4_u1 dut (
+  axifull_slave_ram_8x32x32_i4_u1 dut (
       .clock(S_AXI_ACLK),
       .reset(!S_AXI_ARESETN),
       .S_AXI_AWID(S_AXI_AWID),
@@ -134,7 +134,7 @@ module axifull_slave_tb;
 
   // Initialize signals
   initial begin
-    $dumpfile("my_axifull_slave_ram_tb.vcd");
+    $dumpfile("axifull_slave_ram_tb.vcd");
     $dumpvars(0, axifull_slave_tb);
     // Initialize all inputs
     S_AXI_ARESETN = 0;
@@ -179,32 +179,32 @@ module axifull_slave_tb;
 
     // Test 1: Single Write Transaction
     $display("\n=== Test 1: Single Write Transaction ===");
-    axi_write_single(32'h00000000, 32'hDEADBEEF, 4'hF);
+    axi_write_single(32'h00010000, 32'hDEADBEEF, 4'hF);
 
     // Test 2: Single Read Transaction
     $display("\n=== Test 2: Single Read Transaction ===");
-    axi_read_single(32'h00000000, 32'hDEADBEEF);
+    axi_read_single(32'h00010000, 32'hDEADBEEF);
 
     // Test 3: Burst Write Transaction (Incremental)
     $display("\n=== Test 3: Burst Write Transaction (Incremental) ===");
-    axi_write_burst_incr(32'h00000000, 4);
-    axi_read_single(32'h00000000, 32'h1000);
-    axi_read_single(32'h00000004, 32'h1001);
-    axi_read_single(32'h00000008, 32'h1002);
-    axi_read_single(32'h0000000C, 32'h1003);
+    axi_write_burst_incr(32'h00010000, 4);
+    axi_read_single(32'h00010000, 32'h1000);
+    axi_read_single(32'h00010004, 32'h1001);
+    axi_read_single(32'h00010008, 32'h1002);
+    axi_read_single(32'h0001000C, 32'h1003);
 
     // Test 4: Burst Read Transaction (Incremental)
     $display("\n=== Test 4: Burst Read Transaction (Incremental) ===");
-    axi_read_burst_incr(32'h00000000, 4);
+    axi_read_burst_incr(32'h00010000, 4);
 
     // Test 5: Fixed Burst Write
     $display("\n=== Test 5: Fixed Burst Write ===");
-    axi_write_burst_fixed(32'h00000010, 3);
-    axi_read_single(32'h00000010, 32'h2003);
+    axi_write_burst_fixed(32'h00010010, 3);
+    axi_read_single(32'h00010010, 32'h2003);
 
     // Test 6: Fixed Burst Read
     $display("\n=== Test 6: Fixed Burst Read ===");
-    axi_read_burst_fixed(32'h00000010, 3);
+    axi_read_burst_fixed(32'h00010010, 3);
 
     $display("\n=== All Tests Completed ===");
     #1000;
