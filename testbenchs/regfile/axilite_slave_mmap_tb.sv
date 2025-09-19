@@ -4,7 +4,7 @@ module tb_axi_slave ();
 
   // Parameters
   parameter integer C_S_AXI_DATA_WIDTH = 32;
-  parameter integer C_S_AXI_ADDR_WIDTH = 4;
+  parameter integer C_S_AXI_ADDR_WIDTH = 32;
 
   // Clock and Reset
   reg S_AXI_ACLK;
@@ -46,7 +46,7 @@ module tb_axi_slave ();
   integer test_count = 0;
 
   // Instantiate the AXI Slave
-  axi_lite_slave_mmap_4x32_r4 uut (
+  axilite_slave_mmap_4x32x32_r4 uut (
       .clock(S_AXI_ACLK),
       .reset(!S_AXI_ARESETN),
       .S_AXI_AWADDR(S_AXI_AWADDR),
@@ -184,7 +184,7 @@ module tb_axi_slave ();
   initial begin
     $display("Starting AXI4-Lite Slave Testbench");
     $display("=====================================");
-    $dumpfile("axi_lite_slave_mmap.vcd");
+    $dumpfile("axilite_slave_mmap.vcd");
     $dumpvars(0, tb_axi_slave);
 
     // Reset sequence
@@ -194,47 +194,45 @@ module tb_axi_slave ();
 
     // Test 1: Check initial reset values
     $display("\nTest 1: Checking initial reset values");
-    check_read_data(4'h0, 32'h00000000);  // slv_reg0
-    check_read_data(4'h4, 32'h00000000);  // slv_reg1
-    check_read_data(4'h8, 32'h00000000);  // slv_reg2
-    check_read_data(4'hC, 32'h00000000);  // slv_reg3
+    check_read_data(32'h10000, 32'h00000000);  // slv_reg0
+    check_read_data(32'h14000, 32'h00000000);  // slv_reg1
+    check_read_data(32'h18000, 32'h00000000);  // slv_reg2
+    check_read_data(32'h1C000, 32'h00000000);  // slv_reg3
 
     // Test 2: Basic write and read operations
     $display("\nTest 2: Basic write and read operations");
-    axi_write(4'h0, 32'hDEADBEEF, 4'hF);  // Write to slv_reg0
-    check_read_data(4'h0, 32'hDEADBEEF);
+    axi_write(32'h10000, 32'hDEADBEEF, 4'hF);  // Write to slv_reg0
+    check_read_data(32'h10000, 32'hDEADBEEF);
 
-    axi_write(4'h4, 32'h12345678, 4'hF);  // Write to slv_reg1
-    check_read_data(4'h4, 32'h12345678);
+    axi_write(32'h14000, 32'h12345678, 4'hF);  // Write to slv_reg1
+    check_read_data(32'h14000, 32'h12345678);
 
-    axi_write(4'h8, 32'hABCDEF01, 4'hF);  // Write to slv_reg2
-    check_read_data(4'h8, 32'hABCDEF01);
+    axi_write(32'h18000, 32'hABCDEF01, 4'hF);  // Write to slv_reg2
+    check_read_data(32'h18000, 32'hABCDEF01);
 
-    axi_write(4'hC, 32'h87654321, 4'hF);  // Write to slv_reg3
-    check_read_data(4'hC, 32'h87654321);
+    axi_write(32'h1C000, 32'h87654321, 4'hF);  // Write to slv_reg3
+    check_read_data(32'h1C000, 32'h87654321);
 
     // Test 3: Byte-level write operations using write strobes
     $display("\nTest 3: Byte-level write operations");
 
     // Write only lower byte of reg0
-    axi_write(4'h0, 32'h000000FF, 4'h1);
-    check_read_data(4'h0, 32'hDEADBEFF);
+    axi_write(32'h10000, 32'h000000FF, 4'h1);
 
     // Write only upper byte of reg1
-    axi_write(4'h4, 32'hAA000000, 4'h8);
-    check_read_data(4'h4, 32'hAA345678);
+    axi_write(32'h14000, 32'hAA000000, 4'h8);
 
     // Write middle two bytes of reg2
-    axi_write(4'h8, 32'h0000FFFF, 4'h6);
-    check_read_data(4'h8, 32'hAB00FF01);
+    axi_write(32'h18000, 32'h0000FFFF, 4'h6);
 
-    axi_write(4'hF, 32'hFFFFFFFF, 4'hF);
+    // write no bytes of reg3
+    axi_write(32'h1C000, 32'hFFFFFFFF, 4'h0);
 
     // Verify existing registers
-    check_read_data(4'h0, 32'hDEADBEFF);
-    check_read_data(4'h4, 32'hAA345678);
-    check_read_data(4'h8, 32'hAB00FF01);
-    check_read_data(4'hC, 32'hFFFFFFFF);
+    check_read_data(32'h10000, 32'hDEADBEFF);
+    check_read_data(32'h14000, 32'hAA345678);
+    check_read_data(32'h18000, 32'hAB00FF01);
+    check_read_data(32'h1C000, 32'h87654321);
 
     // Test 4: Reset functionality
     $display("\nTest 4: Reset functionality");
@@ -244,24 +242,24 @@ module tb_axi_slave ();
     #50;
 
     // Check all registers are reset to 0
-    check_read_data(4'h0, 32'h00000000);
-    check_read_data(4'h4, 32'h00000000);
-    check_read_data(4'h8, 32'h00000000);
-    check_read_data(4'hC, 32'h00000000);
+    check_read_data(32'h10000, 32'h00000000);
+    check_read_data(32'h14000, 32'h00000000);
+    check_read_data(32'h18000, 32'h00000000);
+    check_read_data(32'h1C000, 32'h00000000);
 
     // Test 7: Pattern tests
     $display("\nTest 5: Pattern tests");
-    axi_write(4'h0, 32'hAAAAAAAA, 4'hF);
-    check_read_data(4'h0, 32'hAAAAAAAA);
+    axi_write(32'h10000, 32'hAAAAAAAA, 4'hF);
+    check_read_data(32'h10000, 32'hAAAAAAAA);
 
-    axi_write(4'h4, 32'h55555555, 4'hF);
-    check_read_data(4'h4, 32'h55555555);
+    axi_write(32'h14000, 32'h55555555, 4'hF);
+    check_read_data(32'h14000, 32'h55555555);
 
-    axi_write(4'h8, 32'hFFFFFFFF, 4'hF);
-    check_read_data(4'h8, 32'hFFFFFFFF);
+    axi_write(32'h18000, 32'hFFFFFFFF, 4'hF);
+    check_read_data(32'h18000, 32'hFFFFFFFF);
 
-    axi_write(4'hC, 32'h00000000, 4'hF);
-    check_read_data(4'hC, 32'h00000000);
+    axi_write(32'h1C000, 32'h00000000, 4'hF);
+    check_read_data(32'h1C000, 32'h00000000);
 
     // Test Summary
     $display("\n=====================================");
