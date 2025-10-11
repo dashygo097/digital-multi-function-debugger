@@ -256,7 +256,7 @@ module axifull_slave #(
           if (ar_wrap_en) begin
             axi_araddr <= (axi_araddr - ar_wrap_size);
           end else begin
-            axi_araddr[C_S_AXI_ADDR_WIDTH - 1:ADDR_LSB] <= axi_araddr[C_S_AXI_ADDR_WIDTH - 1:ADDR_LSB] + 1; //每次地址偏移4，直到读取完成busrt_len
+            axi_araddr[C_S_AXI_ADDR_WIDTH - 1:ADDR_LSB] <= axi_araddr[C_S_AXI_ADDR_WIDTH - 1:ADDR_LSB] + 1;
             axi_araddr[ADDR_LSB-1:0] <= {ADDR_LSB{1'b0}};
           end
           default: begin
