@@ -15,6 +15,8 @@ class DigitalWaveformChartProps {
   gridColor?: string;
   backgroundColor?: string;
   showGrid?: boolean;
+  valueLabelsColor?: string;
+  maxValue?: number;
 }
 
 export class DigitalWaveformChart extends React.Component<DigitalWaveformChartProps> {
@@ -22,12 +24,14 @@ export class DigitalWaveformChart extends React.Component<DigitalWaveformChartPr
 
   static defaultProps = {
     width: 800,
-    height: 200,
+    height: 300,
     strokeColor: "#00ff00",
     strokeWidth: 2,
     gridColor: "#333333",
     backgroundColor: "#000000",
     showGrid: true,
+    showValueLabels: true,
+    valueLabelsColor: "#ffffff",
   };
 
   constructor(props: DigitalWaveformChartProps) {
@@ -52,15 +56,15 @@ export class DigitalWaveformChart extends React.Component<DigitalWaveformChartPr
 
     const {
       width = 800,
-      height = 200,
+      height = 300,
       strokeColor = "#00ff00",
       strokeWidth = 2,
       gridColor = "#333333",
       backgroundColor = "#000000",
       showGrid = true,
+      maxValue,
     } = this.props;
 
-    // Clear canvas
     ctx.fillStyle = backgroundColor;
     ctx.fillRect(0, 0, width, height);
 
@@ -68,7 +72,14 @@ export class DigitalWaveformChart extends React.Component<DigitalWaveformChartPr
       this.drawGrid(ctx, width, height, gridColor);
     }
 
-    this.drawDigitalSignal(ctx, width, height, strokeColor, strokeWidth);
+    this.drawDigitalSignal(
+      ctx,
+      width,
+      height,
+      strokeColor,
+      strokeWidth,
+      maxValue,
+    );
   }
 
   private drawGrid(
@@ -81,7 +92,7 @@ export class DigitalWaveformChart extends React.Component<DigitalWaveformChartPr
     ctx.lineWidth = 1;
     ctx.setLineDash([5, 5]);
 
-    const horizontalLines = 4;
+    const horizontalLines = 8;
     for (let i = 1; i < horizontalLines; i++) {
       const y = (height / horizontalLines) * i;
       ctx.beginPath();
@@ -90,7 +101,7 @@ export class DigitalWaveformChart extends React.Component<DigitalWaveformChartPr
       ctx.stroke();
     }
 
-    const verticalLines = 8;
+    const verticalLines = 12;
     for (let i = 1; i < verticalLines; i++) {
       const x = (width / verticalLines) * i;
       ctx.beginPath();
@@ -108,16 +119,28 @@ export class DigitalWaveformChart extends React.Component<DigitalWaveformChartPr
     height: number,
     strokeColor: string,
     strokeWidth: number,
+    maxValue?: number,
   ) {
     const { data } = this.props;
     if (data.length < 2) return;
+
+    const minValue = 0;
+    const actualMaxValue =
+      maxValue || Math.max(...data.map((point) => point.value));
+    const valueRange = actualMaxValue - minValue;
 
     const minTime = Math.min(...data.map((point) => point.time));
     const maxTime = Math.max(...data.map((point) => point.time));
     const timeRange = maxTime - minTime;
 
-    const signalLevels = [...new Set(data.map((point) => point.value))].sort();
-    const levelHeight = height / (signalLevels.length || 1);
+    const getYPosition = (value: number) => {
+      const normalizedValue = (value - minValue) / valueRange;
+      return height - (normalizedValue * height * 0.9 + height * 0.05); // 5% padding top and bottom
+    };
+
+    const getXPosition = (time: number) => {
+      return ((time - minTime) / timeRange) * width;
+    };
 
     ctx.strokeStyle = strokeColor;
     ctx.lineWidth = strokeWidth;
@@ -128,14 +151,10 @@ export class DigitalWaveformChart extends React.Component<DigitalWaveformChartPr
       const currentPoint = data[i];
       const nextPoint = data[i + 1];
 
-      const x1 = ((currentPoint.time - minTime) / timeRange) * width;
-      const x2 = ((nextPoint.time - minTime) / timeRange) * width;
-
-      const currentLevelIndex = signalLevels.indexOf(currentPoint.value);
-      const nextLevelIndex = signalLevels.indexOf(nextPoint.value);
-
-      const y1 = height - (currentLevelIndex * levelHeight + levelHeight / 2);
-      const y2 = height - (nextLevelIndex * levelHeight + levelHeight / 2);
+      const x1 = getXPosition(currentPoint.time);
+      const x2 = getXPosition(nextPoint.time);
+      const y1 = getYPosition(currentPoint.value);
+      const y2 = getYPosition(nextPoint.value);
 
       ctx.beginPath();
       ctx.moveTo(x1, y1);
@@ -151,9 +170,8 @@ export class DigitalWaveformChart extends React.Component<DigitalWaveformChartPr
     }
 
     const lastPoint = data[data.length - 1];
-    const lastX = ((lastPoint.time - minTime) / timeRange) * width;
-    const lastLevelIndex = signalLevels.indexOf(lastPoint.value);
-    const lastY = height - (lastLevelIndex * levelHeight + levelHeight / 2);
+    const lastX = getXPosition(lastPoint.time);
+    const lastY = getYPosition(lastPoint.value);
 
     ctx.beginPath();
     ctx.moveTo(lastX, lastY);
@@ -162,12 +180,14 @@ export class DigitalWaveformChart extends React.Component<DigitalWaveformChartPr
   }
 
   render() {
+    const { className, width = 800, height = 300 } = this.props;
+
     return (
-      <div className={this.props.className}>
+      <div className={className}>
         <canvas
           ref={this.canvasRef}
-          width={this.props.width}
-          height={this.props.height}
+          width={width}
+          height={height}
           style={{
             display: "block",
             border: "1px solid #444",
