@@ -91,8 +91,8 @@ module signal_measure_ctrl (
       low_time <= 0;
     end else if (finish) begin
       if (period_buf != 0) begin
-        freq      <= CLK_FREQ / 26'(period_buf);
-        duty      <= 8'((high_buf * 100) / period_buf);
+        freq      <= CLK_FREQ / {6'b0, period_buf};
+        duty      <= ((high_buf * 100) / period_buf)[7:0];
         high_time <= high_buf;
         low_time  <= period_buf - high_buf;
       end
