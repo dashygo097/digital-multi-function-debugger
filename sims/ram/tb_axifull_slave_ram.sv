@@ -78,7 +78,7 @@ module axifull_slave_tb;
   end
 
   // DUT instantiation
-  axifull_slave_ram_8x32x32_i4_u1 dut (
+  axifull_slave_ram_32x32_i4_u1_s8_b65536 dut (
       .clock(S_AXI_ACLK),
       .reset(!S_AXI_ARESETN),
       .S_AXI_AWID(S_AXI_AWID),
