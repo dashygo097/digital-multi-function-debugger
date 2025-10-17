@@ -97,7 +97,6 @@ module axilite_slave_mmap_32x32_r4(
 
   wire [31:0] _mmap_regs_MMAP_read_data;
   wire        _mmap_regs_MMAP_read_resp;
-  reg         aw_en;
   reg         axi_awready;
   reg  [31:0] axi_awaddr;
   reg         axi_wready;
@@ -108,10 +107,8 @@ module axilite_slave_mmap_32x32_r4(
   reg  [31:0] axi_rdata;
   reg         axi_rvalid;
   reg  [1:0]  axi_rresp;
-  wire        _slv_reg_re_T = axi_arready & S_AXI_ARVALID;
   always @(posedge clock) begin
     if (reset) begin
-      aw_en <= 1'h1;
       axi_awready <= 1'h0;
       axi_awaddr <= 32'h0;
       axi_wready <= 1'h0;
@@ -124,37 +121,36 @@ module axilite_slave_mmap_32x32_r4(
       axi_rresp <= 2'h0;
     end
     else begin
-      automatic logic _GEN = ~axi_awready & S_AXI_AWVALID & S_AXI_WVALID & aw_en;
-      automatic logic _GEN_0 = S_AXI_BREADY & axi_bvalid;
-      automatic logic _GEN_1 =
-        axi_awready & S_AXI_AWVALID & ~axi_bvalid & axi_wready & S_AXI_WVALID;
-      automatic logic _GEN_2 = ~axi_arready & S_AXI_ARVALID;
-      automatic logic _GEN_3 = _slv_reg_re_T & ~axi_rvalid;
-      aw_en <= ~_GEN & (_GEN_0 | aw_en);
+      automatic logic _GEN = ~axi_awready & S_AXI_AWVALID;
+      automatic logic _GEN_0 = ~axi_bvalid & axi_wready & S_AXI_WVALID;
+      automatic logic _GEN_1 = ~axi_arready & S_AXI_ARVALID;
+      automatic logic _GEN_2 = ~axi_rvalid & axi_arready & S_AXI_ARVALID;
       axi_awready <= _GEN;
       if (_GEN)
         axi_awaddr <= S_AXI_AWADDR;
-      axi_wready <= ~axi_wready & S_AXI_WVALID & S_AXI_AWVALID & aw_en;
-      axi_bvalid <= _GEN_1 | ~_GEN_0 & axi_bvalid;
-      if (_GEN_1)
+      axi_wready <=
+        ~axi_wready & axi_awready & S_AXI_AWVALID | ~(axi_wready & S_AXI_WVALID)
+        & axi_wready;
+      axi_bvalid <= _GEN_0 | ~(S_AXI_BREADY & axi_bvalid) & axi_bvalid;
+      if (_GEN_0)
         axi_bresp <= {~_mmap_regs_MMAP_read_resp, 1'h0};
-      axi_arready <= _GEN_2;
-      if (_GEN_2)
+      axi_arready <= _GEN_1;
+      if (_GEN_1)
         axi_araddr <= S_AXI_ARADDR;
       axi_rdata <= _mmap_regs_MMAP_read_data;
-      axi_rvalid <= _GEN_3 | ~(axi_rvalid & S_AXI_RREADY) & axi_rvalid;
-      if (_GEN_3)
+      axi_rvalid <= _GEN_2 | ~(axi_rvalid & S_AXI_RREADY) & axi_rvalid;
+      if (_GEN_2)
         axi_rresp <= {~_mmap_regs_MMAP_read_resp, 1'h0};
     end
   end // always @(posedge)
   mmap_regs_32x32_r4 mmap_regs (
     .clock           (clock),
     .reset           (reset),
-    .MMAP_write_en   (axi_wready & S_AXI_WVALID & axi_awready & S_AXI_AWVALID),
+    .MMAP_write_en   (axi_awready & S_AXI_AWVALID & ~axi_bvalid),
     .MMAP_write_addr (axi_awaddr),
     .MMAP_write_data (S_AXI_WDATA),
     .MMAP_write_strb (S_AXI_WSTRB),
-    .MMAP_read_en    (_slv_reg_re_T & ~axi_rvalid),
+    .MMAP_read_en    (axi_arready & S_AXI_ARVALID & ~axi_rvalid),
     .MMAP_read_addr  (axi_araddr),
     .MMAP_read_data  (_mmap_regs_MMAP_read_data),
     .MMAP_read_resp  (_mmap_regs_MMAP_read_resp)
