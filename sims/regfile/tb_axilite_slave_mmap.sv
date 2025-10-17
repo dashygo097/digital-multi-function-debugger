@@ -79,9 +79,11 @@ module tb_axi_slave ();
     input [C_S_AXI_DATA_WIDTH-1:0] data;
     input [(C_S_AXI_DATA_WIDTH/8)-1:0] strb;
     begin
+      // Wait for clock edge
       @(posedge S_AXI_ACLK);
+      #1;  // Small delta delay after clock edge
 
-      // Start write address and data phases simultaneously
+      // Start write address and data phases simultaneously (AXI-Lite allows this)
       S_AXI_AWADDR  = addr;
       S_AXI_AWPROT  = 3'b000;
       S_AXI_AWVALID = 1'b1;
@@ -90,24 +92,36 @@ module tb_axi_slave ();
       S_AXI_WVALID  = 1'b1;
       S_AXI_BREADY  = 1'b1;
 
-      // Wait for address and data ready
-      while (!(S_AXI_AWREADY && S_AXI_WREADY)) begin
+      // Wait for address channel handshake
+      while (!S_AXI_AWREADY) begin
         @(posedge S_AXI_ACLK);
+        #1;
       end
-
       @(posedge S_AXI_ACLK);
+      #1;
       S_AXI_AWVALID = 1'b0;
-      S_AXI_WVALID  = 1'b0;
+
+      // Wait for data channel handshake
+      while (!S_AXI_WREADY) begin
+        @(posedge S_AXI_ACLK);
+        #1;
+      end
+      @(posedge S_AXI_ACLK);
+      #1;
+      S_AXI_WVALID = 1'b0;
 
       // Wait for write response
       while (!S_AXI_BVALID) begin
         @(posedge S_AXI_ACLK);
+        #1;
       end
 
       @(posedge S_AXI_ACLK);
+      #1;
       S_AXI_BREADY = 1'b0;
 
-      $display("Write completed: Addr=0x%h, Data=0x%h, Strb=0x%h", addr, data, strb);
+      $display("Write completed: Addr=0x%h, Data=0x%h, Strb=0x%h, BRESP=0x%h", addr, data, strb,
+               S_AXI_BRESP);
     end
   endtask
 
@@ -116,7 +130,9 @@ module tb_axi_slave ();
     input [C_S_AXI_ADDR_WIDTH-1:0] addr;
     output [C_S_AXI_DATA_WIDTH-1:0] data;
     begin
+      // Wait for clock edge
       @(posedge S_AXI_ACLK);
+      #1;
 
       // Start read address phase
       S_AXI_ARADDR  = addr;
@@ -124,25 +140,29 @@ module tb_axi_slave ();
       S_AXI_ARVALID = 1'b1;
       S_AXI_RREADY  = 1'b1;
 
-      // Wait for address ready
+      // Wait for address handshake
       while (!S_AXI_ARREADY) begin
         @(posedge S_AXI_ACLK);
+        #1;
       end
 
       @(posedge S_AXI_ACLK);
+      #1;
       S_AXI_ARVALID = 1'b0;
 
       // Wait for read data
       while (!S_AXI_RVALID) begin
         @(posedge S_AXI_ACLK);
+        #1;
       end
 
       data = S_AXI_RDATA;
 
       @(posedge S_AXI_ACLK);
+      #1;
       S_AXI_RREADY = 1'b0;
 
-      $display("Read completed: Addr=0x%h, Data=0x%h", addr, data);
+      $display("Read completed: Addr=0x%h, Data=0x%h, RRESP=0x%h", addr, data, S_AXI_RRESP);
     end
   endtask
 
@@ -190,7 +210,7 @@ module tb_axi_slave ();
     // Reset sequence
     #100;
     S_AXI_ARESETN = 1;
-    #100;  // Increased delay after reset to ensure proper initialization
+    #100;
 
     // Test 1: Check initial reset values
     $display("\nTest 1: Checking initial reset values");
@@ -218,20 +238,18 @@ module tb_axi_slave ();
 
     // Write only lower byte of reg0
     axi_write(32'h10000, 32'h000000FF, 4'h1);
+    check_read_data(32'h10000, 32'hDEADBEFF);
 
     // Write only upper byte of reg1
     axi_write(32'h14000, 32'hAA000000, 4'h8);
+    check_read_data(32'h14000, 32'hAA345678);
 
     // Write middle two bytes of reg2
     axi_write(32'h18000, 32'h0000FFFF, 4'h6);
-
-    // write no bytes of reg3
-    axi_write(32'h1C000, 32'hFFFFFFFF, 4'h0);
-
-    // Verify existing registers
-    check_read_data(32'h10000, 32'hDEADBEFF);
-    check_read_data(32'h14000, 32'hAA345678);
     check_read_data(32'h18000, 32'hAB00FF01);
+
+    // Write no bytes of reg3 (should have no effect)
+    axi_write(32'h1C000, 32'hFFFFFFFF, 4'h0);
     check_read_data(32'h1C000, 32'h87654321);
 
     // Test 4: Reset functionality
@@ -247,7 +265,7 @@ module tb_axi_slave ();
     check_read_data(32'h18000, 32'h00000000);
     check_read_data(32'h1C000, 32'h00000000);
 
-    // Test 7: Pattern tests
+    // Test 5: Pattern tests
     $display("\nTest 5: Pattern tests");
     axi_write(32'h10000, 32'hAAAAAAAA, 4'hF);
     check_read_data(32'h10000, 32'hAAAAAAAA);
@@ -260,6 +278,14 @@ module tb_axi_slave ();
 
     axi_write(32'h1C000, 32'h00000000, 4'hF);
     check_read_data(32'h1C000, 32'h00000000);
+
+    // Test 6: Sequential byte writes to same register
+    $display("\nTest 6: Sequential byte writes");
+    axi_write(32'h10000, 32'h00000011, 4'h1);  // Byte 0
+    axi_write(32'h10000, 32'h00002200, 4'h2);  // Byte 1
+    axi_write(32'h10000, 32'h00330000, 4'h4);  // Byte 2
+    axi_write(32'h10000, 32'h44000000, 4'h8);  // Byte 3
+    check_read_data(32'h10000, 32'h44332211);
 
     // Test Summary
     $display("\n=====================================");
@@ -277,6 +303,7 @@ module tb_axi_slave ();
 
     // Close log file
     #100;
+    $finish;
   end
 
   // Monitor for debugging
@@ -289,7 +316,7 @@ module tb_axi_slave ();
 
   // Timeout protection
   initial begin
-    #2500;
+    #10000;
     $display("ERROR: Simulation timeout!");
     $finish;
   end

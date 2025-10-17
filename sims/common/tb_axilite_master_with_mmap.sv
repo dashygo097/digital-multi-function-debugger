@@ -14,14 +14,15 @@ module tb_axi_master_slave ();
   reg [31:0] W_DATA;
   reg [31:0] W_ADDR;
   reg W_EN;
-  wire W_READY;
+  wire W_DONE;
   wire [1:0] W_RESP;
 
   reg [31:0] R_ADDR;
   reg R_EN;
   wire [31:0] R_DATA;
-  wire R_READY;
+  wire R_DONE;
   wire [1:0] R_RESP;
+  wire BUSY;
 
   // AXI Bus Signals (connecting master to slave)
   wire [31:0] M_AXI_AWADDR;
@@ -55,7 +56,7 @@ module tb_axi_master_slave ();
   integer test_count = 0;
 
   // Instantiate the AXI Master
-  axilite_master_32x32 master (
+  axilite_master_rw_32x32 master (
       .clock(clock),
       .reset(reset),
       // AXI Interface
@@ -82,13 +83,14 @@ module tb_axi_master_slave ();
       .W_DATA(W_DATA),
       .W_ADDR(W_ADDR),
       .W_EN(W_EN),
-      .W_READY(W_READY),
+      .W_DONE(W_DONE),
       .W_RESP(W_RESP),
       .R_ADDR(R_ADDR),
       .R_EN(R_EN),
       .R_DATA(R_DATA),
-      .R_READY(R_READY),
-      .R_RESP(R_RESP)
+      .R_DONE(R_DONE),
+      .R_RESP(R_RESP),
+      .BUSY(BUSY)
   );
 
   // Instantiate the AXI Slave
@@ -125,15 +127,18 @@ module tb_axi_master_slave ();
     input [31:0] data;
     begin
       @(posedge clock);
+      #1;  // Delta delay
       W_ADDR = addr;
       W_DATA = data;
       W_EN   = 1'b1;
 
+      // Wait for write ready signal
+      wait (W_DONE);
       @(posedge clock);
+      #1;
       W_EN = 1'b0;
 
-      // Wait for write to complete
-      wait (W_READY == 1'b1);
+      // Wait a bit for transaction to complete
       @(posedge clock);
 
       // Check write response
@@ -151,17 +156,18 @@ module tb_axi_master_slave ();
     output [31:0] data;
     begin
       @(posedge clock);
+      #1;
       R_ADDR = addr;
       R_EN   = 1'b1;
 
-      @(posedge clock);
+      // Wait for read ready signal
+      wait (R_DONE);
+      #1;
       R_EN = 1'b0;
-
-      // Wait for read to complete
-      wait (R_READY == 1'b1);
-      @(posedge clock);
-
       data = R_DATA;
+
+      // Wait a bit for transaction to complete
+      @(posedge clock);
 
       // Check read response
       if (R_RESP != 2'b00) begin
@@ -286,6 +292,12 @@ module tb_axi_master_slave ();
     check_read_data(32'h18000, 32'hFFFF0000);
     check_read_data(32'h1C000, 32'h0000FFFF);
 
+    // Test 8: Write-after-write to same address
+    $display("\nTest 8: Write-after-write to same address");
+    master_write(32'h10000, 32'h11111111);
+    master_write(32'h10000, 32'h22222222);
+    check_read_data(32'h10000, 32'h22222222);
+
     // Test Summary
     $display("\n==========================================");
     $display("Test Summary:");
@@ -308,14 +320,14 @@ module tb_axi_master_slave ();
   initial begin
     $monitor(
         "Time=%0t | RST=%b | W_EN=%b W_RDY=%b | R_EN=%b R_RDY=%b | AW_V=%b AW_R=%b | W_V=%b W_R=%b | B_V=%b B_R=%b | AR_V=%b AR_R=%b | R_V=%b R_R=%b",
-        $time, reset, W_EN, W_READY, R_EN, R_READY, M_AXI_AWVALID, M_AXI_AWREADY, M_AXI_WVALID,
+        $time, reset, W_EN, W_DONE, R_EN, R_DONE, M_AXI_AWVALID, M_AXI_AWREADY, M_AXI_WVALID,
         M_AXI_WREADY, M_AXI_BVALID, M_AXI_BREADY, M_AXI_ARVALID, M_AXI_ARREADY, M_AXI_RVALID,
         M_AXI_RREADY);
   end
 
   // Timeout protection
   initial begin
-    #5000;
+    #10000;
     $display("ERROR: Simulation timeout!");
     $finish;
   end
