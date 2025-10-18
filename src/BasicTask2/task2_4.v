@@ -11,7 +11,7 @@ module signal_measure_ctrl #(
 
     output reg        busy,       
     output reg        finish,     
-    output reg [25:0] freq,       
+    output reg [25:0] period_out,       
     output reg [ 7:0] duty,       
     output reg [19:0] high_time,  
     output reg [19:0] low_time    
@@ -29,7 +29,7 @@ module signal_measure_ctrl #(
         else
             {sig_d1, sig_d2} <= {sig_d2, sig_in};
 
-    assign rise = (sig_d1 & ~sig_d2);  // 上升沿检测
+    assign rise = (~sig_d1 & sig_d2);  // 上升沿检测
 
     //============================
     // 内部寄存器
@@ -50,7 +50,8 @@ module signal_measure_ctrl #(
             cnt_high   <= 32'd0;
             cycle_cnt  <= 8'd0;
             start_flag <= 1'b0;
-        end else begin
+        end 
+        else begin
             finish <= 1'b0;
 
             // 启动测量
@@ -64,7 +65,7 @@ module signal_measure_ctrl #(
             // 测量中
             else if (busy) begin
                 cnt_period <= cnt_period + 1'b1;
-                if (sig_in)
+                if (sig_d2)
                     cnt_high <= cnt_high + 1'b1;
 
                 // 第一个上升沿：标记起点并清零
@@ -78,7 +79,7 @@ module signal_measure_ctrl #(
                 else if (start_flag && rise) begin
                     cycle_cnt <= cycle_cnt + 1'b1;
                     // 到达 N 周期结束
-                    if (cycle_cnt + 1 == AVG_CYCLES) begin
+                    if (cycle_cnt + 1 == AVG_CYCLES ) begin
                         busy       <= 1'b0;
                         finish     <= 1'b1;
                         start_flag <= 1'b0;
@@ -91,29 +92,23 @@ module signal_measure_ctrl #(
     //============================
     // 结果计算逻辑
     //============================
-    reg [31:0] freq_temp;
     reg [31:0] duty_temp;
     reg [31:0] period_buf;
     reg [31:0] high_buf;
+    reg [31:0] low_buf;
 
     always @(posedge clk or negedge rst_n)
         if (!rst_n) begin
-            freq      <= 0;
+            period_out      <= 0;
             duty      <= 0;
             high_time <= 0;
             low_time  <= 0;
-        end else if (finish) begin
-            // 锁存结果
-            period_buf <= cnt_period;
-            high_buf   <= cnt_high;
-
-            if (cnt_period != 0) begin
-                freq_temp = (CLK_FREQ * AVG_CYCLES) / cnt_period;
-                duty_temp = (cnt_high * 100) / cnt_period;
-                freq      <= freq_temp[25:0];
-                duty      <= duty_temp[7:0];
-                high_time <= cnt_high / AVG_CYCLES;                 // 平均每周期高电平
-                low_time  <= (cnt_period - cnt_high) / AVG_CYCLES;  // 平均每周期低电平
+        end 
+        else if (finish) begin
+            if (cnt_period != 0) 
+            begin
+                period_out<= cnt_period;
+                high_time <= cnt_high;          
             end
         end
 
