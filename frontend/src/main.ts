@@ -139,7 +139,7 @@ const createMainWindow = () => {
       }
     } else if (details.deviceType === "serial") {
       const validOrigins = [
-        " file://",
+        " file:///",
         MAIN_WINDOW_VITE_DEV_SERVER_URL?.replace(/\/$/, ""),
       ].filter(Boolean);
 
