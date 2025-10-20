@@ -14,22 +14,47 @@ module ram_32x32_s8_b65536(
   output        RAM_read_resp
 );
 
-  reg  [31:0]      ram_0;
-  reg  [31:0]      ram_1;
-  reg  [31:0]      ram_2;
-  reg  [31:0]      ram_3;
-  reg  [31:0]      ram_4;
-  reg  [31:0]      ram_5;
-  reg  [31:0]      ram_6;
-  reg  [31:0]      ram_7;
-  wire [31:0]      _aw_offset_addr_T = RAM_write_addr - 32'h10000;
-  wire [31:0]      _ar_offset_addr_T = RAM_read_addr - 32'h10000;
-  wire             aw_valid = (|(RAM_write_addr[31:16])) & _aw_offset_addr_T < 32'h20;
-  wire             ar_valid = (|(RAM_read_addr[31:16])) & _ar_offset_addr_T < 32'h20;
-  wire [2:0]       _mem_addr_T_3 =
+  reg  [31:0] ram_0;
+  reg  [31:0] ram_1;
+  reg  [31:0] ram_2;
+  reg  [31:0] ram_3;
+  reg  [31:0] ram_4;
+  reg  [31:0] ram_5;
+  reg  [31:0] ram_6;
+  reg  [31:0] ram_7;
+  wire [31:0] _aw_offset_addr_T = RAM_write_addr - 32'h10000;
+  wire [31:0] _ar_offset_addr_T = RAM_read_addr - 32'h10000;
+  wire        aw_valid = (|(RAM_write_addr[31:16])) & _aw_offset_addr_T < 32'h20;
+  wire        ar_valid = (|(RAM_read_addr[31:16])) & _ar_offset_addr_T < 32'h20;
+  wire [2:0]  _mem_addr_T_3 =
     RAM_read_en ? _ar_offset_addr_T[4:2] : RAM_write_en ? _aw_offset_addr_T[4:2] : 3'h0;
-  wire [7:0][31:0] _GEN =
-    {{ram_7}, {ram_6}, {ram_5}, {ram_4}, {ram_3}, {ram_2}, {ram_1}, {ram_0}};
+  reg  [31:0] casez_tmp;
+  always_comb begin
+    casez (_mem_addr_T_3)
+      3'b000:
+        casez_tmp = ram_0;
+      3'b001:
+        casez_tmp = ram_1;
+      3'b010:
+        casez_tmp = ram_2;
+      3'b011:
+        casez_tmp = ram_3;
+      3'b100:
+        casez_tmp = ram_4;
+      3'b101:
+        casez_tmp = ram_5;
+      3'b110:
+        casez_tmp = ram_6;
+      default:
+        casez_tmp = ram_7;
+    endcase
+  end // always_comb
+  wire        _GEN = RAM_write_en & aw_valid;
+  wire [31:0] _ram_T_12 =
+    {RAM_write_strb[3] ? RAM_write_data[31:24] : casez_tmp[31:24],
+     RAM_write_strb[2] ? RAM_write_data[23:16] : casez_tmp[23:16],
+     RAM_write_strb[1] ? RAM_write_data[15:8] : casez_tmp[15:8],
+     RAM_write_strb[0] ? RAM_write_data[7:0] : casez_tmp[7:0]};
   always @(posedge clock) begin
     if (reset) begin
       ram_0 <= 32'h0;
@@ -42,33 +67,26 @@ module ram_32x32_s8_b65536(
       ram_7 <= 32'h0;
     end
     else begin
-      automatic logic        _GEN_0 = RAM_write_en & aw_valid;
-      automatic logic [31:0] _ram_T_12;
-      _ram_T_12 =
-        {RAM_write_strb[3] ? RAM_write_data[31:24] : _GEN[_mem_addr_T_3][31:24],
-         RAM_write_strb[2] ? RAM_write_data[23:16] : _GEN[_mem_addr_T_3][23:16],
-         RAM_write_strb[1] ? RAM_write_data[15:8] : _GEN[_mem_addr_T_3][15:8],
-         RAM_write_strb[0] ? RAM_write_data[7:0] : _GEN[_mem_addr_T_3][7:0]};
-      if (_GEN_0 & _mem_addr_T_3 == 3'h0)
+      if (_GEN & _mem_addr_T_3 == 3'h0)
         ram_0 <= _ram_T_12;
-      if (_GEN_0 & _mem_addr_T_3 == 3'h1)
+      if (_GEN & _mem_addr_T_3 == 3'h1)
         ram_1 <= _ram_T_12;
-      if (_GEN_0 & _mem_addr_T_3 == 3'h2)
+      if (_GEN & _mem_addr_T_3 == 3'h2)
         ram_2 <= _ram_T_12;
-      if (_GEN_0 & _mem_addr_T_3 == 3'h3)
+      if (_GEN & _mem_addr_T_3 == 3'h3)
         ram_3 <= _ram_T_12;
-      if (_GEN_0 & _mem_addr_T_3 == 3'h4)
+      if (_GEN & _mem_addr_T_3 == 3'h4)
         ram_4 <= _ram_T_12;
-      if (_GEN_0 & _mem_addr_T_3 == 3'h5)
+      if (_GEN & _mem_addr_T_3 == 3'h5)
         ram_5 <= _ram_T_12;
-      if (_GEN_0 & _mem_addr_T_3 == 3'h6)
+      if (_GEN & _mem_addr_T_3 == 3'h6)
         ram_6 <= _ram_T_12;
-      if (_GEN_0 & (&_mem_addr_T_3))
+      if (_GEN & (&_mem_addr_T_3))
         ram_7 <= _ram_T_12;
     end
   end // always @(posedge)
   assign RAM_write_resp = aw_valid;
-  assign RAM_read_data = RAM_read_en & ar_valid ? _GEN[_mem_addr_T_3] : 32'h0;
+  assign RAM_read_data = RAM_read_en & ar_valid ? casez_tmp : 32'h0;
   assign RAM_read_resp = ar_valid;
 endmodule
 
@@ -143,6 +161,53 @@ module axifull_slave_ram_32x32_i4_u1_s8_b65536(
   reg         axi_rvalid;
   reg  [1:0]  axi_rresp;
   reg         axi_rlast;
+  reg  [31:0] casez_tmp;
+  wire [31:0] aw_wrap_size = {22'h0, axi_awlen, 2'h0};
+  always_comb begin
+    casez (axi_awburst)
+      2'b00:
+        casez_tmp = axi_awaddr;
+      2'b01:
+        casez_tmp = {axi_awaddr[31:2] + 30'h1, 2'h0};
+      2'b10:
+        casez_tmp =
+          (axi_awaddr & aw_wrap_size) == aw_wrap_size
+            ? axi_awaddr - {22'h0, axi_awlen, 2'h0}
+            : {axi_awaddr[31:2] + 30'h1, 2'h0};
+      default:
+        casez_tmp = {2'h0, axi_awaddr[31:2] + 30'h1};
+    endcase
+  end // always_comb
+  reg  [31:0] casez_tmp_0;
+  wire [31:0] ar_wrap_size = {22'h0, axi_arlen, 2'h0};
+  always_comb begin
+    casez (axi_arburst)
+      2'b00:
+        casez_tmp_0 = axi_araddr;
+      2'b01:
+        casez_tmp_0 = {axi_araddr[31:2] + 30'h1, 2'h0};
+      2'b10:
+        casez_tmp_0 =
+          (axi_awaddr & ar_wrap_size) == ar_wrap_size
+            ? axi_araddr - {22'h0, axi_arlen, 2'h0}
+            : {axi_araddr[31:2] + 30'h1, 2'h0};
+      default:
+        casez_tmp_0 = {2'h0, S_AXI_ARADDR[31:2] + 30'h1};
+    endcase
+  end // always_comb
+  wire        _GEN = ~axi_awready & S_AXI_AWVALID & ~axi_awv_awr_flag;
+  wire        _GEN_0 = _GEN & ~axi_arv_arr_flag;
+  wire        _GEN_1 = S_AXI_WLAST & axi_wready;
+  wire        _GEN_2 =
+    axi_awv_awr_flag & axi_wready & S_AXI_WVALID & ~axi_bvalid & S_AXI_WLAST;
+  wire        _GEN_3 = ~axi_arready & S_AXI_ARVALID;
+  wire        _GEN_4 = _GEN_3 & ~axi_awv_awr_flag & ~axi_arv_arr_flag;
+  wire        _GEN_5 = axi_rvalid & S_AXI_RREADY;
+  wire        _GEN_6 = axi_arlen_cntr == axi_arlen;
+  wire        _GEN_7 = _GEN_5 & _GEN_6;
+  wire        _GEN_8 = _GEN_3 & ~axi_arv_arr_flag;
+  wire        _GEN_9 = axi_arlen_cntr <= axi_arlen & axi_rvalid & S_AXI_RREADY;
+  wire        _GEN_10 = axi_arv_arr_flag & ~axi_rvalid;
   always @(posedge clock) begin
     if (reset) begin
       axi_awready <= 1'h0;
@@ -165,20 +230,6 @@ module axifull_slave_ram_32x32_i4_u1_s8_b65536(
       axi_rlast <= 1'h0;
     end
     else begin
-      automatic logic _GEN = ~axi_awready & S_AXI_AWVALID & ~axi_awv_awr_flag;
-      automatic logic _GEN_0 = _GEN & ~axi_arv_arr_flag;
-      automatic logic _GEN_1 = S_AXI_WLAST & axi_wready;
-      automatic logic _GEN_2 =
-        axi_awv_awr_flag & axi_wready & S_AXI_WVALID & ~axi_bvalid & S_AXI_WLAST;
-      automatic logic _GEN_3 = ~axi_arready & S_AXI_ARVALID;
-      automatic logic _GEN_4 = _GEN_3 & ~axi_awv_awr_flag & ~axi_arv_arr_flag;
-      automatic logic _GEN_5 = axi_rvalid & S_AXI_RREADY;
-      automatic logic _GEN_6 = axi_arlen_cntr == axi_arlen;
-      automatic logic _GEN_7 = _GEN_5 & _GEN_6;
-      automatic logic _GEN_8 = _GEN_3 & ~axi_arv_arr_flag;
-      automatic logic _GEN_9;
-      automatic logic _GEN_10 = axi_arv_arr_flag & ~axi_rvalid;
-      _GEN_9 = axi_arlen_cntr <= axi_arlen & axi_rvalid & S_AXI_RREADY;
       axi_awready <= _GEN_0 | _GEN_1 & axi_awready;
       axi_awv_awr_flag <= _GEN_0 | ~_GEN_1 & axi_awv_awr_flag;
       if (_GEN) begin
@@ -188,15 +239,7 @@ module axifull_slave_ram_32x32_i4_u1_s8_b65536(
         axi_awlen_cntr <= 8'h0;
       end
       else if (axi_awlen_cntr <= axi_awlen & axi_wready & S_AXI_WVALID) begin
-        automatic logic [31:0]      aw_wrap_size = {22'h0, axi_awlen, 2'h0};
-        automatic logic [3:0][31:0] _GEN_11 =
-          {{{2'h0, axi_awaddr[31:2] + 30'h1}},
-           {(axi_awaddr & aw_wrap_size) == aw_wrap_size
-              ? axi_awaddr - {22'h0, axi_awlen, 2'h0}
-              : {axi_awaddr[31:2] + 30'h1, 2'h0}},
-           {{axi_awaddr[31:2] + 30'h1, 2'h0}},
-           {axi_awaddr}};
-        axi_awaddr <= _GEN_11[axi_awburst];
+        axi_awaddr <= casez_tmp;
         axi_awlen_cntr <= axi_awlen_cntr + 8'h1;
       end
       axi_wready <= ~axi_wready & S_AXI_WVALID & axi_awv_awr_flag | ~_GEN_1 & axi_wready;
@@ -211,15 +254,7 @@ module axifull_slave_ram_32x32_i4_u1_s8_b65536(
         axi_arlen_cntr <= 8'h0;
       end
       else if (_GEN_9) begin
-        automatic logic [31:0]      ar_wrap_size = {22'h0, axi_arlen, 2'h0};
-        automatic logic [3:0][31:0] _GEN_12 =
-          {{{2'h0, S_AXI_ARADDR[31:2] + 30'h1}},
-           {(axi_awaddr & ar_wrap_size) == ar_wrap_size
-              ? axi_araddr - {22'h0, axi_arlen, 2'h0}
-              : {axi_araddr[31:2] + 30'h1, 2'h0}},
-           {{axi_araddr[31:2] + 30'h1, 2'h0}},
-           {axi_araddr}};
-        axi_araddr <= _GEN_12[axi_arburst];
+        axi_araddr <= casez_tmp_0;
         axi_arlen_cntr <= axi_arlen_cntr + 8'h1;
       end
       axi_arv_arr_flag <= _GEN_4 | ~_GEN_7 & axi_arv_arr_flag;

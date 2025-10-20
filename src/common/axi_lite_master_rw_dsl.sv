@@ -53,7 +53,30 @@ module axilite_master_rw_32x32(
   wire        _GEN_5 = state == 3'h4;
   wire        _GEN_6 = state == 3'h5;
   wire        _GEN_7 = _GEN_6 & M_AXI_RVALID;
-  wire        _GEN_8 = _GEN | _GEN_0 | _GEN_1 | _GEN_2 | _GEN_5;
+  reg  [2:0]  casez_tmp;
+  wire [2:0]  _GEN_8 = _GEN_7 ? 3'h0 : state;
+  always_comb begin
+    casez (state)
+      3'b000:
+        casez_tmp = W_EN ? 3'h1 : R_EN ? 3'h4 : state;
+      3'b001:
+        casez_tmp = M_AXI_AWREADY ? 3'h2 : state;
+      3'b010:
+        casez_tmp = M_AXI_WREADY ? 3'h3 : state;
+      3'b011:
+        casez_tmp = M_AXI_BVALID ? 3'h0 : state;
+      3'b100:
+        casez_tmp = M_AXI_ARREADY ? 3'h5 : state;
+      3'b101:
+        casez_tmp = _GEN_8;
+      3'b110:
+        casez_tmp = _GEN_8;
+      default:
+        casez_tmp = _GEN_8;
+    endcase
+  end // always_comb
+  wire        _GEN_9 = _GEN | _GEN_0 | _GEN_1 | _GEN_2 | _GEN_5;
+  wire        _GEN_10 = _GEN_0 | _GEN_1 | _GEN_2;
   always @(posedge clock) begin
     if (reset) begin
       state <= 3'h0;
@@ -67,19 +90,7 @@ module axilite_master_rw_32x32(
       axi_rready <= 1'h0;
     end
     else begin
-      automatic logic            _GEN_9;
-      automatic logic [2:0]      _GEN_10 = _GEN_7 ? 3'h0 : state;
-      automatic logic [7:0][2:0] _GEN_11 =
-        {{_GEN_10},
-         {_GEN_10},
-         {_GEN_10},
-         {M_AXI_ARREADY ? 3'h5 : state},
-         {M_AXI_BVALID ? 3'h0 : state},
-         {M_AXI_WREADY ? 3'h3 : state},
-         {M_AXI_AWREADY ? 3'h2 : state},
-         {W_EN ? 3'h1 : R_EN ? 3'h4 : state}};
-      _GEN_9 = _GEN_0 | _GEN_1 | _GEN_2;
-      state <= _GEN_11[state];
+      state <= casez_tmp;
       if (_GEN & W_EN) begin
         axi_awaddr <= W_ADDR;
         axi_wdata <= W_DATA;
@@ -90,7 +101,7 @@ module axilite_master_rw_32x32(
       end
       else begin
         axi_awvalid <= ~(_GEN_0 & M_AXI_AWREADY) & axi_awvalid;
-        axi_arvalid <= (_GEN_9 | ~(_GEN_5 & M_AXI_ARREADY)) & axi_arvalid;
+        axi_arvalid <= (_GEN_10 | ~(_GEN_5 & M_AXI_ARREADY)) & axi_arvalid;
       end
       axi_wvalid <=
         ~_GEN
@@ -106,7 +117,7 @@ module axilite_master_rw_32x32(
         axi_araddr <= R_ADDR;
       axi_rready <=
         ~_GEN
-        & (_GEN_9
+        & (_GEN_10
              ? axi_rready
              : _GEN_5 ? M_AXI_ARREADY | axi_rready : ~_GEN_7 & axi_rready);
     end
@@ -125,8 +136,8 @@ module axilite_master_rw_32x32(
   assign W_DONE = ~_GEN_4 & _GEN_2 & M_AXI_BVALID;
   assign W_RESP = _GEN_4 | ~_GEN_3 ? 2'h0 : M_AXI_BRESP;
   assign R_DATA = M_AXI_RDATA;
-  assign R_DONE = ~_GEN_8 & _GEN_6 & M_AXI_RVALID;
-  assign R_RESP = _GEN_8 | ~_GEN_7 ? 2'h0 : M_AXI_RRESP;
+  assign R_DONE = ~_GEN_9 & _GEN_6 & M_AXI_RVALID;
+  assign R_RESP = _GEN_9 | ~_GEN_7 ? 2'h0 : M_AXI_RRESP;
   assign BUSY = |state;
 endmodule
 

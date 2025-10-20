@@ -20,6 +20,10 @@ module mmap_regs_32x32_r4(
   wire        read_addr_match =
     MMAP_read_addr == 32'h10000 | MMAP_read_addr == 32'h14000
     | MMAP_read_addr == 32'h18000 | MMAP_read_addr == 32'h1C000;
+  wire        _GEN =
+    MMAP_write_en
+    & (MMAP_write_addr == 32'h10000 | MMAP_write_addr == 32'h14000
+       | MMAP_write_addr == 32'h18000 | MMAP_write_addr == 32'h1C000);
   always @(posedge clock) begin
     if (reset) begin
       regs_0 <= 32'h0;
@@ -28,10 +32,6 @@ module mmap_regs_32x32_r4(
       regs_3 <= 32'h0;
     end
     else begin
-      automatic logic _GEN =
-        MMAP_write_en
-        & (MMAP_write_addr == 32'h10000 | MMAP_write_addr == 32'h14000
-           | MMAP_write_addr == 32'h18000 | MMAP_write_addr == 32'h1C000);
       if (_GEN & MMAP_write_addr == 32'h10000)
         regs_0 <=
           {MMAP_write_strb[3] ? MMAP_write_data[31:24] : regs_0[31:24],
@@ -107,6 +107,10 @@ module axilite_slave_mmap_32x32_r4(
   reg  [31:0] axi_rdata;
   reg         axi_rvalid;
   reg  [1:0]  axi_rresp;
+  wire        _GEN = ~axi_awready & S_AXI_AWVALID;
+  wire        _GEN_0 = ~axi_bvalid & axi_wready & S_AXI_WVALID;
+  wire        _GEN_1 = ~axi_arready & S_AXI_ARVALID;
+  wire        _GEN_2 = ~axi_rvalid & axi_arready & S_AXI_ARVALID;
   always @(posedge clock) begin
     if (reset) begin
       axi_awready <= 1'h0;
@@ -121,10 +125,6 @@ module axilite_slave_mmap_32x32_r4(
       axi_rresp <= 2'h0;
     end
     else begin
-      automatic logic _GEN = ~axi_awready & S_AXI_AWVALID;
-      automatic logic _GEN_0 = ~axi_bvalid & axi_wready & S_AXI_WVALID;
-      automatic logic _GEN_1 = ~axi_arready & S_AXI_ARVALID;
-      automatic logic _GEN_2 = ~axi_rvalid & axi_arready & S_AXI_ARVALID;
       axi_awready <= _GEN;
       if (_GEN)
         axi_awaddr <= S_AXI_AWADDR;
