@@ -13,27 +13,27 @@ module uart_tx_b115200_f100000000 (
   reg  [7:0] data;
   reg  [2:0] bitCounter;
   reg  [9:0] tickCounter;
+  wire       tick = tickCounter == 10'h363;
   wire       UART_TX_channel_ready_0 = state == 2'h0;
   wire       _GEN = state == 2'h1;
   wire       _GEN_0 = state == 2'h2;
+  reg  [1:0] casez_tmp;
+  always_comb begin
+    casez (state)
+      2'b00:   casez_tmp = UART_TX_channel_valid ? 2'h1 : state;
+      2'b01:   casez_tmp = tick ? 2'h2 : state;
+      2'b10:   casez_tmp = tick & (&bitCounter) ? 2'h3 : state;
+      default: casez_tmp = (&state) & tick ? 2'h0 : state;
+    endcase
+  end  // always_comb
+  wire _GEN_1 = _GEN_0 & tick;
   always @(posedge clock) begin
-    automatic logic tick;
-    automatic logic _GEN_1;
-    tick   = tickCounter == 10'h363;
-    _GEN_1 = _GEN_0 & tick;
     if (reset) begin
       state <= 2'h0;
       bitCounter <= 3'h0;
       tickCounter <= 10'h0;
     end else begin
-      automatic logic [3:0][1:0] _GEN_2;
-      _GEN_2 = {
-        {(&state) & tick ? 2'h0 : state},
-        {tick & (&bitCounter) ? 2'h3 : state},
-        {tick ? 2'h2 : state},
-        {UART_TX_channel_valid ? 2'h1 : state}
-      };
-      state <= _GEN_2[state];
+      state <= casez_tmp;
       if (~UART_TX_channel_ready_0) begin
         if (_GEN) begin
           if (tick) bitCounter <= 3'h0;
@@ -77,23 +77,23 @@ module uart_rx_b115200_f100000000 (
   wire       _GEN_1 = state == 2'h2;
   wire       _GEN_2 = _GEN | _GEN_0 | _GEN_1;
   wire       _GEN_3 = (&state) & tick;
+  reg  [1:0] casez_tmp;
+  always_comb begin
+    casez (state)
+      2'b00:   casez_tmp = rxd ? state : 2'h1;
+      2'b01:   casez_tmp = tick ? {~rxd, 1'h0} : state;
+      2'b10:   casez_tmp = tick & (&bitCounter) ? 2'h3 : state;
+      default: casez_tmp = _GEN_3 ? 2'h0 : state;
+    endcase
+  end  // always_comb
+  wire _GEN_4 = _GEN_1 & tick;
   always @(posedge clock) begin
-    automatic logic _GEN_4;
-    _GEN_4 = _GEN_1 & tick;
     if (reset) begin
       state <= 2'h0;
       bitCounter <= 3'h0;
       tickCounter <= 10'h0;
     end else begin
-      automatic
-      logic [3:0][1:0]
-      _GEN_5 = {
-        {_GEN_3 ? 2'h0 : state},
-        {tick & (&bitCounter) ? 2'h3 : state},
-        {tick ? {~rxd, 1'h0} : state},
-        {rxd ? state : 2'h1}
-      };
-      state <= _GEN_5[state];
+      state <= casez_tmp;
       if (~_GEN) begin
         if (_GEN_0) begin
           if (tick & ~rxd) bitCounter <= 3'h0;
@@ -126,54 +126,56 @@ module uart_level_b115200_f100000000 (
     input  [31:0] UART_CMD_resp_rdata
 );
 
-  wire _uart_rx_UART_RX_channel_valid;
-  wire [7:0] _uart_rx_UART_RX_channel_bits;
-  wire _uart_rx_UART_RX_error;
-  wire _uart_tx_UART_TX_channel_ready;
-  wire [2:0][7:0] _GEN = '{8'h0, 8'h0, 8'h0};
-  reg [1:0] rx_state;
-  reg [3:0] rx_byte_cnt;
-  reg [7:0] rx_buffer_0;
-  reg [7:0] rx_buffer_1;
-  reg [7:0] rx_buffer_2;
-  reg [7:0] rx_buffer_3;
-  reg [7:0] rx_buffer_4;
-  reg [7:0] rx_buffer_5;
-  reg [7:0] rx_buffer_6;
-  reg [7:0] rx_buffer_7;
-  reg cmd_valid_reg;
-  reg [1:0] cmd_type_reg;
-  reg [31:0] cmd_addr_reg;
-  reg [31:0] cmd_wdata_reg;
-  reg [1:0] tx_state;
-  reg [2:0] tx_byte_cnt;
-  reg [7:0] tx_buffer_1;
-  reg [7:0] tx_buffer_2;
-  reg [7:0] tx_buffer_3;
-  reg [7:0] tx_buffer_4;
-  reg [3:0] tx_total_bytes;
-  wire _GEN_0 = tx_state == 2'h0;
-  wire _GEN_1 = tx_state == 2'h1;
-  wire [7:0][7:0] _GEN_2 = {
-    _GEN, {{tx_buffer_4}, {tx_buffer_3}, {tx_buffer_2}, {tx_buffer_1}, {8'h0}}
-  };
+  wire        _uart_rx_UART_RX_channel_valid;
+  wire [ 7:0] _uart_rx_UART_RX_channel_bits;
+  wire        _uart_rx_UART_RX_error;
+  wire        _uart_tx_UART_TX_channel_ready;
+  reg  [ 1:0] rx_state;
+  reg  [ 3:0] rx_byte_cnt;
+  reg  [ 7:0] rx_buffer_0;
+  reg  [ 7:0] rx_buffer_1;
+  reg  [ 7:0] rx_buffer_2;
+  reg  [ 7:0] rx_buffer_3;
+  reg  [ 7:0] rx_buffer_4;
+  reg  [ 7:0] rx_buffer_5;
+  reg  [ 7:0] rx_buffer_6;
+  reg  [ 7:0] rx_buffer_7;
+  reg         cmd_valid_reg;
+  reg  [ 1:0] cmd_type_reg;
+  reg  [31:0] cmd_addr_reg;
+  reg  [31:0] cmd_wdata_reg;
+  reg  [ 1:0] tx_state;
+  reg  [ 2:0] tx_byte_cnt;
+  reg  [ 7:0] tx_buffer_1;
+  reg  [ 7:0] tx_buffer_2;
+  reg  [ 7:0] tx_buffer_3;
+  reg  [ 7:0] tx_buffer_4;
+  reg  [ 3:0] tx_total_bytes;
+  wire        _GEN = tx_state == 2'h0;
+  wire        _GEN_0 = tx_state == 2'h1;
+  reg  [ 7:0] casez_tmp;
+  always_comb begin
+    casez (tx_byte_cnt)
+      3'b000:  casez_tmp = 8'h0;
+      3'b001:  casez_tmp = tx_buffer_1;
+      3'b010:  casez_tmp = tx_buffer_2;
+      3'b011:  casez_tmp = tx_buffer_3;
+      3'b100:  casez_tmp = tx_buffer_4;
+      3'b101:  casez_tmp = 8'h0;
+      3'b110:  casez_tmp = 8'h0;
+      default: casez_tmp = 8'h0;
+    endcase
+  end  // always_comb
+  wire       _GEN_1 = {1'h0, tx_byte_cnt} == tx_total_bytes - 4'h1;
+  wire       _GEN_2 = rx_state == 2'h0;
+  wire       _GEN_3 = _uart_rx_UART_RX_channel_valid & ~_uart_rx_UART_RX_error;
+  wire       _GEN_4 = rx_state == 2'h1;
+  wire [3:0] _next_byte_cnt_T = rx_byte_cnt + 4'h1;
+  wire       _GEN_5 = _next_byte_cnt_T == 4'h9;
+  wire       _GEN_6 = _GEN_4 & _GEN_3 & _GEN_5;
+  wire       _GEN_7 = _GEN_2 | ~_GEN_6;
+  wire       _GEN_8 = _GEN & UART_CMD_resp_valid;
   always @(posedge clock) begin
-    automatic logic       _GEN_3;
-    automatic logic       _GEN_4;
-    automatic logic       _GEN_5;
-    automatic logic [3:0] _next_byte_cnt_T;
-    automatic logic       _GEN_6;
-    automatic logic       _GEN_7;
-    automatic logic       _GEN_8;
-    automatic logic       _GEN_9;
-    _GEN_3 = rx_state == 2'h0;
-    _GEN_4 = _uart_rx_UART_RX_channel_valid & ~_uart_rx_UART_RX_error;
-    _GEN_5 = rx_state == 2'h1;
-    _next_byte_cnt_T = rx_byte_cnt + 4'h1;
-    _GEN_6 = _next_byte_cnt_T == 4'h9;
-    _GEN_7 = _GEN_5 & _GEN_4 & _GEN_6;
-    _GEN_8 = _GEN_3 | ~_GEN_7;
-    _GEN_9 = _GEN_0 & UART_CMD_resp_valid;
     if (reset) begin
       rx_state <= 2'h0;
       rx_byte_cnt <= 4'h0;
@@ -184,54 +186,52 @@ module uart_level_b115200_f100000000 (
       tx_byte_cnt <= 3'h0;
       tx_total_bytes <= 4'h0;
     end else begin
-      if (_GEN_3) begin
-        if (_GEN_4) begin
+      if (_GEN_2) begin
+        if (_GEN_3) begin
           rx_state <= 2'h1;
           rx_byte_cnt <= 4'h1;
         end
       end else begin
-        if (_GEN_7) rx_state <= 2'h0;
-        if (_GEN_5 & _GEN_4) rx_byte_cnt <= _GEN_6 ? 4'h0 : _next_byte_cnt_T;
+        if (_GEN_6) rx_state <= 2'h0;
+        if (_GEN_4 & _GEN_3) rx_byte_cnt <= _GEN_5 ? 4'h0 : _next_byte_cnt_T;
       end
-      cmd_valid_reg <= ~_GEN_3 & _GEN_7;
-      if (_GEN_8) begin
+      cmd_valid_reg <= ~_GEN_2 & _GEN_6;
+      if (_GEN_7) begin
       end else begin
         cmd_addr_reg  <= {rx_buffer_4, rx_buffer_3, rx_buffer_2, rx_buffer_1};
         cmd_wdata_reg <= {_uart_rx_UART_RX_channel_bits, rx_buffer_7, rx_buffer_6, rx_buffer_5};
       end
-      if (_GEN_0) begin
+      if (_GEN) begin
         if (UART_CMD_resp_valid) begin
           tx_state <= 2'h1;
           tx_byte_cnt <= 3'h0;
         end
       end else begin
-        automatic logic _GEN_10;
-        _GEN_10 = {1'h0, tx_byte_cnt} == tx_total_bytes - 4'h1;
-        if (_GEN_1 & _uart_tx_UART_TX_channel_ready & _GEN_10) tx_state <= 2'h0;
-        if (_GEN_1 & _uart_tx_UART_TX_channel_ready)
-          tx_byte_cnt <= _GEN_10 ? 3'h0 : tx_byte_cnt + 3'h1;
+        if (_GEN_0 & _uart_tx_UART_TX_channel_ready & _GEN_1) tx_state <= 2'h0;
+        if (_GEN_0 & _uart_tx_UART_TX_channel_ready)
+          tx_byte_cnt <= _GEN_1 ? 3'h0 : tx_byte_cnt + 3'h1;
       end
-      if (_GEN_9) tx_total_bytes <= 4'h5;
+      if (_GEN_8) tx_total_bytes <= 4'h5;
     end
-    if ((_GEN_3 | _GEN_5 & rx_byte_cnt == 4'h0) & _GEN_4)
+    if ((_GEN_2 | _GEN_4 & rx_byte_cnt == 4'h0) & _GEN_3)
       rx_buffer_0 <= _uart_rx_UART_RX_channel_bits;
-    if (_GEN_3 | ~(_GEN_5 & _GEN_4 & rx_byte_cnt == 4'h1)) begin
+    if (_GEN_2 | ~(_GEN_4 & _GEN_3 & rx_byte_cnt == 4'h1)) begin
     end else rx_buffer_1 <= _uart_rx_UART_RX_channel_bits;
-    if (_GEN_3 | ~(_GEN_5 & _GEN_4 & rx_byte_cnt == 4'h2)) begin
+    if (_GEN_2 | ~(_GEN_4 & _GEN_3 & rx_byte_cnt == 4'h2)) begin
     end else rx_buffer_2 <= _uart_rx_UART_RX_channel_bits;
-    if (_GEN_3 | ~(_GEN_5 & _GEN_4 & rx_byte_cnt == 4'h3)) begin
+    if (_GEN_2 | ~(_GEN_4 & _GEN_3 & rx_byte_cnt == 4'h3)) begin
     end else rx_buffer_3 <= _uart_rx_UART_RX_channel_bits;
-    if (_GEN_3 | ~(_GEN_5 & _GEN_4 & rx_byte_cnt == 4'h4)) begin
+    if (_GEN_2 | ~(_GEN_4 & _GEN_3 & rx_byte_cnt == 4'h4)) begin
     end else rx_buffer_4 <= _uart_rx_UART_RX_channel_bits;
-    if (_GEN_3 | ~(_GEN_5 & _GEN_4 & rx_byte_cnt == 4'h5)) begin
+    if (_GEN_2 | ~(_GEN_4 & _GEN_3 & rx_byte_cnt == 4'h5)) begin
     end else rx_buffer_5 <= _uart_rx_UART_RX_channel_bits;
-    if (_GEN_3 | ~(_GEN_5 & _GEN_4 & rx_byte_cnt == 4'h6)) begin
+    if (_GEN_2 | ~(_GEN_4 & _GEN_3 & rx_byte_cnt == 4'h6)) begin
     end else rx_buffer_6 <= _uart_rx_UART_RX_channel_bits;
-    if (_GEN_3 | ~(_GEN_5 & _GEN_4 & rx_byte_cnt == 4'h7)) begin
+    if (_GEN_2 | ~(_GEN_4 & _GEN_3 & rx_byte_cnt == 4'h7)) begin
     end else rx_buffer_7 <= _uart_rx_UART_RX_channel_bits;
-    if (_GEN_8) begin
+    if (_GEN_7) begin
     end else cmd_type_reg <= rx_buffer_0 == 8'h2 ? 2'h2 : {1'h0, rx_buffer_0 == 8'h1};
-    if (_GEN_9) begin
+    if (_GEN_8) begin
       tx_buffer_1 <= UART_CMD_resp_rdata[7:0];
       tx_buffer_2 <= UART_CMD_resp_rdata[15:8];
       tx_buffer_3 <= UART_CMD_resp_rdata[23:16];
@@ -243,8 +243,8 @@ module uart_level_b115200_f100000000 (
       .reset                (reset),
       .UART_TX_txd          (UART_CMD_txd),
       .UART_TX_channel_ready(_uart_tx_UART_TX_channel_ready),
-      .UART_TX_channel_valid(~_GEN_0 & _GEN_1),
-      .UART_TX_channel_bits (_GEN_0 | ~_GEN_1 ? 8'h0 : _GEN_2[tx_byte_cnt])
+      .UART_TX_channel_valid(~_GEN & _GEN_0),
+      .UART_TX_channel_bits (_GEN | ~_GEN_0 ? 8'h0 : casez_tmp)
   );
   uart_rx_b115200_f100000000 uart_rx (
       .clock                (clock),
@@ -299,18 +299,53 @@ module axilite_master_uart_cmd_32x32_b115200_f100000000 (
   reg  [31:0] move_dst_addr;
   reg  [31:0] move_data_buf;
   wire        _GEN = state == 4'h0;
-  wire        _GEN_0 = state == 4'h1;
-  wire        _GEN_1 = state == 4'h3;
-  wire        _GEN_2 = M_AXI_BVALID & axi_bready;
-  wire        _GEN_3 = state == 4'h4;
-  wire        _GEN_4 = state == 4'h5;
-  wire        _GEN_5 = M_AXI_RVALID & axi_rready;
-  wire        _GEN_6 = state == 4'h6;
-  wire        _GEN_7 = state == 4'h7;
-  wire        _GEN_8 = state == 4'h8;
-  wire        _GEN_9 = state == 4'h9;
-  wire        _GEN_10 = _GEN_9 & _GEN_2;
-  wire        _GEN_11 = _GEN_6 | _GEN_7 | _GEN_8;
+  reg  [31:0] casez_tmp;
+  always_comb begin
+    casez (_uart_cmd_UART_CMD_cmd_type)
+      2'b00:   casez_tmp = axi_araddr;
+      2'b01:   casez_tmp = _uart_cmd_UART_CMD_cmd_addr;
+      2'b10:   casez_tmp = _uart_cmd_UART_CMD_cmd_addr;
+      default: casez_tmp = axi_araddr;
+    endcase
+  end  // always_comb
+  reg [3:0] casez_tmp_0;
+  always_comb begin
+    casez (_uart_cmd_UART_CMD_cmd_type)
+      2'b00:   casez_tmp_0 = 4'h1;
+      2'b01:   casez_tmp_0 = 4'h4;
+      2'b10:   casez_tmp_0 = 4'h6;
+      default: casez_tmp_0 = state;
+    endcase
+  end  // always_comb
+  wire _GEN_0 = state == 4'h1;
+  wire _GEN_1 = state == 4'h3;
+  wire _GEN_2 = M_AXI_BVALID & axi_bready;
+  wire _GEN_3 = state == 4'h4;
+  wire _GEN_4 = state == 4'h5;
+  wire _GEN_5 = M_AXI_RVALID & axi_rready;
+  wire _GEN_6 = state == 4'h6;
+  wire _GEN_7 = state == 4'h7;
+  wire _GEN_8 = state == 4'h8;
+  wire _GEN_9 = state == 4'h9;
+  wire _GEN_10 = _GEN_9 & _GEN_2;
+  wire _GEN_11 = _GEN_6 | _GEN_7 | _GEN_8;
+  wire _GEN_12 = M_AXI_AWREADY & axi_awvalid;
+  wire _GEN_13 = M_AXI_WREADY & axi_wvalid;
+  wire _GEN_14 = aw_done & w_done;
+  wire _GEN_15 = _GEN_14 | axi_bready;
+  wire _GEN_16 = _GEN_8 & _GEN_12;
+  wire _GEN_17 = _GEN_8 & _GEN_13;
+  wire _GEN_18 = _uart_cmd_UART_CMD_cmd_type == 2'h0;
+  wire _GEN_19 = _uart_cmd_UART_CMD_cmd_type == 2'h1;
+  wire _GEN_20 = _uart_cmd_UART_CMD_cmd_type == 2'h2;
+  wire _GEN_21 = _GEN & _uart_cmd_UART_CMD_cmd_valid;
+  wire _GEN_22 = M_AXI_ARREADY & axi_arvalid;
+  wire _GEN_23 = _GEN_0 | _GEN_1;
+  wire _GEN_24 = _GEN_7 & _GEN_5;
+  wire _GEN_25 = _GEN_1 | _GEN_3 | _GEN_4 | _GEN_6;
+  wire _GEN_26 = _GEN_0 | _GEN_25;
+  wire _GEN_27 = _uart_cmd_UART_CMD_cmd_valid & _GEN_18;
+  wire _GEN_28 = _GEN_22 | axi_rready;
   always @(posedge clock) begin
     if (reset) begin
       state <= 4'h0;
@@ -327,115 +362,71 @@ module axilite_master_uart_cmd_32x32_b115200_f100000000 (
       move_dst_addr <= 32'h0;
       move_data_buf <= 32'h0;
     end else begin
-      automatic logic _GEN_12;
-      automatic logic _GEN_13;
-      automatic logic _GEN_14;
-      automatic logic _GEN_15 = _GEN & _uart_cmd_UART_CMD_cmd_valid;
-      automatic logic _GEN_16;
-      automatic logic _GEN_17;
-      automatic logic _GEN_18;
-      automatic logic _GEN_19;
-      automatic logic _GEN_20;
-      _GEN_12 = _uart_cmd_UART_CMD_cmd_type == 2'h0;
-      _GEN_13 = _uart_cmd_UART_CMD_cmd_type == 2'h1;
-      _GEN_14 = _uart_cmd_UART_CMD_cmd_type == 2'h2;
-      _GEN_16 = M_AXI_ARREADY & axi_arvalid;
-      _GEN_17 = _GEN_0 | _GEN_1;
-      _GEN_18 = _GEN_7 & _GEN_5;
-      _GEN_19 = _GEN_1 | _GEN_3 | _GEN_4 | _GEN_6;
-      _GEN_20 = _GEN_0 | _GEN_19;
       if (_GEN) begin
-        automatic logic _GEN_21;
-        _GEN_21 = _uart_cmd_UART_CMD_cmd_valid & _GEN_12;
-        if (_uart_cmd_UART_CMD_cmd_valid) begin
-          automatic logic [3:0][3:0] _GEN_22 = {{state}, {4'h6}, {4'h4}, {4'h1}};
-          state <= _GEN_22[_uart_cmd_UART_CMD_cmd_type];
-        end
-        if (_GEN_21) begin
+        if (_uart_cmd_UART_CMD_cmd_valid) state <= casez_tmp_0;
+        if (_GEN_27) begin
           axi_awaddr <= _uart_cmd_UART_CMD_cmd_addr;
           axi_wdata  <= _uart_cmd_UART_CMD_cmd_wdata;
         end
-        axi_awvalid <= _GEN_21 | axi_awvalid;
-        axi_wvalid <= _GEN_21 | axi_wvalid;
-        axi_arvalid <= _uart_cmd_UART_CMD_cmd_valid & ~_GEN_12 & (_GEN_13 | _GEN_14) | axi_arvalid;
-        aw_done <= ~_GEN_21 & aw_done;
-        w_done <= ~_GEN_21 & w_done;
+        axi_awvalid <= _GEN_27 | axi_awvalid;
+        axi_wvalid <= _GEN_27 | axi_wvalid;
+        axi_arvalid <= _uart_cmd_UART_CMD_cmd_valid & ~_GEN_18 & (_GEN_19 | _GEN_20) | axi_arvalid;
+        aw_done <= ~_GEN_27 & aw_done;
+        w_done <= ~_GEN_27 & w_done;
       end else begin
-        automatic logic _GEN_23;
-        automatic logic _GEN_24;
-        automatic logic _GEN_25;
-        automatic logic _GEN_26;
-        _GEN_23 = M_AXI_AWREADY & axi_awvalid;
-        _GEN_24 = M_AXI_WREADY & axi_wvalid;
-        _GEN_25 = aw_done & w_done;
-        _GEN_26 = _GEN_25 | axi_bready;
         if (_GEN_0) begin
-          if (_GEN_25) state <= 4'h3;
-          axi_awvalid <= ~_GEN_23 & axi_awvalid;
-          axi_wvalid <= ~_GEN_24 & axi_wvalid;
-          axi_bready <= _GEN_26;
-          aw_done <= _GEN_23 | aw_done;
-          w_done <= _GEN_24 | w_done;
+          if (_GEN_14) state <= 4'h3;
+          axi_awvalid <= ~_GEN_12 & axi_awvalid;
+          axi_wvalid <= ~_GEN_13 & axi_wvalid;
+          axi_bready <= _GEN_15;
+          aw_done <= _GEN_12 | aw_done;
+          w_done <= _GEN_13 | w_done;
         end else begin
           if (_GEN_1) begin
             if (_GEN_2) state <= 4'h0;
             axi_bready <= ~_GEN_2 & axi_bready;
           end else begin
             if (_GEN_3) begin
-              if (_GEN_16) state <= 4'h5;
+              if (_GEN_22) state <= 4'h5;
             end else if (_GEN_4) begin
               if (_GEN_5) state <= 4'h0;
             end else if (_GEN_6) begin
-              if (_GEN_16) state <= 4'h7;
+              if (_GEN_22) state <= 4'h7;
             end else if (_GEN_7) begin
               if (_GEN_5) state <= 4'h8;
             end else if (_GEN_8) begin
-              if (_GEN_25) state <= 4'h9;
+              if (_GEN_14) state <= 4'h9;
             end else if (_GEN_10) state <= 4'h0;
             if (~(_GEN_3 | _GEN_4 | _GEN_6 | _GEN_7))
-              axi_bready <= _GEN_8 ? _GEN_26 : ~_GEN_10 & axi_bready;
+              axi_bready <= _GEN_8 ? _GEN_15 : ~_GEN_10 & axi_bready;
           end
-          if (~_GEN_19) begin
-            automatic logic _GEN_27;
-            automatic logic _GEN_28;
-            _GEN_27 = _GEN_8 & _GEN_23;
-            _GEN_28 = _GEN_8 & _GEN_24;
-            axi_awvalid <= _GEN_7 ? _GEN_5 | axi_awvalid : ~_GEN_27 & axi_awvalid;
-            axi_wvalid <= _GEN_7 ? _GEN_5 | axi_wvalid : ~_GEN_28 & axi_wvalid;
-            aw_done <= _GEN_7 ? ~_GEN_5 & aw_done : _GEN_27 | aw_done;
-            w_done <= _GEN_7 ? ~_GEN_5 & w_done : _GEN_28 | w_done;
+          if (~_GEN_25) begin
+            axi_awvalid <= _GEN_7 ? _GEN_5 | axi_awvalid : ~_GEN_16 & axi_awvalid;
+            axi_wvalid <= _GEN_7 ? _GEN_5 | axi_wvalid : ~_GEN_17 & axi_wvalid;
+            aw_done <= _GEN_7 ? ~_GEN_5 & aw_done : _GEN_16 | aw_done;
+            w_done <= _GEN_7 ? ~_GEN_5 & w_done : _GEN_17 | w_done;
           end
         end
-        if (_GEN_20 | ~_GEN_18) begin
+        if (_GEN_26 | ~_GEN_24) begin
         end else begin
           axi_awaddr <= move_dst_addr;
           axi_wdata  <= M_AXI_RDATA;
         end
-        if (~_GEN_17)
+        if (~_GEN_23)
           axi_arvalid <=
             _GEN_3
-              ? ~_GEN_16 & axi_arvalid
-              : (_GEN_4 | ~(_GEN_6 & _GEN_16)) & axi_arvalid;
+              ? ~_GEN_22 & axi_arvalid
+              : (_GEN_4 | ~(_GEN_6 & _GEN_22)) & axi_arvalid;
       end
-      if (_GEN_15) begin
-        automatic
-        logic [3:0][31:0]
-        _GEN_29 = {
-          {axi_araddr}, {_uart_cmd_UART_CMD_cmd_addr}, {_uart_cmd_UART_CMD_cmd_addr}, {axi_araddr}
-        };
-        axi_araddr <= _GEN_29[_uart_cmd_UART_CMD_cmd_type];
-      end
-      if (~(_GEN | _GEN_17)) begin
-        automatic logic _GEN_30;
-        _GEN_30 = _GEN_16 | axi_rready;
+      if (_GEN_21) axi_araddr <= casez_tmp;
+      if (~(_GEN | _GEN_23))
         axi_rready <=
           _GEN_3
-            ? _GEN_30
-            : _GEN_4 ? ~_GEN_5 & axi_rready : _GEN_6 ? _GEN_30 : ~_GEN_18 & axi_rready;
-      end
-      if (~_GEN_15 | _GEN_12 | _GEN_13 | ~_GEN_14) begin
+            ? _GEN_28
+            : _GEN_4 ? ~_GEN_5 & axi_rready : _GEN_6 ? _GEN_28 : ~_GEN_24 & axi_rready;
+      if (~_GEN_21 | _GEN_18 | _GEN_19 | ~_GEN_20) begin
       end else move_dst_addr <= _uart_cmd_UART_CMD_cmd_wdata;
-      if (_GEN | _GEN_20 | ~_GEN_18) begin
+      if (_GEN | _GEN_26 | ~_GEN_24) begin
       end else move_data_buf <= M_AXI_RDATA;
     end
   end  // always @(posedge)
@@ -609,14 +600,22 @@ module mmap_regs_32x32_r4 (
     output [31:0] MMAP_read_data
 );
 
-  reg  [31:0] regs_0;
-  reg  [31:0] regs_1;
-  reg  [31:0] regs_2;
-  reg  [31:0] regs_3;
-  wire        _MMAP_read_data_T = MMAP_read_addr == 32'h10000;
-  wire        _MMAP_read_data_T_1 = MMAP_read_addr == 32'h14000;
-  wire        _MMAP_read_data_T_2 = MMAP_read_addr == 32'h18000;
-  wire        _MMAP_read_data_T_3 = MMAP_read_addr == 32'h1C000;
+  reg [31:0] regs_0;
+  reg [31:0] regs_1;
+  reg [31:0] regs_2;
+  reg [31:0] regs_3;
+  wire _MMAP_read_data_T = MMAP_read_addr == 32'h10000;
+  wire _MMAP_read_data_T_1 = MMAP_read_addr == 32'h14000;
+  wire _MMAP_read_data_T_2 = MMAP_read_addr == 32'h18000;
+  wire _MMAP_read_data_T_3 = MMAP_read_addr == 32'h1C000;
+  wire _write_addr_match_T = MMAP_write_addr == 32'h10000;
+  wire _write_addr_match_T_1 = MMAP_write_addr == 32'h14000;
+  wire _write_addr_match_T_2 = MMAP_write_addr == 32'h18000;
+  wire _write_addr_match_T_3 = MMAP_write_addr == 32'h1C000;
+  wire        _GEN =
+    MMAP_write_en
+    & (_write_addr_match_T | _write_addr_match_T_1 | _write_addr_match_T_2
+       | _write_addr_match_T_3);
   always @(posedge clock) begin
     if (reset) begin
       regs_0 <= 32'h0;
@@ -624,16 +623,6 @@ module mmap_regs_32x32_r4 (
       regs_2 <= 32'h0;
       regs_3 <= 32'h0;
     end else begin
-      automatic logic _write_addr_match_T = MMAP_write_addr == 32'h10000;
-      automatic logic _write_addr_match_T_1 = MMAP_write_addr == 32'h14000;
-      automatic logic _write_addr_match_T_2 = MMAP_write_addr == 32'h18000;
-      automatic logic _write_addr_match_T_3 = MMAP_write_addr == 32'h1C000;
-      automatic
-      logic
-      _GEN =
-        MMAP_write_en
-        & (_write_addr_match_T | _write_addr_match_T_1 | _write_addr_match_T_2
-           | _write_addr_match_T_3);
       if (_GEN & _write_addr_match_T) regs_0 <= MMAP_write_data;
       if (_GEN & _write_addr_match_T_1) regs_1 <= MMAP_write_data;
       if (_GEN & _write_addr_match_T_2) regs_2 <= MMAP_write_data;
@@ -680,6 +669,8 @@ module axilite_slave_mmap_32x32_r4 (
   reg  [31:0] axi_araddr;
   reg  [31:0] axi_rdata;
   reg         axi_rvalid;
+  wire        _GEN = ~axi_awready & S_AXI_AWVALID;
+  wire        _GEN_0 = ~axi_arready & S_AXI_ARVALID;
   always @(posedge clock) begin
     if (reset) begin
       axi_awready <= 1'h0;
@@ -691,8 +682,6 @@ module axilite_slave_mmap_32x32_r4 (
       axi_rdata   <= 32'h0;
       axi_rvalid  <= 1'h0;
     end else begin
-      automatic logic _GEN = ~axi_awready & S_AXI_AWVALID;
-      automatic logic _GEN_0 = ~axi_arready & S_AXI_ARVALID;
       axi_awready <= _GEN;
       if (_GEN) axi_awaddr <= S_AXI_AWADDR;
       axi_wready <=
@@ -750,9 +739,22 @@ module ram_32x32_s8_b131072 (
   wire [31:0] _aw_offset_addr_T = RAM_write_addr - 32'h20000;
   wire [31:0] _ar_offset_addr_T = RAM_read_addr - 32'h20000;
   wire ar_valid = (|(RAM_read_addr[31:17])) & _ar_offset_addr_T < 32'h20;
-  wire [2:0]       _mem_addr_T_3 =
+  wire [2:0]  _mem_addr_T_3 =
     RAM_read_en ? _ar_offset_addr_T[4:2] : RAM_write_en ? _aw_offset_addr_T[4:2] : 3'h0;
-  wire [7:0][31:0] _GEN = {{ram_7}, {ram_6}, {ram_5}, {ram_4}, {ram_3}, {ram_2}, {ram_1}, {ram_0}};
+  reg [31:0] casez_tmp;
+  always_comb begin
+    casez (_mem_addr_T_3)
+      3'b000:  casez_tmp = ram_0;
+      3'b001:  casez_tmp = ram_1;
+      3'b010:  casez_tmp = ram_2;
+      3'b011:  casez_tmp = ram_3;
+      3'b100:  casez_tmp = ram_4;
+      3'b101:  casez_tmp = ram_5;
+      3'b110:  casez_tmp = ram_6;
+      default: casez_tmp = ram_7;
+    endcase
+  end  // always_comb
+  wire _GEN = RAM_write_en & (|(RAM_write_addr[31:17])) & _aw_offset_addr_T < 32'h20;
   always @(posedge clock) begin
     if (reset) begin
       ram_0 <= 32'h0;
@@ -764,20 +766,17 @@ module ram_32x32_s8_b131072 (
       ram_6 <= 32'h0;
       ram_7 <= 32'h0;
     end else begin
-      automatic
-      logic
-      _GEN_0 = RAM_write_en & (|(RAM_write_addr[31:17])) & _aw_offset_addr_T < 32'h20;
-      if (_GEN_0 & _mem_addr_T_3 == 3'h0) ram_0 <= RAM_write_data;
-      if (_GEN_0 & _mem_addr_T_3 == 3'h1) ram_1 <= RAM_write_data;
-      if (_GEN_0 & _mem_addr_T_3 == 3'h2) ram_2 <= RAM_write_data;
-      if (_GEN_0 & _mem_addr_T_3 == 3'h3) ram_3 <= RAM_write_data;
-      if (_GEN_0 & _mem_addr_T_3 == 3'h4) ram_4 <= RAM_write_data;
-      if (_GEN_0 & _mem_addr_T_3 == 3'h5) ram_5 <= RAM_write_data;
-      if (_GEN_0 & _mem_addr_T_3 == 3'h6) ram_6 <= RAM_write_data;
-      if (_GEN_0 & (&_mem_addr_T_3)) ram_7 <= RAM_write_data;
+      if (_GEN & _mem_addr_T_3 == 3'h0) ram_0 <= RAM_write_data;
+      if (_GEN & _mem_addr_T_3 == 3'h1) ram_1 <= RAM_write_data;
+      if (_GEN & _mem_addr_T_3 == 3'h2) ram_2 <= RAM_write_data;
+      if (_GEN & _mem_addr_T_3 == 3'h3) ram_3 <= RAM_write_data;
+      if (_GEN & _mem_addr_T_3 == 3'h4) ram_4 <= RAM_write_data;
+      if (_GEN & _mem_addr_T_3 == 3'h5) ram_5 <= RAM_write_data;
+      if (_GEN & _mem_addr_T_3 == 3'h6) ram_6 <= RAM_write_data;
+      if (_GEN & (&_mem_addr_T_3)) ram_7 <= RAM_write_data;
     end
   end  // always @(posedge)
-  assign RAM_read_data = RAM_read_en & ar_valid ? _GEN[_mem_addr_T_3] : 32'h0;
+  assign RAM_read_data = RAM_read_en & ar_valid ? casez_tmp : 32'h0;
   assign RAM_read_resp = ar_valid;
 endmodule
 
@@ -815,6 +814,31 @@ module axifull_slave_ram_32x32_i4_u1_s8_b131072 (
   reg  [ 7:0] axi_arlen_cntr;
   reg         axi_arv_arr_flag;
   reg         axi_rvalid;
+  reg  [31:0] casez_tmp;
+  always_comb begin
+    casez (axi_awburst)
+      2'b00:   casez_tmp = axi_awaddr;
+      2'b01:   casez_tmp = {axi_awaddr[31:2] + 30'h1, 2'h0};
+      2'b10:   casez_tmp = axi_awaddr;
+      default: casez_tmp = {2'h0, axi_awaddr[31:2] + 30'h1};
+    endcase
+  end  // always_comb
+  reg [31:0] casez_tmp_0;
+  always_comb begin
+    casez (axi_arburst)
+      2'b00:   casez_tmp_0 = axi_araddr;
+      2'b01:   casez_tmp_0 = {axi_araddr[31:2] + 30'h1, 2'h0};
+      2'b10:   casez_tmp_0 = axi_araddr;
+      default: casez_tmp_0 = {2'h0, S_AXI_ARADDR[31:2] + 30'h1};
+    endcase
+  end  // always_comb
+  wire _GEN = ~axi_awready & S_AXI_AWVALID & ~axi_awv_awr_flag;
+  wire _GEN_0 = _GEN & ~axi_arv_arr_flag;
+  wire _GEN_1 = ~axi_arready & S_AXI_ARVALID;
+  wire _GEN_2 = _GEN_1 & ~axi_awv_awr_flag & ~axi_arv_arr_flag;
+  wire _GEN_3 = axi_rvalid & S_AXI_RREADY;
+  wire _GEN_4 = axi_arlen_cntr == 8'h0;
+  wire _GEN_5 = _GEN_3 & _GEN_4;
   always @(posedge clock) begin
     if (reset) begin
       axi_awready <= 1'h0;
@@ -831,15 +855,6 @@ module axifull_slave_ram_32x32_i4_u1_s8_b131072 (
       axi_arv_arr_flag <= 1'h0;
       axi_rvalid <= 1'h0;
     end else begin
-      automatic logic _GEN = ~axi_awready & S_AXI_AWVALID & ~axi_awv_awr_flag;
-      automatic logic _GEN_0 = _GEN & ~axi_arv_arr_flag;
-      automatic logic _GEN_1 = ~axi_arready & S_AXI_ARVALID;
-      automatic logic _GEN_2 = _GEN_1 & ~axi_awv_awr_flag & ~axi_arv_arr_flag;
-      automatic logic _GEN_3 = axi_rvalid & S_AXI_RREADY;
-      automatic logic _GEN_4;
-      automatic logic _GEN_5;
-      _GEN_4 = axi_arlen_cntr == 8'h0;
-      _GEN_5 = _GEN_3 & _GEN_4;
       axi_awready <= _GEN_0 | axi_wready & axi_awready;
       axi_awv_awr_flag <= _GEN_0 | ~axi_wready & axi_awv_awr_flag;
       if (_GEN) begin
@@ -847,15 +862,7 @@ module axifull_slave_ram_32x32_i4_u1_s8_b131072 (
         axi_awburst <= 2'h1;
         axi_awlen_cntr <= 8'h0;
       end else if (axi_awlen_cntr == 8'h0 & axi_wready & S_AXI_WVALID) begin
-        automatic
-        logic [3:0][31:0]
-        _GEN_6 = {
-          {{2'h0, axi_awaddr[31:2] + 30'h1}},
-          {axi_awaddr},
-          {{axi_awaddr[31:2] + 30'h1, 2'h0}},
-          {axi_awaddr}
-        };
-        axi_awaddr <= _GEN_6[axi_awburst];
+        axi_awaddr <= casez_tmp;
         axi_awlen_cntr <= axi_awlen_cntr + 8'h1;
       end
       axi_wready <= ~axi_wready & S_AXI_WVALID & axi_awv_awr_flag;
@@ -868,15 +875,7 @@ module axifull_slave_ram_32x32_i4_u1_s8_b131072 (
         axi_arburst <= 2'h1;
         axi_arlen_cntr <= 8'h0;
       end else if (_GEN_4 & axi_rvalid & S_AXI_RREADY) begin
-        automatic
-        logic [3:0][31:0]
-        _GEN_7 = {
-          {{2'h0, S_AXI_ARADDR[31:2] + 30'h1}},
-          {axi_araddr},
-          {{axi_araddr[31:2] + 30'h1, 2'h0}},
-          {axi_araddr}
-        };
-        axi_araddr <= _GEN_7[axi_arburst];
+        axi_araddr <= casez_tmp_0;
         axi_arlen_cntr <= axi_arlen_cntr + 8'h1;
       end
       axi_arv_arr_flag <= _GEN_2 | ~_GEN_5 & axi_arv_arr_flag;
