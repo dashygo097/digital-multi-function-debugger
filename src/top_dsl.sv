@@ -547,143 +547,135 @@ module axilite_master_uart_cmd_32x32_b115200_f50000000(
 endmodule
 
 module axi_lite2full_32x32_i4_u1(
-  output        S_AXI_aw_ready,
-  input         S_AXI_aw_valid,
-  input  [31:0] S_AXI_aw_bits_addr,
-  output        S_AXI_w_ready,
-  input         S_AXI_w_valid,
-  input  [31:0] S_AXI_w_bits_data,
-  input         S_AXI_b_ready,
-  output        S_AXI_b_valid,
-                S_AXI_ar_ready,
-  input         S_AXI_ar_valid,
-  input  [31:0] S_AXI_ar_bits_addr,
-  input         S_AXI_r_ready,
-  output        S_AXI_r_valid,
-  output [31:0] S_AXI_r_bits_data,
-  input         M_AXI_aw_ready,
-  output        M_AXI_aw_valid,
-  output [31:0] M_AXI_aw_bits_addr,
-  input         M_AXI_w_ready,
-  output        M_AXI_w_valid,
-  output [31:0] M_AXI_w_bits_data,
-  output        M_AXI_b_ready,
-  input         M_AXI_b_valid,
-                M_AXI_ar_ready,
-  output        M_AXI_ar_valid,
-  output [31:0] M_AXI_ar_bits_addr,
-  output        M_AXI_r_ready,
-  input         M_AXI_r_valid,
-  input  [31:0] M_AXI_r_bits_data
+  input  [31:0] S_AXI_AWADDR,
+  input         S_AXI_AWVALID,
+  output        S_AXI_AWREADY,
+  input  [31:0] S_AXI_WDATA,
+  input         S_AXI_WVALID,
+  output        S_AXI_WREADY,
+                S_AXI_BVALID,
+  input         S_AXI_BREADY,
+  input  [31:0] S_AXI_ARADDR,
+  input         S_AXI_ARVALID,
+  output        S_AXI_ARREADY,
+  output [31:0] S_AXI_RDATA,
+  output        S_AXI_RVALID,
+  input         S_AXI_RREADY,
+  output [31:0] M_AXI_AWADDR,
+  output        M_AXI_AWVALID,
+  input         M_AXI_AWREADY,
+  output [31:0] M_AXI_WDATA,
+  output        M_AXI_WVALID,
+  input         M_AXI_WREADY,
+  output        M_AXI_BREADY,
+  input         M_AXI_BVALID,
+  output [31:0] M_AXI_ARADDR,
+  output        M_AXI_ARVALID,
+  input         M_AXI_ARREADY,
+  output        M_AXI_RREADY,
+  input  [31:0] M_AXI_RDATA,
+  input         M_AXI_RVALID
 );
 
-  assign S_AXI_aw_ready = M_AXI_aw_ready;
-  assign S_AXI_w_ready = M_AXI_w_ready;
-  assign S_AXI_b_valid = M_AXI_b_valid;
-  assign S_AXI_ar_ready = M_AXI_ar_ready;
-  assign S_AXI_r_valid = M_AXI_r_valid;
-  assign S_AXI_r_bits_data = M_AXI_r_bits_data;
-  assign M_AXI_aw_valid = S_AXI_aw_valid;
-  assign M_AXI_aw_bits_addr = S_AXI_aw_bits_addr;
-  assign M_AXI_w_valid = S_AXI_w_valid;
-  assign M_AXI_w_bits_data = S_AXI_w_bits_data;
-  assign M_AXI_b_ready = S_AXI_b_ready;
-  assign M_AXI_ar_valid = S_AXI_ar_valid;
-  assign M_AXI_ar_bits_addr = S_AXI_ar_bits_addr;
-  assign M_AXI_r_ready = S_AXI_r_ready;
+  assign S_AXI_AWREADY = M_AXI_AWREADY;
+  assign S_AXI_WREADY = M_AXI_WREADY;
+  assign S_AXI_BVALID = M_AXI_BVALID;
+  assign S_AXI_ARREADY = M_AXI_ARREADY;
+  assign S_AXI_RDATA = M_AXI_RDATA;
+  assign S_AXI_RVALID = M_AXI_RVALID;
+  assign M_AXI_AWADDR = S_AXI_AWADDR;
+  assign M_AXI_AWVALID = S_AXI_AWVALID;
+  assign M_AXI_WDATA = S_AXI_WDATA;
+  assign M_AXI_WVALID = S_AXI_WVALID;
+  assign M_AXI_BREADY = S_AXI_BREADY;
+  assign M_AXI_ARADDR = S_AXI_ARADDR;
+  assign M_AXI_ARVALID = S_AXI_ARVALID;
+  assign M_AXI_RREADY = S_AXI_RREADY;
 endmodule
 
 module axilite_interconnect2_32x32(
-  output        S_AXI_aw_ready,
-  input         S_AXI_aw_valid,
-  input  [31:0] S_AXI_aw_bits_addr,
-  output        S_AXI_w_ready,
-  input         S_AXI_w_valid,
-  input  [31:0] S_AXI_w_bits_data,
-  input         S_AXI_b_ready,
-  output        S_AXI_b_valid,
-                S_AXI_ar_ready,
-  input         S_AXI_ar_valid,
-  input  [31:0] S_AXI_ar_bits_addr,
-  input         S_AXI_r_ready,
-  output        S_AXI_r_valid,
-  output [31:0] S_AXI_r_bits_data,
-  input         M0_AXI_aw_ready,
-  output        M0_AXI_aw_valid,
-  output [31:0] M0_AXI_aw_bits_addr,
-  input         M0_AXI_w_ready,
-  output        M0_AXI_w_valid,
-  output [31:0] M0_AXI_w_bits_data,
-  output        M0_AXI_b_ready,
-  input         M0_AXI_b_valid,
-                M0_AXI_ar_ready,
-  output        M0_AXI_ar_valid,
-  output [31:0] M0_AXI_ar_bits_addr,
-  output        M0_AXI_r_ready,
-  input         M0_AXI_r_valid,
-  input  [31:0] M0_AXI_r_bits_data,
-  input         M1_AXI_aw_ready,
-  output        M1_AXI_aw_valid,
-  output [31:0] M1_AXI_aw_bits_addr,
-  input         M1_AXI_w_ready,
-  output        M1_AXI_w_valid,
-  output [31:0] M1_AXI_w_bits_data,
-  output        M1_AXI_b_ready,
-  input         M1_AXI_b_valid,
-                M1_AXI_ar_ready,
-  output        M1_AXI_ar_valid,
-  output [31:0] M1_AXI_ar_bits_addr,
-  output        M1_AXI_r_ready,
-  input         M1_AXI_r_valid,
-  input  [31:0] M1_AXI_r_bits_data
+  input  [31:0] S_AXI_AWADDR,
+  input         S_AXI_AWVALID,
+  output        S_AXI_AWREADY,
+  input  [31:0] S_AXI_WDATA,
+  input         S_AXI_WVALID,
+  output        S_AXI_WREADY,
+                S_AXI_BVALID,
+  input         S_AXI_BREADY,
+  input  [31:0] S_AXI_ARADDR,
+  input         S_AXI_ARVALID,
+  output        S_AXI_ARREADY,
+  output [31:0] S_AXI_RDATA,
+  output        S_AXI_RVALID,
+  input         S_AXI_RREADY,
+  output [31:0] M_AXI_0_AWADDR,
+  output        M_AXI_0_AWVALID,
+  input         M_AXI_0_AWREADY,
+  output [31:0] M_AXI_0_WDATA,
+  output        M_AXI_0_WVALID,
+  input         M_AXI_0_WREADY,
+                M_AXI_0_BVALID,
+  output        M_AXI_0_BREADY,
+  output [31:0] M_AXI_0_ARADDR,
+  output        M_AXI_0_ARVALID,
+  input         M_AXI_0_ARREADY,
+  input  [31:0] M_AXI_0_RDATA,
+  input         M_AXI_0_RVALID,
+  output        M_AXI_0_RREADY,
+  output [31:0] M_AXI_1_AWADDR,
+  output        M_AXI_1_AWVALID,
+  input         M_AXI_1_AWREADY,
+  output [31:0] M_AXI_1_WDATA,
+  output        M_AXI_1_WVALID,
+  input         M_AXI_1_WREADY,
+                M_AXI_1_BVALID,
+  output        M_AXI_1_BREADY,
+  output [31:0] M_AXI_1_ARADDR,
+  output        M_AXI_1_ARVALID,
+  input         M_AXI_1_ARREADY,
+  input  [31:0] M_AXI_1_RDATA,
+  input         M_AXI_1_RVALID,
+  output        M_AXI_1_RREADY
 );
 
-  wire _S_AXI_b_bits_T_11 = S_AXI_aw_bits_addr < 32'h30000;
-  wire _S_AXI_r_bits_T_11 = S_AXI_ar_bits_addr < 32'h30000;
-  assign S_AXI_aw_ready =
-    ~((|(S_AXI_aw_bits_addr[31:17])) & _S_AXI_b_bits_T_11) & M0_AXI_aw_ready
-    | (|(S_AXI_aw_bits_addr[31:17])) & _S_AXI_b_bits_T_11 & M1_AXI_aw_ready;
-  assign S_AXI_w_ready =
-    ~((|(S_AXI_aw_bits_addr[31:17])) & _S_AXI_b_bits_T_11) & M0_AXI_w_ready
-    | (|(S_AXI_aw_bits_addr[31:17])) & _S_AXI_b_bits_T_11 & M1_AXI_w_ready;
-  assign S_AXI_b_valid =
-    ~((|(S_AXI_aw_bits_addr[31:17])) & _S_AXI_b_bits_T_11) & M0_AXI_b_valid
-    | (|(S_AXI_aw_bits_addr[31:17])) & _S_AXI_b_bits_T_11 & M1_AXI_b_valid;
-  assign S_AXI_ar_ready =
-    ~((|(S_AXI_ar_bits_addr[31:17])) & _S_AXI_r_bits_T_11) & M0_AXI_ar_ready
-    | (|(S_AXI_ar_bits_addr[31:17])) & _S_AXI_r_bits_T_11 & M1_AXI_ar_ready;
-  assign S_AXI_r_valid =
-    ~((|(S_AXI_ar_bits_addr[31:17])) & _S_AXI_r_bits_T_11) & M0_AXI_r_valid
-    | (|(S_AXI_ar_bits_addr[31:17])) & _S_AXI_r_bits_T_11 & M1_AXI_r_valid;
-  assign S_AXI_r_bits_data =
-    ((|(S_AXI_ar_bits_addr[31:17])) & _S_AXI_r_bits_T_11 ? 32'h0 : M0_AXI_r_bits_data)
-    | ((|(S_AXI_ar_bits_addr[31:17])) & _S_AXI_r_bits_T_11 ? M1_AXI_r_bits_data : 32'h0);
-  assign M0_AXI_aw_valid =
-    S_AXI_aw_valid & ~((|(S_AXI_aw_bits_addr[31:17])) & _S_AXI_b_bits_T_11);
-  assign M0_AXI_aw_bits_addr = S_AXI_aw_bits_addr;
-  assign M0_AXI_w_valid =
-    S_AXI_w_valid & ~((|(S_AXI_aw_bits_addr[31:17])) & _S_AXI_b_bits_T_11);
-  assign M0_AXI_w_bits_data = S_AXI_w_bits_data;
-  assign M0_AXI_b_ready =
-    S_AXI_b_ready & ~((|(S_AXI_aw_bits_addr[31:17])) & _S_AXI_b_bits_T_11);
-  assign M0_AXI_ar_valid =
-    S_AXI_ar_valid & ~((|(S_AXI_ar_bits_addr[31:17])) & _S_AXI_r_bits_T_11);
-  assign M0_AXI_ar_bits_addr = S_AXI_ar_bits_addr;
-  assign M0_AXI_r_ready =
-    S_AXI_r_ready & ~((|(S_AXI_ar_bits_addr[31:17])) & _S_AXI_r_bits_T_11);
-  assign M1_AXI_aw_valid =
-    S_AXI_aw_valid & (|(S_AXI_aw_bits_addr[31:17])) & _S_AXI_b_bits_T_11;
-  assign M1_AXI_aw_bits_addr = S_AXI_aw_bits_addr;
-  assign M1_AXI_w_valid =
-    S_AXI_w_valid & (|(S_AXI_aw_bits_addr[31:17])) & _S_AXI_b_bits_T_11;
-  assign M1_AXI_w_bits_data = S_AXI_w_bits_data;
-  assign M1_AXI_b_ready =
-    S_AXI_b_ready & (|(S_AXI_aw_bits_addr[31:17])) & _S_AXI_b_bits_T_11;
-  assign M1_AXI_ar_valid =
-    S_AXI_ar_valid & (|(S_AXI_ar_bits_addr[31:17])) & _S_AXI_r_bits_T_11;
-  assign M1_AXI_ar_bits_addr = S_AXI_ar_bits_addr;
-  assign M1_AXI_r_ready =
-    S_AXI_r_ready & (|(S_AXI_ar_bits_addr[31:17])) & _S_AXI_r_bits_T_11;
+  wire _slave_b_bits_T_11 = S_AXI_AWADDR < 32'h30000;
+  wire _slave_r_bits_T_11 = S_AXI_ARADDR < 32'h30000;
+  assign S_AXI_AWREADY =
+    ~((|(S_AXI_AWADDR[31:17])) & _slave_b_bits_T_11) & M_AXI_0_AWREADY
+    | (|(S_AXI_AWADDR[31:17])) & _slave_b_bits_T_11 & M_AXI_1_AWREADY;
+  assign S_AXI_WREADY =
+    ~((|(S_AXI_AWADDR[31:17])) & _slave_b_bits_T_11) & M_AXI_0_WREADY
+    | (|(S_AXI_AWADDR[31:17])) & _slave_b_bits_T_11 & M_AXI_1_WREADY;
+  assign S_AXI_BVALID =
+    ~((|(S_AXI_AWADDR[31:17])) & _slave_b_bits_T_11) & M_AXI_0_BVALID
+    | (|(S_AXI_AWADDR[31:17])) & _slave_b_bits_T_11 & M_AXI_1_BVALID;
+  assign S_AXI_ARREADY =
+    ~((|(S_AXI_ARADDR[31:17])) & _slave_r_bits_T_11) & M_AXI_0_ARREADY
+    | (|(S_AXI_ARADDR[31:17])) & _slave_r_bits_T_11 & M_AXI_1_ARREADY;
+  assign S_AXI_RDATA =
+    ((|(S_AXI_ARADDR[31:17])) & _slave_r_bits_T_11 ? 32'h0 : M_AXI_0_RDATA)
+    | ((|(S_AXI_ARADDR[31:17])) & _slave_r_bits_T_11 ? M_AXI_1_RDATA : 32'h0);
+  assign S_AXI_RVALID =
+    ~((|(S_AXI_ARADDR[31:17])) & _slave_r_bits_T_11) & M_AXI_0_RVALID
+    | (|(S_AXI_ARADDR[31:17])) & _slave_r_bits_T_11 & M_AXI_1_RVALID;
+  assign M_AXI_0_AWADDR = S_AXI_AWADDR;
+  assign M_AXI_0_AWVALID =
+    S_AXI_AWVALID & ~((|(S_AXI_AWADDR[31:17])) & _slave_b_bits_T_11);
+  assign M_AXI_0_WDATA = S_AXI_WDATA;
+  assign M_AXI_0_WVALID = S_AXI_WVALID & ~((|(S_AXI_AWADDR[31:17])) & _slave_b_bits_T_11);
+  assign M_AXI_0_BREADY = S_AXI_BREADY & ~((|(S_AXI_AWADDR[31:17])) & _slave_b_bits_T_11);
+  assign M_AXI_0_ARADDR = S_AXI_ARADDR;
+  assign M_AXI_0_ARVALID =
+    S_AXI_ARVALID & ~((|(S_AXI_ARADDR[31:17])) & _slave_r_bits_T_11);
+  assign M_AXI_0_RREADY = S_AXI_RREADY & ~((|(S_AXI_ARADDR[31:17])) & _slave_r_bits_T_11);
+  assign M_AXI_1_AWADDR = S_AXI_AWADDR;
+  assign M_AXI_1_AWVALID = S_AXI_AWVALID & (|(S_AXI_AWADDR[31:17])) & _slave_b_bits_T_11;
+  assign M_AXI_1_WDATA = S_AXI_WDATA;
+  assign M_AXI_1_WVALID = S_AXI_WVALID & (|(S_AXI_AWADDR[31:17])) & _slave_b_bits_T_11;
+  assign M_AXI_1_BREADY = S_AXI_BREADY & (|(S_AXI_AWADDR[31:17])) & _slave_b_bits_T_11;
+  assign M_AXI_1_ARADDR = S_AXI_ARADDR;
+  assign M_AXI_1_ARVALID = S_AXI_ARVALID & (|(S_AXI_ARADDR[31:17])) & _slave_r_bits_T_11;
+  assign M_AXI_1_RREADY = S_AXI_RREADY & (|(S_AXI_ARADDR[31:17])) & _slave_r_bits_T_11;
 endmodule
 
 module mmap_regs_32x32_r4(
@@ -1055,42 +1047,42 @@ module axi_cmd_test_module(
   wire        _slave1_S_AXI_ARREADY;
   wire [31:0] _slave1_S_AXI_RDATA;
   wire        _slave1_S_AXI_RVALID;
-  wire        _interconnect_S_AXI_aw_ready;
-  wire        _interconnect_S_AXI_w_ready;
-  wire        _interconnect_S_AXI_b_valid;
-  wire        _interconnect_S_AXI_ar_ready;
-  wire        _interconnect_S_AXI_r_valid;
-  wire [31:0] _interconnect_S_AXI_r_bits_data;
-  wire        _interconnect_M0_AXI_aw_valid;
-  wire [31:0] _interconnect_M0_AXI_aw_bits_addr;
-  wire        _interconnect_M0_AXI_w_valid;
-  wire [31:0] _interconnect_M0_AXI_w_bits_data;
-  wire        _interconnect_M0_AXI_b_ready;
-  wire        _interconnect_M0_AXI_ar_valid;
-  wire [31:0] _interconnect_M0_AXI_ar_bits_addr;
-  wire        _interconnect_M0_AXI_r_ready;
-  wire        _interconnect_M1_AXI_aw_valid;
-  wire [31:0] _interconnect_M1_AXI_aw_bits_addr;
-  wire        _interconnect_M1_AXI_w_valid;
-  wire [31:0] _interconnect_M1_AXI_w_bits_data;
-  wire        _interconnect_M1_AXI_b_ready;
-  wire        _interconnect_M1_AXI_ar_valid;
-  wire [31:0] _interconnect_M1_AXI_ar_bits_addr;
-  wire        _interconnect_M1_AXI_r_ready;
-  wire        _lite2fullBridge_S_AXI_aw_ready;
-  wire        _lite2fullBridge_S_AXI_w_ready;
-  wire        _lite2fullBridge_S_AXI_b_valid;
-  wire        _lite2fullBridge_S_AXI_ar_ready;
-  wire        _lite2fullBridge_S_AXI_r_valid;
-  wire [31:0] _lite2fullBridge_S_AXI_r_bits_data;
-  wire        _lite2fullBridge_M_AXI_aw_valid;
-  wire [31:0] _lite2fullBridge_M_AXI_aw_bits_addr;
-  wire        _lite2fullBridge_M_AXI_w_valid;
-  wire [31:0] _lite2fullBridge_M_AXI_w_bits_data;
-  wire        _lite2fullBridge_M_AXI_b_ready;
-  wire        _lite2fullBridge_M_AXI_ar_valid;
-  wire [31:0] _lite2fullBridge_M_AXI_ar_bits_addr;
-  wire        _lite2fullBridge_M_AXI_r_ready;
+  wire        _interconnect_S_AXI_AWREADY;
+  wire        _interconnect_S_AXI_WREADY;
+  wire        _interconnect_S_AXI_BVALID;
+  wire        _interconnect_S_AXI_ARREADY;
+  wire [31:0] _interconnect_S_AXI_RDATA;
+  wire        _interconnect_S_AXI_RVALID;
+  wire [31:0] _interconnect_M_AXI_0_AWADDR;
+  wire        _interconnect_M_AXI_0_AWVALID;
+  wire [31:0] _interconnect_M_AXI_0_WDATA;
+  wire        _interconnect_M_AXI_0_WVALID;
+  wire        _interconnect_M_AXI_0_BREADY;
+  wire [31:0] _interconnect_M_AXI_0_ARADDR;
+  wire        _interconnect_M_AXI_0_ARVALID;
+  wire        _interconnect_M_AXI_0_RREADY;
+  wire [31:0] _interconnect_M_AXI_1_AWADDR;
+  wire        _interconnect_M_AXI_1_AWVALID;
+  wire [31:0] _interconnect_M_AXI_1_WDATA;
+  wire        _interconnect_M_AXI_1_WVALID;
+  wire        _interconnect_M_AXI_1_BREADY;
+  wire [31:0] _interconnect_M_AXI_1_ARADDR;
+  wire        _interconnect_M_AXI_1_ARVALID;
+  wire        _interconnect_M_AXI_1_RREADY;
+  wire        _lite2fullBridge_S_AXI_AWREADY;
+  wire        _lite2fullBridge_S_AXI_WREADY;
+  wire        _lite2fullBridge_S_AXI_BVALID;
+  wire        _lite2fullBridge_S_AXI_ARREADY;
+  wire [31:0] _lite2fullBridge_S_AXI_RDATA;
+  wire        _lite2fullBridge_S_AXI_RVALID;
+  wire [31:0] _lite2fullBridge_M_AXI_AWADDR;
+  wire        _lite2fullBridge_M_AXI_AWVALID;
+  wire [31:0] _lite2fullBridge_M_AXI_WDATA;
+  wire        _lite2fullBridge_M_AXI_WVALID;
+  wire        _lite2fullBridge_M_AXI_BREADY;
+  wire [31:0] _lite2fullBridge_M_AXI_ARADDR;
+  wire        _lite2fullBridge_M_AXI_ARVALID;
+  wire        _lite2fullBridge_M_AXI_RREADY;
   wire [31:0] _master_M_AXI_AWADDR;
   wire        _master_M_AXI_AWVALID;
   wire [31:0] _master_M_AXI_WDATA;
@@ -1104,128 +1096,128 @@ module axi_cmd_test_module(
     .reset         (reset),
     .M_AXI_AWADDR  (_master_M_AXI_AWADDR),
     .M_AXI_AWVALID (_master_M_AXI_AWVALID),
-    .M_AXI_AWREADY (_interconnect_S_AXI_aw_ready),
+    .M_AXI_AWREADY (_interconnect_S_AXI_AWREADY),
     .M_AXI_WDATA   (_master_M_AXI_WDATA),
     .M_AXI_WVALID  (_master_M_AXI_WVALID),
-    .M_AXI_WREADY  (_interconnect_S_AXI_w_ready),
-    .M_AXI_BVALID  (_interconnect_S_AXI_b_valid),
+    .M_AXI_WREADY  (_interconnect_S_AXI_WREADY),
+    .M_AXI_BVALID  (_interconnect_S_AXI_BVALID),
     .M_AXI_BREADY  (_master_M_AXI_BREADY),
     .M_AXI_ARADDR  (_master_M_AXI_ARADDR),
     .M_AXI_ARVALID (_master_M_AXI_ARVALID),
-    .M_AXI_ARREADY (_interconnect_S_AXI_ar_ready),
-    .M_AXI_RDATA   (_interconnect_S_AXI_r_bits_data),
-    .M_AXI_RVALID  (_interconnect_S_AXI_r_valid),
+    .M_AXI_ARREADY (_interconnect_S_AXI_ARREADY),
+    .M_AXI_RDATA   (_interconnect_S_AXI_RDATA),
+    .M_AXI_RVALID  (_interconnect_S_AXI_RVALID),
     .M_AXI_RREADY  (_master_M_AXI_RREADY),
     .TX            (TXD),
     .RX            (RXD)
   );
   axi_lite2full_32x32_i4_u1 lite2fullBridge (
-    .S_AXI_aw_ready     (_lite2fullBridge_S_AXI_aw_ready),
-    .S_AXI_aw_valid     (_interconnect_M1_AXI_aw_valid),
-    .S_AXI_aw_bits_addr (_interconnect_M1_AXI_aw_bits_addr),
-    .S_AXI_w_ready      (_lite2fullBridge_S_AXI_w_ready),
-    .S_AXI_w_valid      (_interconnect_M1_AXI_w_valid),
-    .S_AXI_w_bits_data  (_interconnect_M1_AXI_w_bits_data),
-    .S_AXI_b_ready      (_interconnect_M1_AXI_b_ready),
-    .S_AXI_b_valid      (_lite2fullBridge_S_AXI_b_valid),
-    .S_AXI_ar_ready     (_lite2fullBridge_S_AXI_ar_ready),
-    .S_AXI_ar_valid     (_interconnect_M1_AXI_ar_valid),
-    .S_AXI_ar_bits_addr (_interconnect_M1_AXI_ar_bits_addr),
-    .S_AXI_r_ready      (_interconnect_M1_AXI_r_ready),
-    .S_AXI_r_valid      (_lite2fullBridge_S_AXI_r_valid),
-    .S_AXI_r_bits_data  (_lite2fullBridge_S_AXI_r_bits_data),
-    .M_AXI_aw_ready     (_slave2_S_AXI_AWREADY),
-    .M_AXI_aw_valid     (_lite2fullBridge_M_AXI_aw_valid),
-    .M_AXI_aw_bits_addr (_lite2fullBridge_M_AXI_aw_bits_addr),
-    .M_AXI_w_ready      (_slave2_S_AXI_WREADY),
-    .M_AXI_w_valid      (_lite2fullBridge_M_AXI_w_valid),
-    .M_AXI_w_bits_data  (_lite2fullBridge_M_AXI_w_bits_data),
-    .M_AXI_b_ready      (_lite2fullBridge_M_AXI_b_ready),
-    .M_AXI_b_valid      (_slave2_S_AXI_BVALID),
-    .M_AXI_ar_ready     (_slave2_S_AXI_ARREADY),
-    .M_AXI_ar_valid     (_lite2fullBridge_M_AXI_ar_valid),
-    .M_AXI_ar_bits_addr (_lite2fullBridge_M_AXI_ar_bits_addr),
-    .M_AXI_r_ready      (_lite2fullBridge_M_AXI_r_ready),
-    .M_AXI_r_valid      (_slave2_S_AXI_RVALID),
-    .M_AXI_r_bits_data  (_slave2_S_AXI_RDATA)
+    .S_AXI_AWADDR  (_interconnect_M_AXI_1_AWADDR),
+    .S_AXI_AWVALID (_interconnect_M_AXI_1_AWVALID),
+    .S_AXI_AWREADY (_lite2fullBridge_S_AXI_AWREADY),
+    .S_AXI_WDATA   (_interconnect_M_AXI_1_WDATA),
+    .S_AXI_WVALID  (_interconnect_M_AXI_1_WVALID),
+    .S_AXI_WREADY  (_lite2fullBridge_S_AXI_WREADY),
+    .S_AXI_BVALID  (_lite2fullBridge_S_AXI_BVALID),
+    .S_AXI_BREADY  (_interconnect_M_AXI_1_BREADY),
+    .S_AXI_ARADDR  (_interconnect_M_AXI_1_ARADDR),
+    .S_AXI_ARVALID (_interconnect_M_AXI_1_ARVALID),
+    .S_AXI_ARREADY (_lite2fullBridge_S_AXI_ARREADY),
+    .S_AXI_RDATA   (_lite2fullBridge_S_AXI_RDATA),
+    .S_AXI_RVALID  (_lite2fullBridge_S_AXI_RVALID),
+    .S_AXI_RREADY  (_interconnect_M_AXI_1_RREADY),
+    .M_AXI_AWADDR  (_lite2fullBridge_M_AXI_AWADDR),
+    .M_AXI_AWVALID (_lite2fullBridge_M_AXI_AWVALID),
+    .M_AXI_AWREADY (_slave2_S_AXI_AWREADY),
+    .M_AXI_WDATA   (_lite2fullBridge_M_AXI_WDATA),
+    .M_AXI_WVALID  (_lite2fullBridge_M_AXI_WVALID),
+    .M_AXI_WREADY  (_slave2_S_AXI_WREADY),
+    .M_AXI_BREADY  (_lite2fullBridge_M_AXI_BREADY),
+    .M_AXI_BVALID  (_slave2_S_AXI_BVALID),
+    .M_AXI_ARADDR  (_lite2fullBridge_M_AXI_ARADDR),
+    .M_AXI_ARVALID (_lite2fullBridge_M_AXI_ARVALID),
+    .M_AXI_ARREADY (_slave2_S_AXI_ARREADY),
+    .M_AXI_RREADY  (_lite2fullBridge_M_AXI_RREADY),
+    .M_AXI_RDATA   (_slave2_S_AXI_RDATA),
+    .M_AXI_RVALID  (_slave2_S_AXI_RVALID)
   );
   axilite_interconnect2_32x32 interconnect_0 (
-    .S_AXI_aw_ready      (_interconnect_S_AXI_aw_ready),
-    .S_AXI_aw_valid      (_master_M_AXI_AWVALID),
-    .S_AXI_aw_bits_addr  (_master_M_AXI_AWADDR),
-    .S_AXI_w_ready       (_interconnect_S_AXI_w_ready),
-    .S_AXI_w_valid       (_master_M_AXI_WVALID),
-    .S_AXI_w_bits_data   (_master_M_AXI_WDATA),
-    .S_AXI_b_ready       (_master_M_AXI_BREADY),
-    .S_AXI_b_valid       (_interconnect_S_AXI_b_valid),
-    .S_AXI_ar_ready      (_interconnect_S_AXI_ar_ready),
-    .S_AXI_ar_valid      (_master_M_AXI_ARVALID),
-    .S_AXI_ar_bits_addr  (_master_M_AXI_ARADDR),
-    .S_AXI_r_ready       (_master_M_AXI_RREADY),
-    .S_AXI_r_valid       (_interconnect_S_AXI_r_valid),
-    .S_AXI_r_bits_data   (_interconnect_S_AXI_r_bits_data),
-    .M0_AXI_aw_ready     (_slave1_S_AXI_AWREADY),
-    .M0_AXI_aw_valid     (_interconnect_M0_AXI_aw_valid),
-    .M0_AXI_aw_bits_addr (_interconnect_M0_AXI_aw_bits_addr),
-    .M0_AXI_w_ready      (_slave1_S_AXI_WREADY),
-    .M0_AXI_w_valid      (_interconnect_M0_AXI_w_valid),
-    .M0_AXI_w_bits_data  (_interconnect_M0_AXI_w_bits_data),
-    .M0_AXI_b_ready      (_interconnect_M0_AXI_b_ready),
-    .M0_AXI_b_valid      (_slave1_S_AXI_BVALID),
-    .M0_AXI_ar_ready     (_slave1_S_AXI_ARREADY),
-    .M0_AXI_ar_valid     (_interconnect_M0_AXI_ar_valid),
-    .M0_AXI_ar_bits_addr (_interconnect_M0_AXI_ar_bits_addr),
-    .M0_AXI_r_ready      (_interconnect_M0_AXI_r_ready),
-    .M0_AXI_r_valid      (_slave1_S_AXI_RVALID),
-    .M0_AXI_r_bits_data  (_slave1_S_AXI_RDATA),
-    .M1_AXI_aw_ready     (_lite2fullBridge_S_AXI_aw_ready),
-    .M1_AXI_aw_valid     (_interconnect_M1_AXI_aw_valid),
-    .M1_AXI_aw_bits_addr (_interconnect_M1_AXI_aw_bits_addr),
-    .M1_AXI_w_ready      (_lite2fullBridge_S_AXI_w_ready),
-    .M1_AXI_w_valid      (_interconnect_M1_AXI_w_valid),
-    .M1_AXI_w_bits_data  (_interconnect_M1_AXI_w_bits_data),
-    .M1_AXI_b_ready      (_interconnect_M1_AXI_b_ready),
-    .M1_AXI_b_valid      (_lite2fullBridge_S_AXI_b_valid),
-    .M1_AXI_ar_ready     (_lite2fullBridge_S_AXI_ar_ready),
-    .M1_AXI_ar_valid     (_interconnect_M1_AXI_ar_valid),
-    .M1_AXI_ar_bits_addr (_interconnect_M1_AXI_ar_bits_addr),
-    .M1_AXI_r_ready      (_interconnect_M1_AXI_r_ready),
-    .M1_AXI_r_valid      (_lite2fullBridge_S_AXI_r_valid),
-    .M1_AXI_r_bits_data  (_lite2fullBridge_S_AXI_r_bits_data)
+    .S_AXI_AWADDR    (_master_M_AXI_AWADDR),
+    .S_AXI_AWVALID   (_master_M_AXI_AWVALID),
+    .S_AXI_AWREADY   (_interconnect_S_AXI_AWREADY),
+    .S_AXI_WDATA     (_master_M_AXI_WDATA),
+    .S_AXI_WVALID    (_master_M_AXI_WVALID),
+    .S_AXI_WREADY    (_interconnect_S_AXI_WREADY),
+    .S_AXI_BVALID    (_interconnect_S_AXI_BVALID),
+    .S_AXI_BREADY    (_master_M_AXI_BREADY),
+    .S_AXI_ARADDR    (_master_M_AXI_ARADDR),
+    .S_AXI_ARVALID   (_master_M_AXI_ARVALID),
+    .S_AXI_ARREADY   (_interconnect_S_AXI_ARREADY),
+    .S_AXI_RDATA     (_interconnect_S_AXI_RDATA),
+    .S_AXI_RVALID    (_interconnect_S_AXI_RVALID),
+    .S_AXI_RREADY    (_master_M_AXI_RREADY),
+    .M_AXI_0_AWADDR  (_interconnect_M_AXI_0_AWADDR),
+    .M_AXI_0_AWVALID (_interconnect_M_AXI_0_AWVALID),
+    .M_AXI_0_AWREADY (_slave1_S_AXI_AWREADY),
+    .M_AXI_0_WDATA   (_interconnect_M_AXI_0_WDATA),
+    .M_AXI_0_WVALID  (_interconnect_M_AXI_0_WVALID),
+    .M_AXI_0_WREADY  (_slave1_S_AXI_WREADY),
+    .M_AXI_0_BVALID  (_slave1_S_AXI_BVALID),
+    .M_AXI_0_BREADY  (_interconnect_M_AXI_0_BREADY),
+    .M_AXI_0_ARADDR  (_interconnect_M_AXI_0_ARADDR),
+    .M_AXI_0_ARVALID (_interconnect_M_AXI_0_ARVALID),
+    .M_AXI_0_ARREADY (_slave1_S_AXI_ARREADY),
+    .M_AXI_0_RDATA   (_slave1_S_AXI_RDATA),
+    .M_AXI_0_RVALID  (_slave1_S_AXI_RVALID),
+    .M_AXI_0_RREADY  (_interconnect_M_AXI_0_RREADY),
+    .M_AXI_1_AWADDR  (_interconnect_M_AXI_1_AWADDR),
+    .M_AXI_1_AWVALID (_interconnect_M_AXI_1_AWVALID),
+    .M_AXI_1_AWREADY (_lite2fullBridge_S_AXI_AWREADY),
+    .M_AXI_1_WDATA   (_interconnect_M_AXI_1_WDATA),
+    .M_AXI_1_WVALID  (_interconnect_M_AXI_1_WVALID),
+    .M_AXI_1_WREADY  (_lite2fullBridge_S_AXI_WREADY),
+    .M_AXI_1_BVALID  (_lite2fullBridge_S_AXI_BVALID),
+    .M_AXI_1_BREADY  (_interconnect_M_AXI_1_BREADY),
+    .M_AXI_1_ARADDR  (_interconnect_M_AXI_1_ARADDR),
+    .M_AXI_1_ARVALID (_interconnect_M_AXI_1_ARVALID),
+    .M_AXI_1_ARREADY (_lite2fullBridge_S_AXI_ARREADY),
+    .M_AXI_1_RDATA   (_lite2fullBridge_S_AXI_RDATA),
+    .M_AXI_1_RVALID  (_lite2fullBridge_S_AXI_RVALID),
+    .M_AXI_1_RREADY  (_interconnect_M_AXI_1_RREADY)
   );
   axilite_slave_mmap_32x32_r4 slave1 (
     .clock         (clock),
     .reset         (reset),
-    .S_AXI_AWADDR  (_interconnect_M0_AXI_aw_bits_addr),
-    .S_AXI_AWVALID (_interconnect_M0_AXI_aw_valid),
+    .S_AXI_AWADDR  (_interconnect_M_AXI_0_AWADDR),
+    .S_AXI_AWVALID (_interconnect_M_AXI_0_AWVALID),
     .S_AXI_AWREADY (_slave1_S_AXI_AWREADY),
-    .S_AXI_WDATA   (_interconnect_M0_AXI_w_bits_data),
-    .S_AXI_WVALID  (_interconnect_M0_AXI_w_valid),
+    .S_AXI_WDATA   (_interconnect_M_AXI_0_WDATA),
+    .S_AXI_WVALID  (_interconnect_M_AXI_0_WVALID),
     .S_AXI_WREADY  (_slave1_S_AXI_WREADY),
     .S_AXI_BVALID  (_slave1_S_AXI_BVALID),
-    .S_AXI_BREADY  (_interconnect_M0_AXI_b_ready),
-    .S_AXI_ARADDR  (_interconnect_M0_AXI_ar_bits_addr),
-    .S_AXI_ARVALID (_interconnect_M0_AXI_ar_valid),
+    .S_AXI_BREADY  (_interconnect_M_AXI_0_BREADY),
+    .S_AXI_ARADDR  (_interconnect_M_AXI_0_ARADDR),
+    .S_AXI_ARVALID (_interconnect_M_AXI_0_ARVALID),
     .S_AXI_ARREADY (_slave1_S_AXI_ARREADY),
     .S_AXI_RDATA   (_slave1_S_AXI_RDATA),
     .S_AXI_RVALID  (_slave1_S_AXI_RVALID),
-    .S_AXI_RREADY  (_interconnect_M0_AXI_r_ready)
+    .S_AXI_RREADY  (_interconnect_M_AXI_0_RREADY)
   );
   axifull_slave_ram_32x32_i4_u1_s8_b131072 slave2 (
     .clock         (clock),
     .reset         (reset),
-    .S_AXI_AWADDR  (_lite2fullBridge_M_AXI_aw_bits_addr),
-    .S_AXI_AWVALID (_lite2fullBridge_M_AXI_aw_valid),
+    .S_AXI_AWADDR  (_lite2fullBridge_M_AXI_AWADDR),
+    .S_AXI_AWVALID (_lite2fullBridge_M_AXI_AWVALID),
     .S_AXI_AWREADY (_slave2_S_AXI_AWREADY),
-    .S_AXI_WDATA   (_lite2fullBridge_M_AXI_w_bits_data),
-    .S_AXI_WVALID  (_lite2fullBridge_M_AXI_w_valid),
+    .S_AXI_WDATA   (_lite2fullBridge_M_AXI_WDATA),
+    .S_AXI_WVALID  (_lite2fullBridge_M_AXI_WVALID),
     .S_AXI_WREADY  (_slave2_S_AXI_WREADY),
-    .S_AXI_BREADY  (_lite2fullBridge_M_AXI_b_ready),
+    .S_AXI_BREADY  (_lite2fullBridge_M_AXI_BREADY),
     .S_AXI_BVALID  (_slave2_S_AXI_BVALID),
-    .S_AXI_ARADDR  (_lite2fullBridge_M_AXI_ar_bits_addr),
-    .S_AXI_ARVALID (_lite2fullBridge_M_AXI_ar_valid),
+    .S_AXI_ARADDR  (_lite2fullBridge_M_AXI_ARADDR),
+    .S_AXI_ARVALID (_lite2fullBridge_M_AXI_ARVALID),
     .S_AXI_ARREADY (_slave2_S_AXI_ARREADY),
-    .S_AXI_RREADY  (_lite2fullBridge_M_AXI_r_ready),
+    .S_AXI_RREADY  (_lite2fullBridge_M_AXI_RREADY),
     .S_AXI_RDATA   (_slave2_S_AXI_RDATA),
     .S_AXI_RVALID  (_slave2_S_AXI_RVALID)
   );
