@@ -32,10 +32,6 @@ const createMainWindow = () => {
   let serialPorts: Electron.SerialPort[] = [];
   let grantedDeviceThroughPermHandler: Electron.USBDevice;
 
-  ipcMain.handle("usb-get-devices", () => {
-    return usbDevices;
-  });
-
   mainWindow.webContents.session.on(
     "select-usb-device",
     (event, details, callback) => {
@@ -62,6 +58,7 @@ const createMainWindow = () => {
       }
     },
   );
+
   mainWindow.webContents.session.on("usb-device-added", (event, device) => {
     console.log("Detected new USB device:", device);
     usbDevices.push(device);
@@ -69,10 +66,6 @@ const createMainWindow = () => {
   mainWindow.webContents.session.on("usb-device-removed", (event, device) => {
     console.log("USB device removed:", device);
     usbDevices = usbDevices.filter((d) => d.deviceId !== device.deviceId);
-  });
-
-  ipcMain.handle("serial-get-ports", () => {
-    return serialPorts;
   });
 
   mainWindow.webContents.session.on(
@@ -91,12 +84,22 @@ const createMainWindow = () => {
   );
 
   mainWindow.webContents.session.on("serial-port-added", (event, port) => {
-    console.log("Detected new Serial Port:", port);
+    console.log("IPC: Detected new Serial Port:", port);
     serialPorts.push(port);
   });
   mainWindow.webContents.session.on("serial-port-removed", (event, port) => {
-    console.log("Serial Port removed:", port);
+    console.log("IPC: Serial Port removed:", port);
     serialPorts = serialPorts.filter((p) => p.portId !== port.portId);
+  });
+
+  // USB IPC handlers
+  ipcMain.handle("usb-get-devices", () => {
+    return usbDevices;
+  });
+
+  // Serial IPC handlers
+  ipcMain.handle("serial-get-ports", () => {
+    return serialPorts;
   });
 
   ipcMain.handle("serial-open", async (event, portPath, options) => {
