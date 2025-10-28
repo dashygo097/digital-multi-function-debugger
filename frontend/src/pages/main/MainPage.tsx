@@ -1,7 +1,7 @@
 import React from "react";
 
 import { WithRouter, WithRouterProps } from "@utils";
-import { USBDeviceList, AnalogSignalData, SerialTerminal } from "@components";
+import { AnalogSignalData, SerialTerminal, UDPTerminal } from "@components";
 import "@styles/main.css";
 
 interface MainPageState {
@@ -22,8 +22,8 @@ class MainPage extends React.Component<WithRouterProps, MainPageState> {
     return (
       <div className="main-page">
         <h1>Control Panel</h1>
-        <USBDeviceList className="main-usblist" />
         <SerialTerminal className="main-serialterminal" />
+        <UDPTerminal bridgeUrl="ws://localhost:8080" />
       </div>
     );
   }
