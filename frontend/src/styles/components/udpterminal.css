@@ -1,14 +1,14 @@
-.main-serialterminal {
+.main-udpterminal {
   width: 95%;
   max-width: 1400px;
-  margin: 0 auto;
+  margin: 20px auto;
   padding: 20px;
   font-family:
     "Segoe UI",
     system-ui,
     -apple-system,
     sans-serif;
-  background: linear-gradient(135deg, #1f1f1f 0%, #4a4a4a 100%);
+  background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
   border-radius: 20px;
   box-shadow:
     0 8px 32px 0 rgba(31, 38, 135, 0.37),
@@ -37,8 +37,26 @@
   }
 }
 
+/* Glass reflection effect */
+.main-udpterminal::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 40%;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.15) 0%,
+    transparent 100%
+  );
+  border-radius: 20px 20px 0 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
 /* Control Panel - Left Side */
-.main-serialterminal .control-panel {
+.main-udpterminal .control-panel {
   grid-column: 1;
   grid-row: 1 / -1;
   background: rgba(255, 255, 255, 0.1);
@@ -58,21 +76,96 @@
   overflow-y: auto;
 }
 
-.main-serialterminal .control-panel::-webkit-scrollbar {
+.main-udpterminal .control-panel::-webkit-scrollbar {
   width: 6px;
 }
 
-.main-serialterminal .control-panel::-webkit-scrollbar-track {
+.main-udpterminal .control-panel::-webkit-scrollbar-track {
   background: rgba(255, 255, 255, 0.05);
   border-radius: 3px;
 }
 
-.main-serialterminal .control-panel::-webkit-scrollbar-thumb {
+.main-udpterminal .control-panel::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.3);
   border-radius: 3px;
 }
 
-.main-serialterminal .section {
+/* Connection Status Row */
+.main-udpterminal .connection-status {
+  background: linear-gradient(
+    135deg,
+    rgba(102, 126, 234, 0.15) 0%,
+    rgba(118, 75, 162, 0.15) 100%
+  );
+  border: 1px solid rgba(102, 126, 234, 0.3);
+  padding: 12px;
+  border-radius: 10px;
+}
+
+.main-udpterminal .status-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.main-udpterminal .status-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: all 0.3s ease;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.main-udpterminal .status-indicator.connected {
+  color: #48bb78;
+  background: rgba(72, 187, 120, 0.15);
+  border-color: rgba(72, 187, 120, 0.3);
+  text-shadow: 0 0 8px rgba(72, 187, 120, 0.6);
+  box-shadow: 0 0 12px rgba(72, 187, 120, 0.2);
+}
+
+.main-udpterminal .status-indicator.disconnected {
+  color: #cbd5e0;
+  background: rgba(203, 213, 224, 0.1);
+  border-color: rgba(203, 213, 224, 0.2);
+}
+
+.main-udpterminal .last-response {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.7);
+  margin-top: 4px;
+  padding: 4px 8px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+  font-style: italic;
+}
+
+.main-udpterminal .warning {
+  color: #f6ad55;
+  font-weight: 600;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.6;
+  }
+}
+
+/* Section Styling */
+.main-udpterminal .section {
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -83,12 +176,12 @@
   transition: all 0.3s ease;
 }
 
-.main-serialterminal .section:hover {
+.main-udpterminal .section:hover {
   background: rgba(255, 255, 255, 0.1);
   border-color: rgba(255, 255, 255, 0.3);
 }
 
-.main-serialterminal .section label {
+.main-udpterminal .section label {
   color: rgba(255, 255, 255, 0.9);
   font-weight: 600;
   font-size: 12px;
@@ -97,64 +190,26 @@
   letter-spacing: 0.5px;
 }
 
-/* Port section with horizontal layout */
-.main-serialterminal .section:first-child {
-  flex-direction: row;
-  align-items: center;
-  gap: 8px;
-  background: linear-gradient(
-    135deg,
-    rgba(102, 126, 234, 0.2) 0%,
-    rgba(118, 75, 162, 0.2) 100%
-  );
-  border: 1px solid rgba(102, 126, 234, 0.3);
-}
-
-.main-serialterminal .section:first-child label {
-  flex-shrink: 0;
-  margin-bottom: 0;
-}
-
-.main-serialterminal .section:first-child select {
-  flex: 1;
-  max-width: 80px;
-}
-
-.main-serialterminal .section:first-child button {
-  flex-shrink: 0;
-  width: auto;
-  min-width: 20px;
-  padding: 8px 12px;
-  background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  font-size: 16px;
-}
-
-.main-serialterminal .section:first-child button:hover:not(:disabled) {
-  background: linear-gradient(135deg, #3182ce 0%, #2b6cb0 100%);
-  box-shadow: 0 4px 16px rgba(66, 153, 225, 0.5);
-}
-
-.main-serialterminal select,
-.main-serialterminal input[type="text"] {
+/* Input Fields */
+.main-udpterminal input[type="number"],
+.main-udpterminal input[type="text"],
+.main-udpterminal select {
   background: rgba(255, 255, 255, 0.9);
   border: 1px solid rgba(255, 255, 255, 0.3);
-  min-width: 80%;
   border-radius: 8px;
   padding: 8px 10px;
   color: #2d3748;
   font-size: 13px;
-  font-style: italic;
-  font-variant: initial;
   font-weight: 500;
   outline: none;
   transition: all 0.3s ease;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  width: 100%;
+  width: 90%;
 }
 
-.main-serialterminal select:focus,
-.main-serialterminal input[type="text"]:focus {
+.main-udpterminal input[type="number"]:focus,
+.main-udpterminal input[type="text"]:focus,
+.main-udpterminal select:focus {
   background: rgba(255, 255, 255, 1);
   border-color: rgba(102, 126, 234, 0.6);
   box-shadow:
@@ -163,21 +218,38 @@
   transform: translateY(-1px);
 }
 
-.main-serialterminal select:disabled,
-.main-serialterminal input[type="text"]:disabled {
+.main-udpterminal input:disabled,
+.main-udpterminal select:disabled {
   background: rgba(255, 255, 255, 0.5);
   color: rgba(45, 55, 72, 0.5);
   cursor: not-allowed;
 }
 
-/* Buttons */
-.main-serialterminal .buttons {
+/* Checkbox Styling */
+.main-udpterminal input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: #667eea;
+}
+
+.main-udpterminal label:has(input[type="checkbox"]) {
   display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  text-transform: none;
+}
+
+/* Buttons */
+.main-udpterminal .buttons {
+  display: flex;
+  flex-direction: column;
   gap: 8px;
   margin-top: 8px;
 }
 
-.main-serialterminal button {
+.main-udpterminal button {
   background: rgba(255, 255, 255, 0.2);
   border: 1px solid rgba(255, 255, 255, 0.3);
   border-radius: 10px;
@@ -193,19 +265,19 @@
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-.main-serialterminal button:hover:not(:disabled) {
+.main-udpterminal button:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.3);
   border-color: rgba(255, 255, 255, 0.5);
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
 }
 
-.main-serialterminal button:active:not(:disabled) {
+.main-udpterminal button:active:not(:disabled) {
   transform: translateY(0);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
-.main-serialterminal button:disabled {
+.main-udpterminal button:disabled {
   background: rgba(255, 255, 255, 0.1);
   border-color: rgba(255, 255, 255, 0.1);
   color: rgba(255, 255, 255, 0.4);
@@ -213,64 +285,65 @@
   transform: none;
 }
 
-.main-serialterminal .btn-primary {
+.main-udpterminal .btn-primary {
   background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
   border: 1px solid rgba(255, 255, 255, 0.4);
   box-shadow: 0 4px 16px rgba(72, 187, 120, 0.3);
 }
 
-.main-serialterminal .btn-primary:hover:not(:disabled) {
+.main-udpterminal .btn-primary:hover:not(:disabled) {
   background: linear-gradient(135deg, #38a169 0%, #2f855a 100%);
   box-shadow: 0 6px 24px rgba(72, 187, 120, 0.5);
 }
 
-.main-serialterminal .btn-secondary {
+.main-udpterminal .btn-secondary {
   background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
   border: 1px solid rgba(255, 255, 255, 0.4);
   box-shadow: 0 4px 16px rgba(66, 153, 225, 0.3);
 }
 
-.main-serialterminal .btn-secondary:hover:not(:disabled) {
+.main-udpterminal .btn-secondary:hover:not(:disabled) {
   background: linear-gradient(135deg, #3182ce 0%, #2b6cb0 100%);
   box-shadow: 0 6px 24px rgba(66, 153, 225, 0.5);
 }
 
-.main-serialterminal .btn-danger {
+.main-udpterminal .btn-danger {
   background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
   border: 1px solid rgba(255, 255, 255, 0.4);
   box-shadow: 0 4px 16px rgba(245, 101, 101, 0.3);
 }
 
-.main-serialterminal .btn-danger:hover:not(:disabled) {
+.main-udpterminal .btn-danger:hover:not(:disabled) {
   background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
   box-shadow: 0 6px 24px rgba(245, 101, 101, 0.5);
 }
 
-/* Clear and Export buttons with colors */
-.main-serialterminal .buttons button:nth-child(2) {
+/* Clear button - Orange */
+.main-udpterminal .buttons button:nth-last-child(2) {
   background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
   border: 1px solid rgba(255, 255, 255, 0.4);
   box-shadow: 0 4px 16px rgba(237, 137, 54, 0.3);
 }
 
-.main-serialterminal .buttons button:nth-child(2):hover:not(:disabled) {
+.main-udpterminal .buttons button:nth-last-child(2):hover:not(:disabled) {
   background: linear-gradient(135deg, #dd6b20 0%, #c05621 100%);
   box-shadow: 0 6px 24px rgba(237, 137, 54, 0.5);
 }
 
-.main-serialterminal .buttons button:nth-child(3) {
+/* Export button - Purple */
+.main-udpterminal .buttons button:last-child {
   background: linear-gradient(135deg, #9f7aea 0%, #805ad5 100%);
   border: 1px solid rgba(255, 255, 255, 0.4);
   box-shadow: 0 4px 16px rgba(159, 122, 234, 0.3);
 }
 
-.main-serialterminal .buttons button:nth-child(3):hover:not(:disabled) {
+.main-udpterminal .buttons button:last-child:hover:not(:disabled) {
   background: linear-gradient(135deg, #805ad5 0%, #6b46c1 100%);
   box-shadow: 0 6px 24px rgba(159, 122, 234, 0.5);
 }
 
 /* Stats */
-.main-serialterminal .stats {
+.main-udpterminal .stats {
   padding: 10px 12px;
   background: linear-gradient(
     135deg,
@@ -279,25 +352,16 @@
   );
   border-radius: 8px;
   color: white;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
   border: 1px solid rgba(255, 255, 255, 0.15);
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
   margin-top: auto;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
-.main-serialterminal .stats strong {
-  color: #fbbf24;
-  font-size: 15px;
-  text-shadow: 0 0 10px rgba(251, 191, 36, 0.5);
-}
-
 /* Terminal Display - Right Side */
-.main-serialterminal .terminal {
+.main-udpterminal .terminal {
   grid-column: 2;
   grid-row: 1 / 3;
   max-height: 380px;
@@ -322,16 +386,16 @@
   z-index: 1;
 }
 
-.main-serialterminal .terminal::-webkit-scrollbar {
+.main-udpterminal .terminal::-webkit-scrollbar {
   width: 8px;
 }
 
-.main-serialterminal .terminal::-webkit-scrollbar-track {
+.main-udpterminal .terminal::-webkit-scrollbar-track {
   background: rgba(255, 255, 255, 0.05);
   border-radius: 4px;
 }
 
-.main-serialterminal .terminal::-webkit-scrollbar-thumb {
+.main-udpterminal .terminal::-webkit-scrollbar-thumb {
   background: linear-gradient(
     180deg,
     rgba(102, 126, 234, 0.5) 0%,
@@ -341,7 +405,7 @@
   transition: background 0.3s ease;
 }
 
-.main-serialterminal .terminal::-webkit-scrollbar-thumb:hover {
+.main-udpterminal .terminal::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(
     180deg,
     rgba(102, 126, 234, 0.7) 0%,
@@ -349,7 +413,8 @@
   );
 }
 
-.main-serialterminal .message {
+/* Message Styling */
+.main-udpterminal .message {
   margin-bottom: 6px;
   padding: 6px 10px;
   border-radius: 6px;
@@ -374,38 +439,38 @@
   }
 }
 
-.main-serialterminal .message:hover {
+.main-udpterminal .message:hover {
   background: rgba(255, 255, 255, 0.08);
 }
 
-.main-serialterminal .message.tx {
+.main-udpterminal .message.tx {
   border-left-color: #48bb78;
   background: rgba(72, 187, 120, 0.05);
 }
 
-.main-serialterminal .message.rx {
+.main-udpterminal .message.rx {
   border-left-color: #4299e1;
   background: rgba(66, 153, 225, 0.05);
 }
 
-.main-serialterminal .message.info {
+.main-udpterminal .message.info {
   border-left-color: #ed8936;
   background: rgba(237, 137, 54, 0.05);
 }
 
-.main-serialterminal .message.error {
+.main-udpterminal .message.error {
   border-left-color: #f56565;
   background: rgba(245, 101, 101, 0.15);
 }
 
-.main-serialterminal .timestamp {
+.main-udpterminal .timestamp {
   color: rgba(255, 255, 255, 0.5);
   font-size: 10px;
   min-width: 85px;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
-.main-serialterminal .direction {
+.main-udpterminal .direction {
   color: white;
   font-weight: 700;
   min-width: 45px;
@@ -413,27 +478,37 @@
   font-size: 11px;
 }
 
-.main-serialterminal .message.tx .direction {
+.main-udpterminal .message.tx .direction {
   color: #48bb78;
   text-shadow: 0 0 8px rgba(72, 187, 120, 0.6);
 }
 
-.main-serialterminal .message.rx .direction {
+.main-udpterminal .message.rx .direction {
   color: #4299e1;
   text-shadow: 0 0 8px rgba(66, 153, 225, 0.6);
 }
 
-.main-serialterminal .message.info .direction {
+.main-udpterminal .message.info .direction {
   color: #ed8936;
   text-shadow: 0 0 8px rgba(237, 137, 54, 0.6);
 }
 
-.main-serialterminal .message.error .direction {
+.main-udpterminal .message.error .direction {
   color: #f56565;
   text-shadow: 0 0 8px rgba(245, 101, 101, 0.6);
 }
 
-.main-serialterminal .data {
+.main-udpterminal .source {
+  color: #9f7aea;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 6px;
+  background: rgba(159, 122, 234, 0.15);
+  border-radius: 4px;
+  text-shadow: 0 0 6px rgba(159, 122, 234, 0.5);
+}
+
+.main-udpterminal .data {
   color: rgba(255, 255, 255, 0.95);
   flex: 1;
   word-break: break-word;
@@ -441,7 +516,7 @@
 }
 
 /* Input Section - Bottom Right */
-.main-serialterminal .input-section {
+.main-udpterminal .input-section {
   grid-column: 2;
   grid-row: 3;
   display: flex;
@@ -451,8 +526,7 @@
   z-index: 1;
 }
 
-.main-serialterminal .text-input,
-.main-serialterminal .hex-input {
+.main-udpterminal .text-input {
   display: flex;
   gap: 10px;
   background: linear-gradient(
@@ -469,8 +543,7 @@
   transition: all 0.3s ease;
 }
 
-.main-serialterminal .text-input:focus-within,
-.main-serialterminal .hex-input:focus-within {
+.main-udpterminal .text-input:focus-within {
   background: linear-gradient(
     135deg,
     rgba(255, 255, 255, 0.18) 0%,
@@ -480,14 +553,13 @@
   box-shadow: 0 6px 24px rgba(102, 126, 234, 0.3);
 }
 
-.main-serialterminal .text-input input,
-.main-serialterminal .hex-input input {
+.main-udpterminal .text-input input {
   flex: 1;
   background: rgba(255, 255, 255, 0.95);
   border: 1px solid rgba(255, 255, 255, 0.3);
   border-radius: 8px;
   padding: 10px 12px;
-  font-size: 16px;
+  font-size: 14px;
   color: #2d3748;
   font-weight: 500;
   outline: none;
@@ -495,8 +567,7 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.main-serialterminal .text-input input:focus,
-.main-serialterminal .hex-input input:focus {
+.main-udpterminal .text-input input:focus {
   background: white;
   border-color: rgba(102, 126, 234, 0.6);
   box-shadow:
@@ -504,44 +575,36 @@
     0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-.main-serialterminal .text-input button,
-.main-serialterminal .hex-input button {
-  min-width: 30px;
-  padding: 8px 16px;
+.main-udpterminal .text-input input::placeholder {
+  color: rgba(45, 55, 72, 0.5);
+  font-style: italic;
 }
 
-.main-serialterminal .text-input button {
+.main-udpterminal .text-input button,
+.main-udpterminal .btn-send {
+  min-width: 100px;
+  padding: 10px 20px;
   background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
   border: 1px solid rgba(255, 255, 255, 0.4);
   box-shadow: 0 4px 12px rgba(72, 187, 120, 0.4);
 }
 
-.main-serialterminal .text-input button:hover:not(:disabled) {
+.main-udpterminal .text-input button:hover:not(:disabled),
+.main-udpterminal .btn-send:hover:not(:disabled) {
   background: linear-gradient(135deg, #38a169 0%, #2f855a 100%);
   box-shadow: 0 6px 20px rgba(72, 187, 120, 0.6);
 }
 
-.main-serialterminal .hex-input button {
-  background: linear-gradient(135deg, #9f7aea 0%, #805ad5 100%);
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  box-shadow: 0 4px 12px rgba(159, 122, 234, 0.4);
-}
-
-.main-serialterminal .hex-input button:hover:not(:disabled) {
-  background: linear-gradient(135deg, #805ad5 0%, #6b46c1 100%);
-  box-shadow: 0 6px 20px rgba(159, 122, 234, 0.6);
-}
-
 /* Responsive Design */
 @media (max-width: 1024px) {
-  .main-serialterminal {
+  .main-udpterminal {
     grid-template-columns: 1fr;
     grid-template-rows: auto auto 1fr auto;
     min-height: auto;
     padding: 12px;
   }
 
-  .main-serialterminal .control-panel {
+  .main-udpterminal .control-panel {
     grid-column: 1;
     grid-row: 1;
     flex-direction: row;
@@ -549,91 +612,51 @@
     overflow-y: visible;
   }
 
-  .main-serialterminal .section {
+  .main-udpterminal .section {
     flex: 1;
-    min-width: 120px;
+    min-width: 140px;
   }
 
-  .main-serialterminal .section:first-child {
-    min-width: 200px;
+  .main-udpterminal .connection-status {
+    width: 100%;
   }
 
-  .main-serialterminal .buttons {
+  .main-udpterminal .buttons {
     flex-direction: row;
     width: 100%;
   }
 
-  .main-serialterminal .buttons button {
-    flex: 1;
-  }
-
-  .main-serialterminal .stats {
-    width: 100%;
-    flex-direction: row;
-    gap: 12px;
-    flex-wrap: wrap;
-  }
-
-  .main-serialterminal .terminal {
+  .main-udpterminal .terminal {
     grid-column: 1;
     grid-row: 3;
     height: 320px;
     max-height: none;
   }
 
-  .main-serialterminal .input-section {
+  .main-udpterminal .input-section {
     grid-column: 1;
     grid-row: 4;
   }
 }
 
 @media (max-width: 640px) {
-  .main-serialterminal .control-panel {
+  .main-udpterminal .control-panel {
     flex-direction: column;
   }
 
-  .main-serialterminal .section {
+  .main-udpterminal .section {
     width: 100%;
   }
 
-  .main-serialterminal .section:first-child {
+  .main-udpterminal .buttons {
     flex-direction: column;
-    align-items: stretch;
   }
 
-  .main-serialterminal .section:first-child button {
+  .main-udpterminal .text-input {
+    flex-direction: column;
+  }
+
+  .main-udpterminal .text-input button {
     width: 100%;
   }
-
-  .main-serialterminal .buttons {
-    flex-direction: column;
-  }
-
-  .main-serialterminal .text-input,
-  .main-serialterminal .hex-input {
-    flex-direction: column;
-  }
-
-  .main-serialterminal .text-input button,
-  .main-serialterminal .hex-input button {
-    width: 100%;
-  }
-}
-
-/* Glass reflection effect */
-.main-serialterminal::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 40%;
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.15) 0%,
-    transparent 100%
-  );
-  border-radius: 20px 20px 0 0;
-  pointer-events: none;
-  z-index: 0;
 }

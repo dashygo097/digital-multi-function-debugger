@@ -60,7 +60,7 @@ export class UDPTerminal extends React.Component<
     this.state = {
       wsConnected: false,
       localPort: 8888,
-      fpgaHost: "192.168.1.100",
+      fpgaHost: "127.0.0.1",
       fpgaPort: 9999,
       isBound: false,
       messages: [],
@@ -94,8 +94,7 @@ export class UDPTerminal extends React.Component<
     }
   }
 
-  // ==================== WebSocket Connection ====================
-
+  // Web Socket
   private connectWebSocket = () => {
     const { bridgeUrl } = this.props;
 
@@ -250,8 +249,7 @@ export class UDPTerminal extends React.Component<
     }));
   };
 
-  // ==================== UDP Operations ====================
-
+  // UDP
   private bindUDP = () => {
     if (!this.state.wsConnected) {
       this.addMessage("ERROR", "Not connected to bridge");
@@ -360,8 +358,7 @@ export class UDPTerminal extends React.Component<
     }
   };
 
-  // ==================== UI Helpers ====================
-
+  // UI Helpers
   private addMessage = (
     direction: "TX" | "RX" | "INFO" | "ERROR",
     data: string,
@@ -598,7 +595,7 @@ export class UDPTerminal extends React.Component<
               disabled={!isBound}
               className="btn-send"
             >
-              Send to FPGA
+              Send
             </button>
           </div>
         </div>

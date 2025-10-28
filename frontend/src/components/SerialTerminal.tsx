@@ -12,7 +12,7 @@ interface SerialTerminalProps {
 }
 
 interface SerialTerminalState {
-  ports: SerialPort[]; // Web Serial API ports
+  ports: SerialPort[];
   selectedPort: SerialPort | null;
   selectedPortName: string;
   isConnected: boolean;
@@ -23,6 +23,11 @@ interface SerialTerminalState {
   inputMode: "TEXT" | "HEX";
   lineEnding: "NONE" | "LF" | "CR" | "CRLF";
   stats: { tx: number; rx: number; errors: number };
+  autoScroll: boolean;
+  showScrollIndicator: boolean;
+  newMessagesCount: number;
+  showHex: boolean;
+  hexPrefix: "0x" | "\\x" | "";
 }
 
 export class SerialTerminal extends React.Component<
@@ -30,6 +35,7 @@ export class SerialTerminal extends React.Component<
   SerialTerminalState
 > {
   private terminalEndRef: React.RefObject<HTMLDivElement>;
+  private terminalRef: React.RefObject<HTMLDivElement>;
   private writerRef: WritableStreamDefaultWriter<Uint8Array> | null = null;
   private readerRef: ReadableStreamDefaultReader<Uint8Array> | null = null;
   private shouldStopRef = false;
@@ -43,6 +49,7 @@ export class SerialTerminal extends React.Component<
   constructor(props: SerialTerminalProps) {
     super(props);
     this.terminalEndRef = React.createRef();
+    this.terminalRef = React.createRef();
     this.state = {
       ports: [],
       selectedPort: null,
@@ -55,6 +62,11 @@ export class SerialTerminal extends React.Component<
       inputMode: "TEXT",
       lineEnding: "NONE",
       stats: { tx: 0, rx: 0, errors: 0 },
+      autoScroll: true,
+      showScrollIndicator: false,
+      newMessagesCount: 0,
+      showHex: false,
+      hexPrefix: "0x",
     };
   }
 
@@ -75,9 +87,51 @@ export class SerialTerminal extends React.Component<
     prevState: SerialTerminalState,
   ) {
     if (prevState.messages.length !== this.state.messages.length) {
-      this.terminalEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      const terminal = this.terminalRef.current;
+      const isNearBottom = terminal
+        ? terminal.scrollHeight - terminal.scrollTop - terminal.clientHeight <
+          50
+        : true;
+
+      if (this.state.autoScroll) {
+        this.scrollToBottom();
+      } else if (!isNearBottom) {
+        // Increment new messages count
+        this.setState((prev) => ({
+          newMessagesCount: prev.newMessagesCount + 1,
+        }));
+      }
     }
   }
+
+  // ==================== Auto-scroll Methods ====================
+
+  private handleScroll = () => {
+    const terminal = this.terminalRef.current;
+    if (!terminal) return;
+
+    const { scrollTop, scrollHeight, clientHeight } = terminal;
+    const isNearBottom = scrollHeight - scrollTop - clientHeight < 50;
+
+    this.setState({
+      showScrollIndicator: !isNearBottom,
+      newMessagesCount: isNearBottom ? 0 : this.state.newMessagesCount,
+    });
+  };
+
+  private scrollToBottom = () => {
+    this.terminalEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    this.setState({ newMessagesCount: 0 });
+  };
+
+  private toggleAutoScroll = (checked: boolean) => {
+    this.setState({ autoScroll: checked });
+    if (checked) {
+      this.scrollToBottom();
+    }
+  };
+
+  // ==================== Serial Port Methods ====================
 
   private startAutoRefresh = () => {
     this.refreshInterval = setInterval(() => {
@@ -94,7 +148,6 @@ export class SerialTerminal extends React.Component<
 
       this.setState({ ports });
 
-      // If we had a selected port, try to keep it selected
       if (this.state.selectedPort) {
         const stillExists = ports.find((p) => p === this.state.selectedPort);
         if (!stillExists) {
@@ -146,7 +199,6 @@ export class SerialTerminal extends React.Component<
         `Connecting to ${this.state.selectedPortName} at ${this.state.baudRate} baud...`,
       );
 
-      // Close if already open
       try {
         await port.close();
         console.log("Closed previously open port");
@@ -166,7 +218,6 @@ export class SerialTerminal extends React.Component<
       });
       console.log("✓ Port opened");
 
-      // Set DTR/RTS signals
       try {
         await port.setSignals({
           dataTerminalReady: true,
@@ -225,9 +276,20 @@ export class SerialTerminal extends React.Component<
         }
 
         if (value && value.length > 0) {
-          const text = new TextDecoder().decode(value);
-          console.log("RX:", text);
-          this.addMessage("RX", text);
+          let displayText = new TextDecoder().decode(value);
+
+          if (this.state.showHex) {
+            const hexStr = Array.from(value)
+              .map((b) => {
+                const hex = b.toString(16).padStart(2, "0");
+                return `${this.state.hexPrefix}${hex}`;
+              })
+              .join(" ");
+            displayText = `${displayText} [${hexStr}]`;
+          }
+
+          console.log("RX:", displayText);
+          this.addMessage("RX", displayText);
           this.setState((prev) => ({
             stats: { ...prev.stats, rx: prev.stats.rx + 1 },
           }));
@@ -401,7 +463,7 @@ export class SerialTerminal extends React.Component<
         .split(/[\s,]+/)
         .filter((x) => x.length > 0)
         .map((x) => {
-          const cleaned = x.replace(/^0x/i, "");
+          const cleaned = x.replace(/^0x/i, "").replace(/^\\x/i, "");
           return parseInt(cleaned, 16);
         });
 
@@ -476,6 +538,7 @@ export class SerialTerminal extends React.Component<
     this.setState({
       messages: [],
       stats: { tx: 0, rx: 0, errors: 0 },
+      newMessagesCount: 0,
     });
   };
 
@@ -509,11 +572,19 @@ export class SerialTerminal extends React.Component<
       inputMode,
       lineEnding,
       stats,
+      autoScroll,
+      showScrollIndicator,
+      newMessagesCount,
+      showHex,
+      hexPrefix,
     } = this.state;
 
     return (
       <div className={className}>
         <div className="control-panel">
+          <div className="section">
+            <label>{isConnected ? "✓ Connected" : "○ Disconnected"}</label>
+          </div>
           <div className="section">
             <label>Port:</label>
             <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
@@ -539,7 +610,7 @@ export class SerialTerminal extends React.Component<
                 })}
               </select>
               <button onClick={this.refreshPorts} disabled={isConnected}>
-                Refresh
+                🔄
               </button>
             </div>
           </div>
@@ -562,6 +633,9 @@ export class SerialTerminal extends React.Component<
               <option value={460800}>460800</option>
               <option value={921600}>921600</option>
             </select>
+          </div>
+
+          <div className="section">
             <label>Line End:</label>
             <select
               value={lineEnding}
@@ -575,6 +649,9 @@ export class SerialTerminal extends React.Component<
               <option value="CR">CR (\r)</option>
               <option value="CRLF">CRLF (\r\n)</option>
             </select>
+          </div>
+
+          <div className="section">
             <label>Input Mode:</label>
             <select
               value={inputMode}
@@ -586,6 +663,42 @@ export class SerialTerminal extends React.Component<
               <option value="TEXT">Text</option>
               <option value="HEX">Hex</option>
             </select>
+            <label>
+              <input
+                type="checkbox"
+                checked={showHex}
+                onChange={(e) => this.setState({ showHex: e.target.checked })}
+              />
+              Show Hex
+            </label>
+            {showHex && (
+              <>
+                <label>Prefix:</label>
+                <select
+                  value={hexPrefix}
+                  onChange={(e) =>
+                    this.setState({ hexPrefix: e.target.value as any })
+                  }
+                >
+                  <option value="0x">0x</option>
+                  <option value="\x">\x</option>
+                  <option value="">None</option>
+                </select>
+              </>
+            )}
+          </div>
+
+          <div className="section">
+            <label>
+              <input
+                type="checkbox"
+                checked={autoScroll}
+                onChange={(e) =>
+                  this.setState({ autoScroll: e.target.checked })
+                }
+              />
+              Auto-scroll
+            </label>
           </div>
 
           <div className="buttons">
@@ -607,23 +720,45 @@ export class SerialTerminal extends React.Component<
           </div>
 
           <div className="stats">
-            TX: {stats.tx} | RX: {stats.rx} | Errors: {stats.errors} |{" "}
-            {isConnected ? "Connected" : "Disconnected"}
+            TX: {stats.tx} | RX: {stats.rx} | Errors: {stats.errors}
           </div>
         </div>
 
-        <div className="terminal">
-          {messages.map((msg) => (
-            <div
-              key={msg.id}
-              className={`message ${msg.direction.toLowerCase()}`}
-            >
-              <span className="timestamp">[{msg.timestamp}]</span>
-              <span className="direction">{msg.direction}:</span>
-              <span className="data">{msg.data}</span>
+        <div className="terminal-wrapper">
+          {/* New messages badge */}
+          {!autoScroll && newMessagesCount > 0 && (
+            <div className="new-messages-badge visible">
+              +{newMessagesCount} new
             </div>
-          ))}
-          <div ref={this.terminalEndRef} />
+          )}
+
+          {/* Terminal */}
+          <div
+            className={`terminal ${!autoScroll ? "auto-scroll-disabled" : ""}`}
+            ref={this.terminalRef}
+            onScroll={this.handleScroll}
+          >
+            {messages.map((msg) => (
+              <div
+                key={msg.id}
+                className={`message ${msg.direction.toLowerCase()}`}
+              >
+                <span className="timestamp">[{msg.timestamp}]</span>
+                <span className="direction">{msg.direction}:</span>
+                <span className="data">{msg.data}</span>
+              </div>
+            ))}
+            <div ref={this.terminalEndRef} />
+          </div>
+
+          {/* Scroll to bottom button */}
+          {!autoScroll && showScrollIndicator && (
+            <div
+              className="scroll-indicator visible"
+              onClick={this.scrollToBottom}
+              title="Scroll to bottom"
+            />
+          )}
         </div>
 
         <div className="input-section">
