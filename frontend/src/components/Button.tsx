@@ -5,6 +5,7 @@ interface ButtonProps {
   type?: "button" | "submit" | "reset";
   className?: string;
   onClick?: () => void;
+  disabled?: boolean;
 }
 
 interface ButtonState {
@@ -34,6 +35,7 @@ export class Button extends React.Component<ButtonProps, ButtonState> {
         type={this.props.type || "button"}
         className={this.props.className}
         onClick={this.handleClick}
+        disabled={this.props.disabled || this.state.loading}
       >
         <>{this.props.children}</>
       </button>

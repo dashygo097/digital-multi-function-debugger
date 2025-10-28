@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React from "react";
 
 interface Message {
   timestamp: string;
@@ -11,114 +11,171 @@ interface SerialTerminalProps {
   className?: string;
 }
 
-export const SerialTerminal: React.FC<SerialTerminalProps> = ({
-  className = "serial-terminal",
-}) => {
-  const [ports, setPorts] = useState<Electron.SerialPort[]>([]);
-  const [selectedPort, setSelectedPort] = useState<string>("");
-  const [isConnected, setIsConnected] = useState(false);
-  const [baudRate, setBaudRate] = useState<number>(115200);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [inputText, setInputText] = useState("");
-  const [inputHex, setInputHex] = useState("");
-  const [inputMode, setInputMethod] = useState<"TEXT" | "HEX">("TEXT");
-  const [lineEnding, setLineEnding] = useState<"NONE" | "LF" | "CR" | "CRLF">(
-    "NONE",
-  );
-  const [stats, setStats] = useState({ tx: 0, rx: 0, errors: 0 });
-  const terminalEndRef = useRef<HTMLDivElement>(null);
+interface SerialTerminalState {
+  ports: SerialPort[]; // Web Serial API ports
+  selectedPort: SerialPort | null;
+  selectedPortName: string;
+  isConnected: boolean;
+  baudRate: number;
+  messages: Message[];
+  inputText: string;
+  inputHex: string;
+  inputMode: "TEXT" | "HEX";
+  lineEnding: "NONE" | "LF" | "CR" | "CRLF";
+  stats: { tx: number; rx: number; errors: number };
+}
 
-  const portRef = useRef<Electron.SerialPort | null>(null);
-  const writerRef = useRef<WritableStreamDefaultWriter<Uint8Array> | null>(
-    null,
-  );
-  const readerRef = useRef<ReadableStreamDefaultReader<Uint8Array> | null>(
-    null,
-  );
-  const shouldStopRef = useRef<boolean>(false);
-  const keepReading = useRef<boolean>(false);
+export class SerialTerminal extends React.Component<
+  SerialTerminalProps,
+  SerialTerminalState
+> {
+  private terminalEndRef: React.RefObject<HTMLDivElement>;
+  private writerRef: WritableStreamDefaultWriter<Uint8Array> | null = null;
+  private readerRef: ReadableStreamDefaultReader<Uint8Array> | null = null;
+  private shouldStopRef = false;
+  private keepReading = false;
+  private refreshInterval: NodeJS.Timeout | null = null;
 
-  useEffect(() => {
-    refreshPorts();
-    setupEventListeners();
-
-    return () => {
-      cleanupConnection();
-      window.serialAPI?.removeAllListeners();
-    };
-  }, []);
-
-  useEffect(() => {
-    terminalEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
-  const setupEventListeners = () => {
-    window.serialAPI?.onPortAdded(() => {
-      console.log("Port added event");
-      refreshPorts();
-    });
-
-    window.serialAPI?.onPortRemoved(() => {
-      console.log("Port removed event");
-      refreshPorts();
-    });
+  static defaultProps = {
+    className: "serial-terminal",
   };
 
-  const refreshPorts = async () => {
+  constructor(props: SerialTerminalProps) {
+    super(props);
+    this.terminalEndRef = React.createRef();
+    this.state = {
+      ports: [],
+      selectedPort: null,
+      selectedPortName: "",
+      isConnected: false,
+      baudRate: 115200,
+      messages: [],
+      inputText: "",
+      inputHex: "",
+      inputMode: "TEXT",
+      lineEnding: "NONE",
+      stats: { tx: 0, rx: 0, errors: 0 },
+    };
+  }
+
+  async componentDidMount() {
+    await this.refreshPorts();
+    this.startAutoRefresh();
+  }
+
+  componentWillUnmount() {
+    if (this.refreshInterval) {
+      clearInterval(this.refreshInterval);
+    }
+    this.cleanupConnection();
+  }
+
+  componentDidUpdate(
+    prevProps: SerialTerminalProps,
+    prevState: SerialTerminalState,
+  ) {
+    if (prevState.messages.length !== this.state.messages.length) {
+      this.terminalEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }
+
+  private startAutoRefresh = () => {
+    this.refreshInterval = setInterval(() => {
+      if (!this.state.isConnected) {
+        this.refreshPorts();
+      }
+    }, 2000);
+  };
+
+  private refreshPorts = async () => {
     try {
-      const availablePorts = await window.serialAPI?.getPorts();
-      setPorts(availablePorts || []);
-      console.log("Available ports:", availablePorts);
+      const ports = await navigator.serial.getPorts();
+      console.log(`Found ${ports.length} authorized ports`);
+
+      this.setState({ ports });
+
+      // If we had a selected port, try to keep it selected
+      if (this.state.selectedPort) {
+        const stillExists = ports.find((p) => p === this.state.selectedPort);
+        if (!stillExists) {
+          this.setState({ selectedPort: null, selectedPortName: "" });
+        }
+      }
     } catch (error) {
-      addMessage("ERROR", `Failed to get ports: ${error}`);
-      setStats((prev) => ({ ...prev, errors: prev.errors + 1 }));
+      console.error("Error refreshing ports:", error);
+      this.addMessage("ERROR", `Failed to refresh ports: ${error}`);
     }
   };
 
-  const connectPort = async () => {
-    if (!selectedPort) {
-      addMessage("ERROR", "Please select a port first");
-      setStats((prev) => ({ ...prev, errors: prev.errors + 1 }));
+  private requestPort = async () => {
+    try {
+      const port = await navigator.serial.requestPort({ filters: [] });
+      await this.refreshPorts();
+
+      // Auto-select the newly requested port
+      const portInfo = port.getInfo();
+      this.setState({
+        selectedPort: port,
+        selectedPortName: this.getPortDisplayName(port),
+      });
+
+      this.addMessage("INFO", "Port access granted");
+    } catch (error) {
+      console.log("Port request cancelled or failed:", error);
+    }
+  };
+
+  private getPortDisplayName = (port: SerialPort): string => {
+    const info = port.getInfo();
+    if (info.usbVendorId && info.usbProductId) {
+      return `USB Device (VID: 0x${info.usbVendorId.toString(16).padStart(4, "0")}, PID: 0x${info.usbProductId.toString(16).padStart(4, "0")})`;
+    }
+    return "Serial Port";
+  };
+
+  private handlePortSelection = (index: number) => {
+    if (this.state.isConnected) return;
+
+    if (index >= 0 && index < this.state.ports.length) {
+      const port = this.state.ports[index];
+      this.setState({
+        selectedPort: port,
+        selectedPortName: this.getPortDisplayName(port),
+      });
+    } else {
+      this.setState({ selectedPort: null, selectedPortName: "" });
+    }
+  };
+
+  private connectPort = async () => {
+    if (!this.state.selectedPort) {
+      this.addMessage("ERROR", "Please select a port first");
+      this.setState((prev) => ({
+        stats: { ...prev.stats, errors: prev.stats.errors + 1 },
+      }));
       return;
     }
 
+    const port = this.state.selectedPort;
+
     try {
-      addMessage(
+      this.addMessage(
         "INFO",
-        `Connecting to ${selectedPort} at ${baudRate} baud...`,
+        `Connecting to ${this.state.selectedPortName} at ${this.state.baudRate} baud...`,
       );
 
-      // Get all available Web Serial ports
-      const allPorts = await navigator.serial.getPorts();
-      console.log(`Found ${allPorts.length} authorized port(s)`);
-
-      let port: SerialPort;
-
-      if (allPorts.length > 0) {
-        // Use the first available port
-        port = allPorts[0];
-        const info = port.getInfo();
-        console.log("Using port:", info);
-
-        // If port is somehow open, close it first
-        try {
-          await port.close();
-          console.log("Closed previously open port");
-          await new Promise((r) => setTimeout(r, 500));
-        } catch (e) {
-          // Port wasn't open, that's fine
-        }
-      } else {
-        // Request port access from user
-        console.log("Requesting port access...");
-        port = await navigator.serial.requestPort({ filters: [] });
-        console.log("Port access granted");
+      // Close if already open
+      try {
+        await port.close();
+        console.log("Closed previously open port");
+        await new Promise((r) => setTimeout(r, 500));
+      } catch (e) {
+        // Port wasn't open, that's fine
       }
 
-      // Open the port with proper configuration
-      console.log(`Opening port with baudRate: ${baudRate}...`);
+      console.log(`Opening port with baudRate: ${this.state.baudRate}...`);
       await port.open({
-        baudRate: baudRate,
+        baudRate: this.state.baudRate,
         dataBits: 8,
         stopBits: 1,
         parity: "none",
@@ -127,7 +184,7 @@ export const SerialTerminal: React.FC<SerialTerminalProps> = ({
       });
       console.log("✓ Port opened");
 
-      // Set control signals (DTR/RTS) - critical for many devices
+      // Set DTR/RTS signals
       try {
         await port.setSignals({
           dataTerminalReady: true,
@@ -138,42 +195,37 @@ export const SerialTerminal: React.FC<SerialTerminalProps> = ({
         console.log("Could not set signals (may not be supported):", e);
       }
 
-      portRef.current = port;
-      shouldStopRef.current = false;
-      keepReading.current = true;
+      this.shouldStopRef = false;
+      this.keepReading = true;
 
-      // Get writer - DON'T close it until disconnect
       if (!port.writable) {
         throw new Error("Port is not writable");
       }
-      writerRef.current = port.writable.getWriter();
+      this.writerRef = port.writable.getWriter();
       console.log("✓ Writer ready");
 
-      // Get reader
       if (!port.readable) {
         throw new Error("Port is not readable");
       }
-      readerRef.current = port.readable.getReader();
+      this.readerRef = port.readable.getReader();
       console.log("✓ Reader ready");
 
-      // Start reading
-      readLoop();
+      this.readLoop();
 
-      setIsConnected(true);
-      addMessage("INFO", `✓ Connected at ${baudRate} baud`);
-
-      // Notify backend (for tracking only)
-      await window.serialAPI?.openPort(selectedPort, { baudRate });
+      this.setState({ isConnected: true });
+      this.addMessage("INFO", `✓ Connected at ${this.state.baudRate} baud`);
     } catch (error: any) {
       console.error("Connection failed:", error);
-      addMessage("ERROR", `Connection failed: ${error.message || error}`);
-      setStats((prev) => ({ ...prev, errors: prev.errors + 1 }));
-      await cleanupConnection();
+      this.addMessage("ERROR", `Connection failed: ${error.message || error}`);
+      this.setState((prev) => ({
+        stats: { ...prev.stats, errors: prev.stats.errors + 1 },
+      }));
+      await this.cleanupConnection();
     }
   };
 
-  const readLoop = async () => {
-    const reader = readerRef.current;
+  private readLoop = async () => {
+    const reader = this.readerRef;
     if (!reader) {
       console.error("No reader available");
       return;
@@ -182,7 +234,7 @@ export const SerialTerminal: React.FC<SerialTerminalProps> = ({
     console.log("Read loop started");
 
     try {
-      while (keepReading.current) {
+      while (this.keepReading) {
         const { value, done } = await reader.read();
 
         if (done) {
@@ -193,124 +245,127 @@ export const SerialTerminal: React.FC<SerialTerminalProps> = ({
         if (value && value.length > 0) {
           const text = new TextDecoder().decode(value);
           console.log("RX:", text);
-          addMessage("RX", text);
-          setStats((prev) => ({ ...prev, rx: prev.rx + 1 }));
+          this.addMessage("RX", text);
+          this.setState((prev) => ({
+            stats: { ...prev.stats, rx: prev.stats.rx + 1 },
+          }));
         }
       }
     } catch (error: any) {
-      if (shouldStopRef.current) {
+      if (this.shouldStopRef) {
         console.log("Read loop stopped by user");
         return;
       }
 
       if (error.name === "NetworkError" || error.name === "NotFoundError") {
         console.error("Device disconnected");
-        addMessage("ERROR", "Device disconnected");
-        await disconnectPort();
+        this.addMessage("ERROR", "Device disconnected");
+        await this.disconnectPort();
       } else if (error.name !== "AbortError") {
         console.error("Read error:", error);
-        addMessage("ERROR", `Read error: ${error.message}`);
-        setStats((prev) => ({ ...prev, errors: prev.errors + 1 }));
+        this.addMessage("ERROR", `Read error: ${error.message}`);
+        this.setState((prev) => ({
+          stats: { ...prev.stats, errors: prev.stats.errors + 1 },
+        }));
       }
     } finally {
       console.log("Read loop ended");
     }
   };
 
-  const cleanupConnection = async () => {
+  private cleanupConnection = async () => {
     console.log("=== Cleanup started ===");
 
-    shouldStopRef.current = true;
-    keepReading.current = false;
+    this.shouldStopRef = true;
+    this.keepReading = false;
 
-    // Small delay to let read loop exit gracefully
     await new Promise((r) => setTimeout(r, 100));
 
-    // Cancel and release reader
-    if (readerRef.current) {
+    if (this.readerRef) {
       try {
-        await readerRef.current.cancel();
+        await this.readerRef.cancel();
         console.log("✓ Reader canceled");
       } catch (e) {
         console.log("Reader cancel error:", e);
       }
-      readerRef.current = null;
+      try {
+        this.readerRef.releaseLock();
+      } catch (e) {
+        console.log("Reader release error:", e);
+      }
+      this.readerRef = null;
     }
 
-    // Release writer WITHOUT closing the stream
-    // This is important - closing the writer closes the underlying port!
-    if (writerRef.current) {
+    if (this.writerRef) {
       try {
-        await writerRef.current.releaseLock();
+        await this.writerRef.releaseLock();
         console.log("✓ Writer lock released");
       } catch (e) {
         console.log("Writer release error:", e);
       }
-      writerRef.current = null;
+      this.writerRef = null;
     }
 
-    // Now close the port itself
-    if (portRef.current) {
+    if (this.state.selectedPort) {
       try {
-        await portRef.current.close();
+        await this.state.selectedPort.close();
         console.log("✓ Port closed");
       } catch (e) {
         console.log("Port close error:", e);
       }
-      portRef.current = null;
     }
 
-    // Wait for OS to fully release the port
     await new Promise((r) => setTimeout(r, 300));
 
     console.log("=== Cleanup complete ===");
   };
 
-  const disconnectPort = async () => {
-    if (!isConnected) {
+  private disconnectPort = async () => {
+    if (!this.state.isConnected) {
       return;
     }
 
     try {
-      addMessage("INFO", "Disconnecting...");
+      this.addMessage("INFO", "Disconnecting...");
 
-      await cleanupConnection();
+      await this.cleanupConnection();
 
-      setIsConnected(false);
-      addMessage("INFO", "✓ Disconnected");
-
-      // Notify backend
-      if (selectedPort) {
-        await window.serialAPI?.closePort(selectedPort);
-      }
+      this.setState({ isConnected: false });
+      this.addMessage("INFO", "✓ Disconnected");
     } catch (error) {
       console.error("Disconnect error:", error);
-      setIsConnected(false);
+      this.setState({ isConnected: false });
     }
   };
 
-  const getLineEnding = (): string => {
+  private getLineEnding = (): string => {
     const endings = { NONE: "", LF: "\n", CR: "\r", CRLF: "\r\n" };
-    return endings[lineEnding];
+    return endings[this.state.lineEnding];
   };
 
-  const sendText = async () => {
-    const text = inputText.trim();
+  private sendText = async () => {
+    const text = this.state.inputText.trim();
     if (!text) {
       return;
     }
 
-    if (!isConnected || !writerRef.current || !portRef.current) {
-      addMessage("ERROR", "Port not connected");
-      setStats((prev) => ({ ...prev, errors: prev.errors + 1 }));
+    if (
+      !this.state.isConnected ||
+      !this.writerRef ||
+      !this.state.selectedPort
+    ) {
+      this.addMessage("ERROR", "Port not connected");
+      this.setState((prev) => ({
+        stats: { ...prev.stats, errors: prev.stats.errors + 1 },
+      }));
       return;
     }
 
     try {
-      const dataToSend = text + getLineEnding();
+      const dataToSend = text + this.getLineEnding();
       const encoded = new TextEncoder().encode(dataToSend);
 
-      console.log(`Sending: "${text}" + ending "${lineEnding}"`);
+      console.log(`Sending: "${text}" + ending "${this.state.lineEnding}"`);
       console.log(
         "Bytes:",
         Array.from(encoded)
@@ -318,42 +373,48 @@ export const SerialTerminal: React.FC<SerialTerminalProps> = ({
           .join(" "),
       );
 
-      // Write data
-      await writerRef.current.write(encoded);
+      await this.writerRef.write(encoded);
 
-      // CRITICAL: Ensure data is actually sent to device
-      // Some platforms buffer writes
       console.log("✓ Data written to buffer");
 
-      addMessage("TX", text);
-      setStats((prev) => ({ ...prev, tx: prev.tx + 1 }));
-      setInputText("");
+      this.addMessage("TX", text);
+      this.setState((prev) => ({
+        stats: { ...prev.stats, tx: prev.stats.tx + 1 },
+        inputText: "",
+      }));
     } catch (error: any) {
       console.error("Send error:", error);
-      addMessage("ERROR", `Send failed: ${error.message}`);
-      setStats((prev) => ({ ...prev, errors: prev.errors + 1 }));
+      this.addMessage("ERROR", `Send failed: ${error.message}`);
+      this.setState((prev) => ({
+        stats: { ...prev.stats, errors: prev.stats.errors + 1 },
+      }));
 
       if (error.name === "NetworkError" || error.name === "NotFoundError") {
-        addMessage("ERROR", "Device disconnected");
-        await disconnectPort();
+        this.addMessage("ERROR", "Device disconnected");
+        await this.disconnectPort();
       }
     }
   };
 
-  const sendHex = async () => {
-    const hex = inputHex.trim();
+  private sendHex = async () => {
+    const hex = this.state.inputHex.trim();
     if (!hex) {
       return;
     }
 
-    if (!isConnected || !writerRef.current || !portRef.current) {
-      addMessage("ERROR", "Port not connected");
-      setStats((prev) => ({ ...prev, errors: prev.errors + 1 }));
+    if (
+      !this.state.isConnected ||
+      !this.writerRef ||
+      !this.state.selectedPort
+    ) {
+      this.addMessage("ERROR", "Port not connected");
+      this.setState((prev) => ({
+        stats: { ...prev.stats, errors: prev.stats.errors + 1 },
+      }));
       return;
     }
 
     try {
-      // Parse hex values
       const hexValues = hex
         .split(/[\s,]+/)
         .filter((x) => x.length > 0)
@@ -363,11 +424,13 @@ export const SerialTerminal: React.FC<SerialTerminalProps> = ({
         });
 
       if (hexValues.some(isNaN) || hexValues.some((v) => v < 0 || v > 255)) {
-        addMessage(
+        this.addMessage(
           "ERROR",
           "Invalid hex format. Use: 01 02 03 or 0x01 0x02 0x03",
         );
-        setStats((prev) => ({ ...prev, errors: prev.errors + 1 }));
+        this.setState((prev) => ({
+          stats: { ...prev.stats, errors: prev.stats.errors + 1 },
+        }));
         return;
       }
 
@@ -379,55 +442,63 @@ export const SerialTerminal: React.FC<SerialTerminalProps> = ({
           .join(" "),
       );
 
-      await writerRef.current.write(bytes);
+      await this.writerRef.write(bytes);
       console.log("✓ Hex data sent");
 
       const hexDisplay = Array.from(bytes)
         .map((b) => `0x${b.toString(16).padStart(2, "0")}`)
         .join(" ");
-      addMessage("TX", `[HEX] ${hexDisplay}`);
-      setStats((prev) => ({ ...prev, tx: prev.tx + 1 }));
-      setInputHex("");
+      this.addMessage("TX", `[HEX] ${hexDisplay}`);
+      this.setState((prev) => ({
+        stats: { ...prev.stats, tx: prev.stats.tx + 1 },
+        inputHex: "",
+      }));
     } catch (error: any) {
       console.error("Hex send error:", error);
-      addMessage("ERROR", `Hex send failed: ${error.message}`);
-      setStats((prev) => ({ ...prev, errors: prev.errors + 1 }));
+      this.addMessage("ERROR", `Hex send failed: ${error.message}`);
+      this.setState((prev) => ({
+        stats: { ...prev.stats, errors: prev.stats.errors + 1 },
+      }));
 
       if (error.name === "NetworkError" || error.name === "NotFoundError") {
-        addMessage("ERROR", "Device disconnected");
-        await disconnectPort();
+        this.addMessage("ERROR", "Device disconnected");
+        await this.disconnectPort();
       }
     }
   };
 
-  const addMessage = (
+  private addMessage = (
     direction: "TX" | "RX" | "INFO" | "ERROR",
     data: string,
   ) => {
-    setMessages((prev) => [
-      ...prev,
-      {
-        timestamp: new Date().toLocaleTimeString("en-US", {
-          hour12: false,
-          hour: "2-digit",
-          minute: "2-digit",
-          second: "2-digit",
-          fractionalSecondDigits: 3,
-        }),
-        direction,
-        data,
-        id: `${Date.now()}-${Math.random()}`,
-      },
-    ]);
+    this.setState((prev) => ({
+      messages: [
+        ...prev.messages,
+        {
+          timestamp: new Date().toLocaleTimeString("en-US", {
+            hour12: false,
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+            fractionalSecondDigits: 3,
+          }),
+          direction,
+          data,
+          id: `${Date.now()}-${Math.random()}`,
+        },
+      ],
+    }));
   };
 
-  const clearTerminal = () => {
-    setMessages([]);
-    setStats({ tx: 0, rx: 0, errors: 0 });
+  private clearTerminal = () => {
+    this.setState({
+      messages: [],
+      stats: { tx: 0, rx: 0, errors: 0 },
+    });
   };
 
-  const exportLog = () => {
-    const log = messages
+  private exportLog = () => {
+    const log = this.state.messages
       .map((m) => `[${m.timestamp}] ${m.direction}: ${m.data}`)
       .join("\n");
 
@@ -443,132 +514,169 @@ export const SerialTerminal: React.FC<SerialTerminalProps> = ({
     document.body.removeChild(element);
   };
 
-  return (
-    <div className={className}>
-      <div className="control-panel">
-        <div className="section">
-          <label>Port:</label>
-          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+  render() {
+    const { className } = this.props;
+    const {
+      ports,
+      selectedPortName,
+      isConnected,
+      baudRate,
+      messages,
+      inputText,
+      inputHex,
+      inputMode,
+      lineEnding,
+      stats,
+    } = this.state;
+
+    return (
+      <div className={className}>
+        <div className="control-panel">
+          <div className="section">
+            <label>Port:</label>
+            <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+              <select
+                value={selectedPortName}
+                onChange={(e) => {
+                  const index = ports.findIndex(
+                    (p) => this.getPortDisplayName(p) === e.target.value,
+                  );
+                  this.handlePortSelection(index);
+                }}
+                disabled={isConnected}
+                style={{ flex: 1 }}
+              >
+                <option value="">Select...</option>
+                {ports.map((port, index) => {
+                  const name = this.getPortDisplayName(port);
+                  return (
+                    <option key={index} value={name}>
+                      {name}
+                    </option>
+                  );
+                })}
+              </select>
+              <button onClick={this.requestPort} disabled={isConnected}>
+                ➕
+              </button>
+              <button onClick={this.refreshPorts} disabled={isConnected}>
+                🔄
+              </button>
+            </div>
+          </div>
+
+          <div className="section">
+            <label>Baud:</label>
             <select
-              value={selectedPort}
-              onChange={(e) => setSelectedPort(e.target.value)}
+              value={baudRate}
+              onChange={(e) =>
+                this.setState({ baudRate: Number(e.target.value) })
+              }
               disabled={isConnected}
-              style={{ flex: 1 }}
             >
-              <option value="">Select...</option>
-              {ports.map((p) => (
-                <option key={p.portId} value={p.displayName}>
-                  {p.displayName}
-                </option>
-              ))}
+              <option value={9600}>9600</option>
+              <option value={19200}>19200</option>
+              <option value={38400}>38400</option>
+              <option value={57600}>57600</option>
+              <option value={115200}>115200</option>
+              <option value={230400}>230400</option>
+              <option value={460800}>460800</option>
+              <option value={921600}>921600</option>
             </select>
-            <button onClick={refreshPorts} disabled={isConnected}>
-              🔄
-            </button>
-          </div>
-        </div>
-
-        <div className="section">
-          <label>Baud:</label>
-          <select
-            value={baudRate}
-            onChange={(e) => setBaudRate(Number(e.target.value))}
-            disabled={isConnected}
-          >
-            <option value={9600}>9600</option>
-            <option value={19200}>19200</option>
-            <option value={38400}>38400</option>
-            <option value={57600}>57600</option>
-            <option value={115200}>115200</option>
-            <option value={230400}>230400</option>
-            <option value={460800}>460800</option>
-            <option value={921600}>921600</option>
-          </select>
-          <label>Line End:</label>
-          <select
-            value={lineEnding}
-            onChange={(e) => setLineEnding(e.target.value as any)}
-            disabled={!isConnected}
-          >
-            <option value="NONE">None</option>
-            <option value="LF">LF (\n)</option>
-            <option value="CR">CR (\r)</option>
-            <option value="CRLF">CRLF (\r\n)</option>
-          </select>
-          <label>Input Mode:</label>
-          <select
-            value={inputMode}
-            onChange={(e) => setInputMethod(e.target.value as any)}
-            disabled={!isConnected}
-          >
-            <option value="TEXT">Text</option>
-            <option value="HEX">Hex</option>
-          </select>
-        </div>
-
-        <div className="buttons">
-          {!isConnected ? (
-            <button
-              onClick={connectPort}
-              className="btn-primary"
-              disabled={!selectedPort}
+            <label>Line End:</label>
+            <select
+              value={lineEnding}
+              onChange={(e) =>
+                this.setState({ lineEnding: e.target.value as any })
+              }
+              disabled={!isConnected}
             >
-              Connect
-            </button>
-          ) : (
-            <button onClick={disconnectPort} className="btn-danger">
-              Disconnect
-            </button>
-          )}
-          <button onClick={clearTerminal}>Clear</button>
-          <button onClick={exportLog}>Export</button>
-        </div>
-
-        <div className="stats">
-          TX: {stats.tx} | RX: {stats.rx} | Errors: {stats.errors} |{" "}
-          {isConnected ? "Connected" : "Disconnected"}
-        </div>
-      </div>
-
-      <div className="terminal">
-        {messages.map((msg) => (
-          <div
-            key={msg.id}
-            className={`message ${msg.direction.toLowerCase()}`}
-          >
-            <span className="timestamp">[{msg.timestamp}]</span>
-            <span className="direction">{msg.direction}:</span>
-            <span className="data">{msg.data}</span>
+              <option value="NONE">None</option>
+              <option value="LF">LF (\n)</option>
+              <option value="CR">CR (\r)</option>
+              <option value="CRLF">CRLF (\r\n)</option>
+            </select>
+            <label>Input Mode:</label>
+            <select
+              value={inputMode}
+              onChange={(e) =>
+                this.setState({ inputMode: e.target.value as any })
+              }
+              disabled={!isConnected}
+            >
+              <option value="TEXT">Text</option>
+              <option value="HEX">Hex</option>
+            </select>
           </div>
-        ))}
-        <div ref={terminalEndRef} />
-      </div>
 
-      <div className="input-section">
-        <div className="text-input">
-          <input
-            type="text"
-            value={inputMode === "TEXT" ? inputText : inputHex}
-            onChange={(e) =>
-              inputMode === "TEXT"
-                ? setInputText(e.target.value)
-                : setInputHex(e.target.value)
-            }
-            onKeyPress={(e) =>
-              e.key === "Enter" &&
-              (inputMode === "TEXT" ? sendText() : sendHex())
-            }
-            placeholder="Type message..."
-            disabled={!isConnected}
-          />
-          <button
-            onClick={inputMode === "TEXT" ? sendText : sendHex}
-            disabled={!isConnected}
-          >
-            Send
-          </button>
+          <div className="buttons">
+            {!isConnected ? (
+              <button
+                onClick={this.connectPort}
+                className="btn-primary"
+                disabled={!this.state.selectedPort}
+              >
+                Connect
+              </button>
+            ) : (
+              <button onClick={this.disconnectPort} className="btn-danger">
+                Disconnect
+              </button>
+            )}
+            <button onClick={this.clearTerminal}>Clear</button>
+            <button onClick={this.exportLog}>Export</button>
+          </div>
+
+          <div className="stats">
+            TX: {stats.tx} | RX: {stats.rx} | Errors: {stats.errors} |{" "}
+            {isConnected ? "Connected" : "Disconnected"}
+          </div>
+        </div>
+
+        <div className="terminal">
+          {messages.map((msg) => (
+            <div
+              key={msg.id}
+              className={`message ${msg.direction.toLowerCase()}`}
+            >
+              <span className="timestamp">[{msg.timestamp}]</span>
+              <span className="direction">{msg.direction}:</span>
+              <span className="data">{msg.data}</span>
+            </div>
+          ))}
+          <div ref={this.terminalEndRef} />
+        </div>
+
+        <div className="input-section">
+          <div className="text-input">
+            <input
+              type="text"
+              value={inputMode === "TEXT" ? inputText : inputHex}
+              onChange={(e) =>
+                inputMode === "TEXT"
+                  ? this.setState({ inputText: e.target.value })
+                  : this.setState({ inputHex: e.target.value })
+              }
+              onKeyPress={(e) =>
+                e.key === "Enter" &&
+                (inputMode === "TEXT" ? this.sendText() : this.sendHex())
+              }
+              placeholder={
+                inputMode === "TEXT"
+                  ? "Type message..."
+                  : "Hex: 01 02 03 or 0x01 0x02 0x03"
+              }
+              disabled={!isConnected}
+            />
+            <button
+              onClick={inputMode === "TEXT" ? this.sendText : this.sendHex}
+              disabled={!isConnected}
+            >
+              Send
+            </button>
+          </div>
         </div>
       </div>
-    </div>
-  );
-};
+    );
+  }
+}
