@@ -68,7 +68,7 @@ export class UDPTerminal extends React.Component<
       inputHex: "",
       inputMode: "TEXT",
       stats: { tx: 0, rx: 0, errors: 0 },
-      autoScroll: true,
+      autoScroll: false,
       showHex: false,
       hexPrefix: "0x",
     };
