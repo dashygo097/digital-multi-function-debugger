@@ -1,9 +1,11 @@
 import React from "react";
 import { Button } from "./Button";
-import { SelectList } from "./SelectList";
 
 interface SerialPortListProps {
   className?: string;
+  onPortSelect: (portName: string) => void;
+  selectedPort: string;
+  disabled?: boolean;
 }
 
 interface SerialPortListState {
@@ -14,6 +16,8 @@ export class SerialPortList extends React.Component<
   SerialPortListProps,
   SerialPortListState
 > {
+  private updateInterval: NodeJS.Timeout | null = null;
+
   constructor(props: SerialPortListProps) {
     super(props);
     this.state = {
@@ -22,8 +26,14 @@ export class SerialPortList extends React.Component<
   }
 
   async componentDidMount() {
-    this.getPorts();
+    await this.getPorts();
     this.startAutoUpdate();
+  }
+
+  componentWillUnmount() {
+    if (this.updateInterval) {
+      clearInterval(this.updateInterval);
+    }
   }
 
   async updatePorts() {
@@ -38,7 +48,7 @@ export class SerialPortList extends React.Component<
   async getPorts() {
     try {
       const ports = await window.serialAPI.getPorts();
-      this.setState(() => ({ ports }));
+      this.setState({ ports });
     } catch (error) {
       console.log("Error fetching Serial ports:", error);
     }
@@ -50,24 +60,41 @@ export class SerialPortList extends React.Component<
     }, 2000);
   }
 
+  handlePortChange = (portName: string) => {
+    if (!this.props.disabled) {
+      this.props.onPortSelect(portName);
+    }
+  };
+
   render() {
+    const { className, selectedPort, disabled } = this.props;
+
     return (
-      <div id={this.props.className}>
+      <div
+        className={className}
+        style={{ display: "flex", gap: "8px", alignItems: "center" }}
+      >
+        <select
+          value={selectedPort}
+          onChange={(e) => this.handlePortChange(e.target.value)}
+          disabled={disabled}
+          style={{ flex: 1 }}
+        >
+          <option value="">Select...</option>
+          {this.state.ports.map((p) => (
+            <option key={p.portId} value={p.displayName}>
+              {p.displayName}
+            </option>
+          ))}
+        </select>
         <Button
           onClick={() => this.updatePorts()}
-          className={`${this.props.className}-button`}
+          className={`${className}-button`}
+          disabled={disabled}
         >
-          Refresh
+          🔄
         </Button>
-        <SelectList
-          options={this.state.ports.map(getPortDetails)}
-          className={`${this.props.className}-selectlist`}
-        />
       </div>
     );
   }
-}
-
-function getPortDetails(device: Electron.SerialPort) {
-  return device.displayName;
 }
