@@ -23,7 +23,10 @@ class MainPage extends React.Component<WithRouterProps, MainPageState> {
       <div className="main-page">
         <h1>Control Panel</h1>
         <SerialTerminal className="main-serialterminal" />
-        <UDPTerminal bridgeUrl="ws://localhost:8080" />
+        <UDPTerminal
+          className="main-udpterminal"
+          bridgeUrl="ws://localhost:8080"
+        />
       </div>
     );
   }
