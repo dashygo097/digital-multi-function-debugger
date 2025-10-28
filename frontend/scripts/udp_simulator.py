@@ -198,7 +198,10 @@ class UDPSimulator:
     def stop(self):
         self.running = False
         if self.sock:
-            self.sock.close()
+            try:
+                self.sock.close()
+            except Exception as e:
+                print(f"Error closing socket: {e}")
         print("✓ Server stopped")
 
 
@@ -213,4 +216,3 @@ if __name__ == "__main__":
 
     simulator = UDPSimulator(host, port)
     simulator.start()
-    simulator.stop()
