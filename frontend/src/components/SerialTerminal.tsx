@@ -27,7 +27,7 @@ export const SerialTerminal: React.FC<SerialTerminalProps> = ({
   const [stats, setStats] = useState({ tx: 0, rx: 0, errors: 0 });
   const terminalEndRef = useRef<HTMLDivElement>(null);
 
-  const portRef = useRef<SerialPort | null>(null);
+  const portRef = useRef<Electron.SerialPort | null>(null);
   const writerRef = useRef<WritableStreamDefaultWriter<Uint8Array> | null>(
     null,
   );
@@ -447,25 +447,24 @@ export const SerialTerminal: React.FC<SerialTerminalProps> = ({
       <div className="control-panel">
         <div className="section">
           <label>Port:</label>
-          <select
-            value={selectedPort}
-            onChange={(e) => setSelectedPort(e.target.value)}
-            disabled={isConnected}
-          >
-            <option value="">Select...</option>
-            {ports.map((p) => (
-              <option key={p.portId} value={p.displayName}>
-                {p.displayName}
-              </option>
-            ))}
-          </select>
-          <button
-            onClick={refreshPorts}
-            disabled={isConnected}
-            className="btn-secondary"
-          >
-            Refresh
-          </button>
+          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+            <select
+              value={selectedPort}
+              onChange={(e) => setSelectedPort(e.target.value)}
+              disabled={isConnected}
+              style={{ flex: 1 }}
+            >
+              <option value="">Select...</option>
+              {ports.map((p) => (
+                <option key={p.portId} value={p.displayName}>
+                  {p.displayName}
+                </option>
+              ))}
+            </select>
+            <button onClick={refreshPorts} disabled={isConnected}>
+              🔄
+            </button>
+          </div>
         </div>
 
         <div className="section">
@@ -484,6 +483,9 @@ export const SerialTerminal: React.FC<SerialTerminalProps> = ({
             <option value={460800}>460800</option>
             <option value={921600}>921600</option>
           </select>
+        </div>
+
+        <div className="section">
           <label>Line End:</label>
           <select
             value={lineEnding}
