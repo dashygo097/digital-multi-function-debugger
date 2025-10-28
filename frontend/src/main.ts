@@ -1,6 +1,8 @@
 import { app, BrowserWindow, ipcMain } from "electron";
 import path from "node:path";
 
+const serialConnections = new Map<string, any>();
+
 const createMainWindow = () => {
   const mainWindow = new BrowserWindow({
     title: "Control Panel",
@@ -29,6 +31,10 @@ const createMainWindow = () => {
   let usbDevices: Electron.USBDevice[] = [];
   let serialPorts: Electron.SerialPort[] = [];
   let grantedDeviceThroughPermHandler: Electron.USBDevice;
+
+  ipcMain.handle("usb-get-devices", () => {
+    return usbDevices;
+  });
 
   mainWindow.webContents.session.on(
     "select-usb-device",
@@ -65,6 +71,10 @@ const createMainWindow = () => {
     usbDevices = usbDevices.filter((d) => d.deviceId !== device.deviceId);
   });
 
+  ipcMain.handle("serial-get-ports", () => {
+    return serialPorts;
+  });
+
   mainWindow.webContents.session.on(
     "select-serial-port",
     (event, portList, webContents, callback) => {
@@ -87,6 +97,91 @@ const createMainWindow = () => {
   mainWindow.webContents.session.on("serial-port-removed", (event, port) => {
     console.log("Serial Port removed:", port);
     serialPorts = serialPorts.filter((p) => p.portId !== port.portId);
+  });
+
+  ipcMain.handle("serial-open", async (event, portPath, options) => {
+    try {
+      console.log(`IPC: serial-open - Port: ${portPath}, Options:`, options);
+
+      if (serialConnections.has(portPath)) {
+        console.log(`Port ${portPath} already open`);
+        return { success: false, error: "Port already open" };
+      }
+
+      const port = serialPorts.find((p) => p.displayName === portPath);
+      if (!port) {
+        console.log(`Port ${portPath} not found in serialPorts`);
+        return { success: false, error: "Port not found" };
+      }
+
+      serialConnections.set(portPath, {
+        portId: port.portId,
+        displayName: port.displayName,
+        opened: true,
+        options: options,
+        timestamp: new Date().toISOString(),
+      });
+
+      console.log(`✓ Port ${portPath} registered as open`);
+      mainWindow.webContents.send("serial-opened", { port: portPath });
+      return {
+        success: true,
+        message: `Opened ${portPath}`,
+      };
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      console.error("serial-open error:", errorMsg);
+      return { success: false, error: errorMsg };
+    }
+  });
+
+  ipcMain.handle("serial-close", async (event, portPath) => {
+    try {
+      console.log(`IPC: serial-close - Port: ${portPath}`);
+
+      if (serialConnections.has(portPath)) {
+        serialConnections.delete(portPath);
+        console.log(`✓ Port ${portPath} closed`);
+        mainWindow.webContents.send("serial-closed", { port: portPath });
+        return { success: true, message: `Closed ${portPath}` };
+      }
+      return { success: false, error: "Port not open" };
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      console.error("serial-close error:", errorMsg);
+      return { success: false, error: errorMsg };
+    }
+  });
+
+  ipcMain.handle("serial-send", async (event, portPath, data) => {
+    try {
+      if (!serialConnections.has(portPath)) {
+        console.log(`Port ${portPath} not in connections`);
+        return { success: false, error: "Port not open" };
+      }
+
+      console.log(`IPC: serial-send - Port: ${portPath}, Data:`, data);
+      mainWindow.webContents.send("serial-data-sent", {
+        port: portPath,
+        data,
+        timestamp: new Date().toISOString(),
+      });
+
+      return { success: true };
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      console.error("serial-send error:", errorMsg);
+      return { success: false, error: errorMsg };
+    }
+  });
+
+  ipcMain.on("serial-data-received", (event, portPath, data) => {
+    console.log(`Received from ${portPath}:`, data);
+    mainWindow.webContents.send("serial-data-received", {
+      port: portPath,
+      data,
+      timestamp: new Date().toISOString(),
+    });
   });
 
   mainWindow.webContents.session.setPermissionCheckHandler(
@@ -159,17 +254,11 @@ const createMainWindow = () => {
     }
     return false;
   });
+
   mainWindow.webContents.session.setUSBProtectedClassesHandler((details) => {
     return details.protectedClasses.filter((usbClass) => {
       return usbClass.indexOf("audio") === -1;
     });
-  });
-
-  ipcMain.handle("usb-get-devices", () => {
-    return usbDevices;
-  });
-  ipcMain.handle("serial-get-ports", () => {
-    return serialPorts;
   });
 
   mainWindow.webContents.openDevTools();
