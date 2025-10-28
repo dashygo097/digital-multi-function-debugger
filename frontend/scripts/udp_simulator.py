@@ -213,3 +213,4 @@ if __name__ == "__main__":
 
     simulator = UDPSimulator(host, port)
     simulator.start()
+    simulator.stop()

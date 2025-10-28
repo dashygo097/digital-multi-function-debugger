@@ -62,7 +62,7 @@ export class SerialTerminal extends React.Component<
       inputMode: "TEXT",
       lineEnding: "NONE",
       stats: { tx: 0, rx: 0, errors: 0 },
-      autoScroll: true,
+      autoScroll: false,
       showScrollIndicator: false,
       newMessagesCount: 0,
       showHex: false,
