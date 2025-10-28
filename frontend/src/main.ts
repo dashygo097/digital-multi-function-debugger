@@ -6,8 +6,8 @@ const serialConnections = new Map<string, any>();
 const createMainWindow = () => {
   const mainWindow = new BrowserWindow({
     title: "Control Panel",
-    width: 1000,
-    height: 750,
+    width: 1280,
+    height: 960,
     autoHideMenuBar: true,
     center: true,
     vibrancy: "under-window",
@@ -103,57 +103,13 @@ const createMainWindow = () => {
   });
 
   ipcMain.handle("serial-open", async (event, portPath, options) => {
-    try {
-      console.log(`IPC: serial-open - Port: ${portPath}, Options:`, options);
-
-      if (serialConnections.has(portPath)) {
-        console.log(`Port ${portPath} already open`);
-        return { success: false, error: "Port already open" };
-      }
-
-      const port = serialPorts.find((p) => p.displayName === portPath);
-      if (!port) {
-        console.log(`Port ${portPath} not found in serialPorts`);
-        return { success: false, error: "Port not found" };
-      }
-
-      serialConnections.set(portPath, {
-        portId: port.portId,
-        displayName: port.displayName,
-        opened: true,
-        options: options,
-        timestamp: new Date().toISOString(),
-      });
-
-      console.log(`✓ Port ${portPath} registered as open`);
-      mainWindow.webContents.send("serial-opened", { port: portPath });
-      return {
-        success: true,
-        message: `Opened ${portPath}`,
-      };
-    } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : String(error);
-      console.error("serial-open error:", errorMsg);
-      return { success: false, error: errorMsg };
-    }
+    console.log(`Tracking: Port ${portPath} opened`);
+    return { success: true }; // Don't track state!
   });
 
   ipcMain.handle("serial-close", async (event, portPath) => {
-    try {
-      console.log(`IPC: serial-close - Port: ${portPath}`);
-
-      if (serialConnections.has(portPath)) {
-        serialConnections.delete(portPath);
-        console.log(`✓ Port ${portPath} closed`);
-        mainWindow.webContents.send("serial-closed", { port: portPath });
-        return { success: true, message: `Closed ${portPath}` };
-      }
-      return { success: false, error: "Port not open" };
-    } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : String(error);
-      console.error("serial-close error:", errorMsg);
-      return { success: false, error: errorMsg };
-    }
+    console.log(`Tracking: Port ${portPath} closed`);
+    return { success: true }; // Don't track state!
   });
 
   ipcMain.handle("serial-send", async (event, portPath, data) => {

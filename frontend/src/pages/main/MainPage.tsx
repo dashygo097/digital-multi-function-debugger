@@ -29,7 +29,7 @@ class MainPage extends React.Component<WithRouterProps, MainPageState> {
         <h1>Control Panel</h1>
         <USBDeviceList className="main-usblist" />
         <SerialPortList className="main-seriallist" />
-        <SerialTerminal />
+        <SerialTerminal className="main-serialterminal" />
       </div>
     );
   }
