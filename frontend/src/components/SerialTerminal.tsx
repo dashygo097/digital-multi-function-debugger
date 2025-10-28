@@ -107,24 +107,6 @@ export class SerialTerminal extends React.Component<
     }
   };
 
-  private requestPort = async () => {
-    try {
-      const port = await navigator.serial.requestPort({ filters: [] });
-      await this.refreshPorts();
-
-      // Auto-select the newly requested port
-      const portInfo = port.getInfo();
-      this.setState({
-        selectedPort: port,
-        selectedPortName: this.getPortDisplayName(port),
-      });
-
-      this.addMessage("INFO", "Port access granted");
-    } catch (error) {
-      console.log("Port request cancelled or failed:", error);
-    }
-  };
-
   private getPortDisplayName = (port: SerialPort): string => {
     const info = port.getInfo();
     if (info.usbVendorId && info.usbProductId) {
@@ -556,11 +538,8 @@ export class SerialTerminal extends React.Component<
                   );
                 })}
               </select>
-              <button onClick={this.requestPort} disabled={isConnected}>
-                ➕
-              </button>
               <button onClick={this.refreshPorts} disabled={isConnected}>
-                🔄
+                Refresh
               </button>
             </div>
           </div>
