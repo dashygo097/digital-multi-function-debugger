@@ -1,8 +1,6 @@
 import { app, BrowserWindow, ipcMain } from "electron";
 import path from "node:path";
 
-const serialConnections = new Map<string, any>();
-
 const createMainWindow = () => {
   const mainWindow = new BrowserWindow({
     title: "Control Panel",
@@ -100,47 +98,6 @@ const createMainWindow = () => {
   // Serial IPC handlers
   ipcMain.handle("serial-get-ports", () => {
     return serialPorts;
-  });
-
-  ipcMain.handle("serial-open", async (event, portPath, options) => {
-    console.log(`Tracking: Port ${portPath} opened`);
-    return { success: true }; // Don't track state!
-  });
-
-  ipcMain.handle("serial-close", async (event, portPath) => {
-    console.log(`Tracking: Port ${portPath} closed`);
-    return { success: true }; // Don't track state!
-  });
-
-  ipcMain.handle("serial-send", async (event, portPath, data) => {
-    try {
-      if (!serialConnections.has(portPath)) {
-        console.log(`Port ${portPath} not in connections`);
-        return { success: false, error: "Port not open" };
-      }
-
-      console.log(`IPC: serial-send - Port: ${portPath}, Data:`, data);
-      mainWindow.webContents.send("serial-data-sent", {
-        port: portPath,
-        data,
-        timestamp: new Date().toISOString(),
-      });
-
-      return { success: true };
-    } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : String(error);
-      console.error("serial-send error:", errorMsg);
-      return { success: false, error: errorMsg };
-    }
-  });
-
-  ipcMain.on("serial-data-received", (event, portPath, data) => {
-    console.log(`Received from ${portPath}:`, data);
-    mainWindow.webContents.send("serial-data-received", {
-      port: portPath,
-      data,
-      timestamp: new Date().toISOString(),
-    });
   });
 
   mainWindow.webContents.session.setPermissionCheckHandler(
