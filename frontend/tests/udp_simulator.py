@@ -81,7 +81,7 @@ class UDPSimulator:
             hex_str = " ".join([f"{b:02x}" for b in data])
 
             print(f"[{timestamp}] RX from {addr[0]}:{addr[1]}")
-            print(f"  Text: '{text}'")  # ← Added quotes to see exact content
+            print(f"  Text: '{text}'")
             print(f"  Hex:  {hex_str}")
             print(f"  Size: {len(data)} bytes\n")
 
@@ -90,7 +90,7 @@ class UDPSimulator:
             if response:
                 self.send_response(response, addr)
             else:
-                print(f"  No response generated for command: '{text}'")  # ← DEBUG
+                print(f"  No response generated for command: '{text}'")
 
         except UnicodeDecodeError:
             hex_str = " ".join([f"{b:02x}" for b in data])
@@ -101,14 +101,12 @@ class UDPSimulator:
             self.send_response(data, addr)
 
     def handle_command(self, cmd):
-        cmd_upper = cmd.upper().strip()  # ← Added strip()
+        cmd_upper = cmd.upper().strip()
 
-        print(
-            f"  🔍 Processing command: '{cmd_upper}' (len={len(cmd_upper)})"
-        )  # ← DEBUG
+        print(f"  Processing command: '{cmd_upper}' (len={len(cmd_upper)})")
 
         if cmd_upper == "PING":
-            print(f"  Matched PING command")  # ← DEBUG
+            print("  Matched PING command")
             return "PONG"
 
         elif cmd_upper == "STATUS":
@@ -157,7 +155,7 @@ class UDPSimulator:
             return "OK: Statistics reset"
 
         else:
-            print(f"  Unknown command, echoing back")  # ← DEBUG
+            print("  Unknown command, echoing back")
             return f"ECHO: {cmd}"
 
     def send_response(self, data, addr):
@@ -165,7 +163,7 @@ class UDPSimulator:
             data = data.encode("utf-8")
 
         try:
-            sent_bytes = self.sock.sendto(data, addr)  # ← Capture return value
+            sent_bytes = self.sock.sendto(data, addr)
             self.packets_sent += 1
 
             timestamp = datetime.now().strftime("%H:%M:%S.%f")[:-3]
@@ -173,9 +171,7 @@ class UDPSimulator:
                 text = data.decode("utf-8")
                 print(f"[{timestamp}] TX to {addr[0]}:{addr[1]}")
                 print(f"  Text: '{text}'")
-                print(
-                    f"  Size: {len(data)} bytes (sent: {sent_bytes})\n"
-                )  # ← Show sent bytes
+                print(f"  Size: {len(data)} bytes (sent: {sent_bytes})\n")
             except UnicodeDecodeError:
                 hex_str = " ".join([f"{b:02x}" for b in data])
                 print(f"[{timestamp}] TX (Binary) to {addr[0]}:{addr[1]}")
@@ -183,10 +179,10 @@ class UDPSimulator:
                 print(f"  Size: {len(data)} bytes (sent: {sent_bytes})\n")
 
         except Exception as e:
-            print(f"❌ Send error: {e}")
+            print(f"Send error: {e}")
             import traceback
 
-            traceback.print_exc()  # ← Full error trace
+            traceback.print_exc()
 
     def status_broadcaster(self):
         while self.running:

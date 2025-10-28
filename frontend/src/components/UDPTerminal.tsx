@@ -98,6 +98,11 @@ export class UDPTerminal extends React.Component<
   private connectWebSocket = () => {
     const { bridgeUrl } = this.props;
 
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      console.log("WebSocket already connected, skipping");
+      return;
+    }
+
     try {
       this.addMessage("INFO", `Connecting to UDP bridge at ${bridgeUrl}...`);
 
