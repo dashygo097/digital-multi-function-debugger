@@ -21,8 +21,9 @@ export const SerialTerminal: React.FC<SerialTerminalProps> = ({
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState("");
   const [inputHex, setInputHex] = useState("");
+  const [inputMode, setInputMethod] = useState<"TEXT" | "HEX">("TEXT");
   const [lineEnding, setLineEnding] = useState<"NONE" | "LF" | "CR" | "CRLF">(
-    "CRLF",
+    "NONE",
   );
   const [stats, setStats] = useState({ tx: 0, rx: 0, errors: 0 });
   const terminalEndRef = useRef<HTMLDivElement>(null);
@@ -483,9 +484,6 @@ export const SerialTerminal: React.FC<SerialTerminalProps> = ({
             <option value={460800}>460800</option>
             <option value={921600}>921600</option>
           </select>
-        </div>
-
-        <div className="section">
           <label>Line End:</label>
           <select
             value={lineEnding}
@@ -496,6 +494,15 @@ export const SerialTerminal: React.FC<SerialTerminalProps> = ({
             <option value="LF">LF (\n)</option>
             <option value="CR">CR (\r)</option>
             <option value="CRLF">CRLF (\r\n)</option>
+          </select>
+          <label>Input Mode:</label>
+          <select
+            value={inputMode}
+            onChange={(e) => setInputMethod(e.target.value as any)}
+            disabled={!isConnected}
+          >
+            <option value="TEXT">Text</option>
+            <option value="HEX">Hex</option>
           </select>
         </div>
 
@@ -541,27 +548,24 @@ export const SerialTerminal: React.FC<SerialTerminalProps> = ({
         <div className="text-input">
           <input
             type="text"
-            value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
-            onKeyPress={(e) => e.key === "Enter" && sendText()}
+            value={inputMode === "TEXT" ? inputText : inputHex}
+            onChange={(e) =>
+              inputMode === "TEXT"
+                ? setInputText(e.target.value)
+                : setInputHex(e.target.value)
+            }
+            onKeyPress={(e) =>
+              e.key === "Enter" &&
+              (inputMode === "TEXT" ? sendText() : sendHex())
+            }
             placeholder="Type message..."
             disabled={!isConnected}
           />
-          <button onClick={sendText} disabled={!isConnected}>
-            Send
-          </button>
-        </div>
-
-        <div className="hex-input">
-          <input
-            type="text"
-            value={inputHex}
-            onChange={(e) => setInputHex(e.target.value)}
-            placeholder="Hex: 01 02 03 or 0x01 0x02 0x03"
+          <button
+            onClick={inputMode === "TEXT" ? sendText : sendHex}
             disabled={!isConnected}
-          />
-          <button onClick={sendHex} disabled={!isConnected}>
-            Send Hex
+          >
+            Send
           </button>
         </div>
       </div>
