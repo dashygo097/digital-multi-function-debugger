@@ -1265,10 +1265,6 @@ module acm2108_wrapper (
   reg  [ 2:0] regDdsWaveSel;
   reg  [31:0] regDdsFtw;
   reg         regDdsRestart;
-  reg  [15:0] regLocalMacHi;
-  reg  [31:0] regLocalMacLo;
-  reg  [31:0] regLocalIp;
-  reg  [15:0] regLocalPort;
   reg         axi_awready;
   reg  [31:0] axi_awaddr;
   reg         axi_wready;
@@ -1277,7 +1273,6 @@ module acm2108_wrapper (
   reg  [31:0] axi_araddr;
   reg  [31:0] axi_rdata;
   reg         axi_rvalid;
-  wire [31:0] _raddr_T = axi_araddr - 32'h30000;
   wire        _GEN = ~axi_awready & S_AXI_AWVALID;
   wire        _GEN_0 = ~axi_bvalid & axi_wready & S_AXI_WVALID;
   wire        _GEN_1 = axi_awaddr[7:0] == 8'h8;
@@ -1286,13 +1281,8 @@ module acm2108_wrapper (
   wire        _GEN_4 = axi_awaddr[7:0] == 8'h14;
   wire        _GEN_5 = axi_awaddr[7:0] == 8'h1C;
   wire        _GEN_6 = axi_awaddr[7:0] == 8'h20;
-  wire        _GEN_7 = axi_awaddr[7:0] == 8'h18;
-  wire        _GEN_8 = axi_awaddr[7:0] == 8'h24;
-  wire [15:0] _GEN_9 = {S_AXI_WDATA[15:8], 8'h0};
-  wire        _GEN_10 = axi_awaddr[7:0] == 8'h28;
-  wire        _GEN_11 = axi_awaddr[7:0] == 8'h2C;
-  wire        _GEN_12 = ~axi_arready & S_AXI_ARVALID;
-  wire        _GEN_13 = ~axi_rvalid & axi_arready & S_AXI_ARVALID;
+  wire        _GEN_7 = ~axi_arready & S_AXI_ARVALID;
+  wire        _GEN_8 = ~axi_rvalid & axi_arready & S_AXI_ARVALID;
   always @(posedge clock) begin
     if (reset) begin
       regChannelSel <= 8'h0;
@@ -1302,10 +1292,6 @@ module acm2108_wrapper (
       regDdsWaveSel <= 3'h0;
       regDdsFtw <= 32'h0;
       regDdsRestart <= 1'h0;
-      regLocalMacHi <= 16'hA;
-      regLocalMacLo <= 32'h3501FEC0;
-      regLocalIp <= 32'hC0A80002;
-      regLocalPort <= 16'h1388;
       axi_awready <= 1'h0;
       axi_awaddr <= 32'h0;
       axi_wready <= 1'h0;
@@ -1326,105 +1312,83 @@ module acm2108_wrapper (
       if (~_GEN_0 | _GEN_1 | _GEN_2 | _GEN_3 | _GEN_4 | _GEN_5 | ~_GEN_6) begin
       end else regDdsFtw <= regDdsFtw & 32'hFFFFFF | {S_AXI_WDATA[31:24], 24'h0};
       regDdsRestart <=
-        _GEN_0 & ~(_GEN_1 | _GEN_2 | _GEN_3 | _GEN_4 | _GEN_5 | _GEN_6) & _GEN_7
-        & S_AXI_WDATA[0];
-      if (~_GEN_0 | _GEN_1 | _GEN_2 | _GEN_3 | _GEN_4 | _GEN_5 | _GEN_6 | _GEN_7 | ~_GEN_8) begin
-      end else regLocalMacHi <= regLocalMacHi & 16'hFF | _GEN_9;
-      if (~_GEN_0 | _GEN_1 | _GEN_2 | _GEN_3 | _GEN_4 | _GEN_5 | _GEN_6 | _GEN_7 | _GEN_8
-          | ~_GEN_10) begin
-      end else regLocalMacLo <= regLocalMacLo & 32'hFFFFFF | {S_AXI_WDATA[31:24], 24'h0};
-      if (~_GEN_0 | _GEN_1 | _GEN_2 | _GEN_3 | _GEN_4 | _GEN_5 | _GEN_6 | _GEN_7 | _GEN_8
-          | _GEN_10 | ~_GEN_11) begin
-      end else regLocalIp <= regLocalIp & 32'hFFFFFF | {S_AXI_WDATA[31:24], 24'h0};
-      if (~_GEN_0 | _GEN_1 | _GEN_2 | _GEN_3 | _GEN_4 | _GEN_5 | _GEN_6 | _GEN_7 | _GEN_8
-          | _GEN_10 | _GEN_11 | axi_awaddr[7:0] != 8'h30) begin
-      end else regLocalPort <= regLocalPort & 16'hFF | _GEN_9;
+        _GEN_0 & ~(_GEN_1 | _GEN_2 | _GEN_3 | _GEN_4 | _GEN_5 | _GEN_6)
+        & axi_awaddr[7:0] == 8'h18 & S_AXI_WDATA[0];
       axi_awready <= _GEN;
       if (_GEN) axi_awaddr <= S_AXI_AWADDR;
       axi_wready <=
         ~axi_wready & axi_awready & S_AXI_AWVALID | ~(axi_wready & S_AXI_WVALID)
         & axi_wready;
       axi_bvalid <= _GEN_0 | ~(S_AXI_BREADY & axi_bvalid) & axi_bvalid;
-      axi_arready <= _GEN_12;
-      if (_GEN_12) axi_araddr <= S_AXI_ARADDR;
-      if (_GEN_13)
+      axi_arready <= _GEN_7;
+      if (_GEN_7) axi_araddr <= S_AXI_ARADDR;
+      if (_GEN_8)
         axi_rdata <=
-          _raddr_T == 32'h34
+          axi_araddr[7:0] == 8'h34
             ? {31'h0, _acm2108_led[1]}
-            : _raddr_T == 32'h30
-                ? {16'h0, regLocalPort}
-                : _raddr_T == 32'h2C
-                    ? regLocalIp
-                    : _raddr_T == 32'h28
-                        ? regLocalMacLo
-                        : _raddr_T == 32'h24
-                            ? {16'h0, regLocalMacHi}
-                            : _raddr_T == 32'h20
-                                ? regDdsFtw
-                                : _raddr_T == 32'h1C
-                                    ? {29'h0, regDdsWaveSel}
-                                    : _raddr_T == 32'h10
-                                        ? regAdcSpeed
-                                        : _raddr_T == 32'hC
-                                            ? regDataNum
-                                            : _raddr_T == 32'h8
-                                                ? {24'h0, regChannelSel}
-                                                : _raddr_T == 32'h4
-                                                    ? {30'h0, _acm2108_led}
-                                                    : _raddr_T == 32'h0
-                                                        ? {31'h0, regRestartReq}
-                                                        : 32'h0;
-      axi_rvalid <= _GEN_13 | ~(axi_rvalid & S_AXI_RREADY) & axi_rvalid;
+            : axi_araddr[7:0] == 8'h20
+                ? regDdsFtw
+                : axi_araddr[7:0] == 8'h1C
+                    ? {29'h0, regDdsWaveSel}
+                    : axi_araddr[7:0] == 8'h10
+                        ? regAdcSpeed
+                        : axi_araddr[7:0] == 8'hC
+                            ? regDataNum
+                            : axi_araddr[7:0] == 8'h8
+                                ? {24'h0, regChannelSel}
+                                : axi_araddr[7:0] == 8'h4
+                                    ? {30'h0, _acm2108_led}
+                                    : axi_araddr[7:0] == 8'h0
+                                        ? {31'h0, regRestartReq}
+                                        : 32'h0;
+      axi_rvalid <= _GEN_8 | ~(axi_rvalid & S_AXI_RREADY) & axi_rvalid;
     end
   end  // always @(posedge)
   acm2108_ddr3_udp acm2108 (
-      .clk                    (clock),
-      .reset_n                (~reset),
-      .ChannelSel             (regChannelSel),
-      .DataNum                (regDataNum),
-      .ADC_Speed_Set          (regAdcSpeed),
-      .RestartReq             (regRestartReq),
-      .RestartReq_DDS         (regDdsRestart),
-      .DDS_WaveSel            (regDdsWaveSel),
-      .DDS_FTW                (regDdsFtw),
-      .LOCAL_MAC              ({regLocalMacHi, regLocalMacLo}),
-      .LOCAL_IP               (regLocalIp),
-      .LOCAL_PORT             (regLocalPort),
-      .led                    (_acm2108_led),
-      .external_led           (acm_led),
-      .external_key_in        (acm_key_in),
-      .external_AD0           (acm_AD0),
-      .external_AD1           (acm_AD1),
-      .external_AD0_CLK       (acm_AD0_CLK),
-      .external_AD1_CLK       (acm_AD1_CLK),
-      .external_DA0_Data      (acm_DA0_Data),
-      .external_DA1_Data      (acm_DA1_Data),
-      .external_DA0_Clk       (acm_DA0_Clk),
-      .external_DA1_Clk       (acm_DA1_Clk),
-      .external_ddr_addr      (acm_ddr_addr),
-      .external_ddr_ba        (acm_ddr_ba),
-      .external_ddr_cs_n      (acm_ddr_cs_n),
-      .external_ddr_ras_n     (acm_ddr_ras_n),
-      .external_ddr_cas_n     (acm_ddr_cas_n),
-      .external_ddr_we_n      (acm_ddr_we_n),
-      .external_ddr_clk       (acm_ddr_clk),
-      .external_ddr_clk_n     (acm_ddr_clk_n),
-      .external_ddr_cke       (acm_ddr_cke),
-      .external_ddr_odt       (acm_ddr_odt),
-      .external_ddr_reset_n   (acm_ddr_reset_n),
-      .external_ddr_dqm       (acm_ddr_dqm),
-      .external_ddr_dq        (acm_ddr_dq),
-      .external_ddr_dqs       (acm_ddr_dqs),
-      .external_ddr_dqs_n     (acm_ddr_dqs_n),
-      .external_rgmii_rx_clk_i(acm_rgmii_rx_clk_i),
-      .external_rgmii_rxd     (acm_rgmii_rxd),
-      .external_rgmii_rxdv    (acm_rgmii_rxdv),
-      .external_eth_rst_n     (acm_eth_rst_n),
-      .external_eth_mdc       (acm_eth_mdc),
-      .external_eth_mdio      (acm_eth_mdio),
-      .external_rgmii_tx_clk  (acm_rgmii_tx_clk),
-      .external_rgmii_txd     (acm_rgmii_txd),
-      .external_rgmii_txen    (acm_rgmii_txen)
+      .clk           (clock),
+      .reset_n       (~reset),
+      .ChannelSel    (regChannelSel),
+      .DataNum       (regDataNum),
+      .ADC_Speed_Set (regAdcSpeed),
+      .RestartReq    (regRestartReq),
+      .RestartReq_DDS(regDdsRestart),
+      .DDS_WaveSel   (regDdsWaveSel),
+      .DDS_FTW       (regDdsFtw),
+      .led           (_acm2108_led),
+      .led           (acm_led),
+      .key_in        (acm_key_in),
+      .AD0           (acm_AD0),
+      .AD1           (acm_AD1),
+      .AD0_CLK       (acm_AD0_CLK),
+      .AD1_CLK       (acm_AD1_CLK),
+      .DA0_Data      (acm_DA0_Data),
+      .DA1_Data      (acm_DA1_Data),
+      .DA0_Clk       (acm_DA0_Clk),
+      .DA1_Clk       (acm_DA1_Clk),
+      .ddr_addr      (acm_ddr_addr),
+      .ddr_ba        (acm_ddr_ba),
+      .ddr_cs_n      (acm_ddr_cs_n),
+      .ddr_ras_n     (acm_ddr_ras_n),
+      .ddr_cas_n     (acm_ddr_cas_n),
+      .ddr_we_n      (acm_ddr_we_n),
+      .ddr_clk       (acm_ddr_clk),
+      .ddr_clk_n     (acm_ddr_clk_n),
+      .ddr_cke       (acm_ddr_cke),
+      .ddr_odt       (acm_ddr_odt),
+      .ddr_reset_n   (acm_ddr_reset_n),
+      .ddr_dqm       (acm_ddr_dqm),
+      .ddr_dq        (acm_ddr_dq),
+      .ddr_dqs       (acm_ddr_dqs),
+      .ddr_dqs_n     (acm_ddr_dqs_n),
+      .rgmii_rx_clk_i(acm_rgmii_rx_clk_i),
+      .rgmii_rxd     (acm_rgmii_rxd),
+      .rgmii_rxdv    (acm_rgmii_rxdv),
+      .eth_rst_n     (acm_eth_rst_n),
+      .eth_mdc       (acm_eth_mdc),
+      .eth_mdio      (acm_eth_mdio),
+      .rgmii_tx_clk  (acm_rgmii_tx_clk),
+      .rgmii_txd     (acm_rgmii_txd),
+      .rgmii_txen    (acm_rgmii_txen)
   );
   assign S_AXI_AWREADY = axi_awready;
   assign S_AXI_WREADY  = axi_wready;
