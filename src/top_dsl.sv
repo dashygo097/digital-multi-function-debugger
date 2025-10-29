@@ -506,7 +506,7 @@ module axi_lite2full_32x32_i4_u1 (
   assign M_AXI_RREADY  = S_AXI_RREADY;
 endmodule
 
-module axilite_interconnect3_32x32 (
+module axilite_interconnect5_32x32 (
     input  [31:0] S_AXI_AWADDR,
     input         S_AXI_AWVALID,
     output        S_AXI_AWREADY,
@@ -562,172 +562,540 @@ module axilite_interconnect3_32x32 (
     input         M_AXI_2_ARREADY,
     input  [31:0] M_AXI_2_RDATA,
     input         M_AXI_2_RVALID,
-    output        M_AXI_2_RREADY
+    output        M_AXI_2_RREADY,
+    output [31:0] M_AXI_3_AWADDR,
+    output        M_AXI_3_AWVALID,
+    input         M_AXI_3_AWREADY,
+    output [31:0] M_AXI_3_WDATA,
+    output        M_AXI_3_WVALID,
+    input         M_AXI_3_WREADY,
+    M_AXI_3_BVALID,
+    output        M_AXI_3_BREADY,
+    output [31:0] M_AXI_3_ARADDR,
+    output        M_AXI_3_ARVALID,
+    input         M_AXI_3_ARREADY,
+    input  [31:0] M_AXI_3_RDATA,
+    input         M_AXI_3_RVALID,
+    output        M_AXI_3_RREADY,
+    output [31:0] M_AXI_4_AWADDR,
+    output        M_AXI_4_AWVALID,
+    input         M_AXI_4_AWREADY,
+    output [31:0] M_AXI_4_WDATA,
+    output        M_AXI_4_WVALID,
+    input         M_AXI_4_WREADY,
+    M_AXI_4_BVALID,
+    output        M_AXI_4_BREADY,
+    output [31:0] M_AXI_4_ARADDR,
+    output        M_AXI_4_ARVALID,
+    input         M_AXI_4_ARREADY,
+    input  [31:0] M_AXI_4_RDATA,
+    input         M_AXI_4_RVALID,
+    output        M_AXI_4_RREADY
 );
 
-  wire _slave_b_bits_T_24 = S_AXI_AWADDR < 32'h30000;
-  wire _slave_b_bits_T_26 = S_AXI_AWADDR > 32'h2FFFF;
-  wire _slave_b_bits_T_27 = S_AXI_AWADDR < 32'h40000;
-  wire _slave_r_bits_T_24 = S_AXI_ARADDR < 32'h30000;
-  wire _slave_r_bits_T_26 = S_AXI_ARADDR > 32'h2FFFF;
-  wire _slave_r_bits_T_27 = S_AXI_ARADDR < 32'h40000;
+  wire _slave_b_bits_T_68 = S_AXI_AWADDR < 32'h30000;
+  wire _slave_b_bits_T_70 = S_AXI_AWADDR > 32'h2FFFF;
+  wire _slave_b_bits_T_71 = S_AXI_AWADDR < 32'h40000;
+  wire _slave_b_bits_T_74 = S_AXI_AWADDR < 32'h50000;
+  wire _slave_b_bits_T_76 = S_AXI_AWADDR > 32'h4FFFF;
+  wire _slave_b_bits_T_77 = S_AXI_AWADDR < 32'h60000;
+  wire _slave_r_bits_T_68 = S_AXI_ARADDR < 32'h30000;
+  wire _slave_r_bits_T_70 = S_AXI_ARADDR > 32'h2FFFF;
+  wire _slave_r_bits_T_71 = S_AXI_ARADDR < 32'h40000;
+  wire _slave_r_bits_T_74 = S_AXI_ARADDR < 32'h50000;
+  wire _slave_r_bits_T_76 = S_AXI_ARADDR > 32'h4FFFF;
+  wire _slave_r_bits_T_77 = S_AXI_ARADDR < 32'h60000;
   assign S_AXI_AWREADY =
-    (_slave_b_bits_T_26 & _slave_b_bits_T_27
-       ? 2'h2
-       : {1'h0, (|(S_AXI_AWADDR[31:17])) & _slave_b_bits_T_24}) == 2'h0 & M_AXI_0_AWREADY
-    | (_slave_b_bits_T_26 & _slave_b_bits_T_27
-         ? 2'h2
-         : {1'h0, (|(S_AXI_AWADDR[31:17])) & _slave_b_bits_T_24}) == 2'h1
+    (_slave_b_bits_T_76 & _slave_b_bits_T_77
+       ? 3'h4
+       : (|(S_AXI_AWADDR[31:18])) & _slave_b_bits_T_74
+           ? 3'h3
+           : _slave_b_bits_T_70 & _slave_b_bits_T_71
+               ? 3'h2
+               : {2'h0, (|(S_AXI_AWADDR[31:17])) & _slave_b_bits_T_68}) == 3'h0
+    & M_AXI_0_AWREADY
+    | (_slave_b_bits_T_76 & _slave_b_bits_T_77
+         ? 3'h4
+         : (|(S_AXI_AWADDR[31:18])) & _slave_b_bits_T_74
+             ? 3'h3
+             : _slave_b_bits_T_70 & _slave_b_bits_T_71
+                 ? 3'h2
+                 : {2'h0, (|(S_AXI_AWADDR[31:17])) & _slave_b_bits_T_68}) == 3'h1
     & M_AXI_1_AWREADY
-    | (_slave_b_bits_T_26 & _slave_b_bits_T_27
-         ? 2'h2
-         : {1'h0, (|(S_AXI_AWADDR[31:17])) & _slave_b_bits_T_24}) == 2'h2
-    & M_AXI_2_AWREADY;
+    | (_slave_b_bits_T_76 & _slave_b_bits_T_77
+         ? 3'h4
+         : (|(S_AXI_AWADDR[31:18])) & _slave_b_bits_T_74
+             ? 3'h3
+             : _slave_b_bits_T_70 & _slave_b_bits_T_71
+                 ? 3'h2
+                 : {2'h0, (|(S_AXI_AWADDR[31:17])) & _slave_b_bits_T_68}) == 3'h2
+    & M_AXI_2_AWREADY
+    | (_slave_b_bits_T_76 & _slave_b_bits_T_77
+         ? 3'h4
+         : (|(S_AXI_AWADDR[31:18])) & _slave_b_bits_T_74
+             ? 3'h3
+             : _slave_b_bits_T_70 & _slave_b_bits_T_71
+                 ? 3'h2
+                 : {2'h0, (|(S_AXI_AWADDR[31:17])) & _slave_b_bits_T_68}) == 3'h3
+    & M_AXI_3_AWREADY
+    | (_slave_b_bits_T_76 & _slave_b_bits_T_77
+         ? 3'h4
+         : (|(S_AXI_AWADDR[31:18])) & _slave_b_bits_T_74
+             ? 3'h3
+             : _slave_b_bits_T_70 & _slave_b_bits_T_71
+                 ? 3'h2
+                 : {2'h0, (|(S_AXI_AWADDR[31:17])) & _slave_b_bits_T_68}) == 3'h4
+    & M_AXI_4_AWREADY;
   assign S_AXI_WREADY =
-    (_slave_b_bits_T_26 & _slave_b_bits_T_27
-       ? 2'h2
-       : {1'h0, (|(S_AXI_AWADDR[31:17])) & _slave_b_bits_T_24}) == 2'h0 & M_AXI_0_WREADY
-    | (_slave_b_bits_T_26 & _slave_b_bits_T_27
-         ? 2'h2
-         : {1'h0, (|(S_AXI_AWADDR[31:17])) & _slave_b_bits_T_24}) == 2'h1 & M_AXI_1_WREADY
-    | (_slave_b_bits_T_26 & _slave_b_bits_T_27
-         ? 2'h2
-         : {1'h0, (|(S_AXI_AWADDR[31:17])) & _slave_b_bits_T_24}) == 2'h2
-    & M_AXI_2_WREADY;
+    (_slave_b_bits_T_76 & _slave_b_bits_T_77
+       ? 3'h4
+       : (|(S_AXI_AWADDR[31:18])) & _slave_b_bits_T_74
+           ? 3'h3
+           : _slave_b_bits_T_70 & _slave_b_bits_T_71
+               ? 3'h2
+               : {2'h0, (|(S_AXI_AWADDR[31:17])) & _slave_b_bits_T_68}) == 3'h0
+    & M_AXI_0_WREADY
+    | (_slave_b_bits_T_76 & _slave_b_bits_T_77
+         ? 3'h4
+         : (|(S_AXI_AWADDR[31:18])) & _slave_b_bits_T_74
+             ? 3'h3
+             : _slave_b_bits_T_70 & _slave_b_bits_T_71
+                 ? 3'h2
+                 : {2'h0, (|(S_AXI_AWADDR[31:17])) & _slave_b_bits_T_68}) == 3'h1
+    & M_AXI_1_WREADY
+    | (_slave_b_bits_T_76 & _slave_b_bits_T_77
+         ? 3'h4
+         : (|(S_AXI_AWADDR[31:18])) & _slave_b_bits_T_74
+             ? 3'h3
+             : _slave_b_bits_T_70 & _slave_b_bits_T_71
+                 ? 3'h2
+                 : {2'h0, (|(S_AXI_AWADDR[31:17])) & _slave_b_bits_T_68}) == 3'h2
+    & M_AXI_2_WREADY
+    | (_slave_b_bits_T_76 & _slave_b_bits_T_77
+         ? 3'h4
+         : (|(S_AXI_AWADDR[31:18])) & _slave_b_bits_T_74
+             ? 3'h3
+             : _slave_b_bits_T_70 & _slave_b_bits_T_71
+                 ? 3'h2
+                 : {2'h0, (|(S_AXI_AWADDR[31:17])) & _slave_b_bits_T_68}) == 3'h3
+    & M_AXI_3_WREADY
+    | (_slave_b_bits_T_76 & _slave_b_bits_T_77
+         ? 3'h4
+         : (|(S_AXI_AWADDR[31:18])) & _slave_b_bits_T_74
+             ? 3'h3
+             : _slave_b_bits_T_70 & _slave_b_bits_T_71
+                 ? 3'h2
+                 : {2'h0, (|(S_AXI_AWADDR[31:17])) & _slave_b_bits_T_68}) == 3'h4
+    & M_AXI_4_WREADY;
   assign S_AXI_BVALID =
-    (_slave_b_bits_T_26 & _slave_b_bits_T_27
-       ? 2'h2
-       : {1'h0, (|(S_AXI_AWADDR[31:17])) & _slave_b_bits_T_24}) == 2'h0 & M_AXI_0_BVALID
-    | (_slave_b_bits_T_26 & _slave_b_bits_T_27
-         ? 2'h2
-         : {1'h0, (|(S_AXI_AWADDR[31:17])) & _slave_b_bits_T_24}) == 2'h1 & M_AXI_1_BVALID
-    | (_slave_b_bits_T_26 & _slave_b_bits_T_27
-         ? 2'h2
-         : {1'h0, (|(S_AXI_AWADDR[31:17])) & _slave_b_bits_T_24}) == 2'h2
-    & M_AXI_2_BVALID;
+    (_slave_b_bits_T_76 & _slave_b_bits_T_77
+       ? 3'h4
+       : (|(S_AXI_AWADDR[31:18])) & _slave_b_bits_T_74
+           ? 3'h3
+           : _slave_b_bits_T_70 & _slave_b_bits_T_71
+               ? 3'h2
+               : {2'h0, (|(S_AXI_AWADDR[31:17])) & _slave_b_bits_T_68}) == 3'h0
+    & M_AXI_0_BVALID
+    | (_slave_b_bits_T_76 & _slave_b_bits_T_77
+         ? 3'h4
+         : (|(S_AXI_AWADDR[31:18])) & _slave_b_bits_T_74
+             ? 3'h3
+             : _slave_b_bits_T_70 & _slave_b_bits_T_71
+                 ? 3'h2
+                 : {2'h0, (|(S_AXI_AWADDR[31:17])) & _slave_b_bits_T_68}) == 3'h1
+    & M_AXI_1_BVALID
+    | (_slave_b_bits_T_76 & _slave_b_bits_T_77
+         ? 3'h4
+         : (|(S_AXI_AWADDR[31:18])) & _slave_b_bits_T_74
+             ? 3'h3
+             : _slave_b_bits_T_70 & _slave_b_bits_T_71
+                 ? 3'h2
+                 : {2'h0, (|(S_AXI_AWADDR[31:17])) & _slave_b_bits_T_68}) == 3'h2
+    & M_AXI_2_BVALID
+    | (_slave_b_bits_T_76 & _slave_b_bits_T_77
+         ? 3'h4
+         : (|(S_AXI_AWADDR[31:18])) & _slave_b_bits_T_74
+             ? 3'h3
+             : _slave_b_bits_T_70 & _slave_b_bits_T_71
+                 ? 3'h2
+                 : {2'h0, (|(S_AXI_AWADDR[31:17])) & _slave_b_bits_T_68}) == 3'h3
+    & M_AXI_3_BVALID
+    | (_slave_b_bits_T_76 & _slave_b_bits_T_77
+         ? 3'h4
+         : (|(S_AXI_AWADDR[31:18])) & _slave_b_bits_T_74
+             ? 3'h3
+             : _slave_b_bits_T_70 & _slave_b_bits_T_71
+                 ? 3'h2
+                 : {2'h0, (|(S_AXI_AWADDR[31:17])) & _slave_b_bits_T_68}) == 3'h4
+    & M_AXI_4_BVALID;
   assign S_AXI_ARREADY =
-    (_slave_r_bits_T_26 & _slave_r_bits_T_27
-       ? 2'h2
-       : {1'h0, (|(S_AXI_ARADDR[31:17])) & _slave_r_bits_T_24}) == 2'h0 & M_AXI_0_ARREADY
-    | (_slave_r_bits_T_26 & _slave_r_bits_T_27
-         ? 2'h2
-         : {1'h0, (|(S_AXI_ARADDR[31:17])) & _slave_r_bits_T_24}) == 2'h1
+    (_slave_r_bits_T_76 & _slave_r_bits_T_77
+       ? 3'h4
+       : (|(S_AXI_ARADDR[31:18])) & _slave_r_bits_T_74
+           ? 3'h3
+           : _slave_r_bits_T_70 & _slave_r_bits_T_71
+               ? 3'h2
+               : {2'h0, (|(S_AXI_ARADDR[31:17])) & _slave_r_bits_T_68}) == 3'h0
+    & M_AXI_0_ARREADY
+    | (_slave_r_bits_T_76 & _slave_r_bits_T_77
+         ? 3'h4
+         : (|(S_AXI_ARADDR[31:18])) & _slave_r_bits_T_74
+             ? 3'h3
+             : _slave_r_bits_T_70 & _slave_r_bits_T_71
+                 ? 3'h2
+                 : {2'h0, (|(S_AXI_ARADDR[31:17])) & _slave_r_bits_T_68}) == 3'h1
     & M_AXI_1_ARREADY
-    | (_slave_r_bits_T_26 & _slave_r_bits_T_27
-         ? 2'h2
-         : {1'h0, (|(S_AXI_ARADDR[31:17])) & _slave_r_bits_T_24}) == 2'h2
-    & M_AXI_2_ARREADY;
+    | (_slave_r_bits_T_76 & _slave_r_bits_T_77
+         ? 3'h4
+         : (|(S_AXI_ARADDR[31:18])) & _slave_r_bits_T_74
+             ? 3'h3
+             : _slave_r_bits_T_70 & _slave_r_bits_T_71
+                 ? 3'h2
+                 : {2'h0, (|(S_AXI_ARADDR[31:17])) & _slave_r_bits_T_68}) == 3'h2
+    & M_AXI_2_ARREADY
+    | (_slave_r_bits_T_76 & _slave_r_bits_T_77
+         ? 3'h4
+         : (|(S_AXI_ARADDR[31:18])) & _slave_r_bits_T_74
+             ? 3'h3
+             : _slave_r_bits_T_70 & _slave_r_bits_T_71
+                 ? 3'h2
+                 : {2'h0, (|(S_AXI_ARADDR[31:17])) & _slave_r_bits_T_68}) == 3'h3
+    & M_AXI_3_ARREADY
+    | (_slave_r_bits_T_76 & _slave_r_bits_T_77
+         ? 3'h4
+         : (|(S_AXI_ARADDR[31:18])) & _slave_r_bits_T_74
+             ? 3'h3
+             : _slave_r_bits_T_70 & _slave_r_bits_T_71
+                 ? 3'h2
+                 : {2'h0, (|(S_AXI_ARADDR[31:17])) & _slave_r_bits_T_68}) == 3'h4
+    & M_AXI_4_ARREADY;
   assign S_AXI_RDATA =
-    ((_slave_r_bits_T_26 & _slave_r_bits_T_27
-        ? 2'h2
-        : {1'h0, (|(S_AXI_ARADDR[31:17])) & _slave_r_bits_T_24}) == 2'h0
+    ((_slave_r_bits_T_76 & _slave_r_bits_T_77
+        ? 3'h4
+        : (|(S_AXI_ARADDR[31:18])) & _slave_r_bits_T_74
+            ? 3'h3
+            : _slave_r_bits_T_70 & _slave_r_bits_T_71
+                ? 3'h2
+                : {2'h0, (|(S_AXI_ARADDR[31:17])) & _slave_r_bits_T_68}) == 3'h0
        ? M_AXI_0_RDATA
        : 32'h0)
-    | ((_slave_r_bits_T_26 & _slave_r_bits_T_27
-          ? 2'h2
-          : {1'h0, (|(S_AXI_ARADDR[31:17])) & _slave_r_bits_T_24}) == 2'h1
+    | ((_slave_r_bits_T_76 & _slave_r_bits_T_77
+          ? 3'h4
+          : (|(S_AXI_ARADDR[31:18])) & _slave_r_bits_T_74
+              ? 3'h3
+              : _slave_r_bits_T_70 & _slave_r_bits_T_71
+                  ? 3'h2
+                  : {2'h0, (|(S_AXI_ARADDR[31:17])) & _slave_r_bits_T_68}) == 3'h1
          ? M_AXI_1_RDATA
          : 32'h0)
-    | ((_slave_r_bits_T_26 & _slave_r_bits_T_27
-          ? 2'h2
-          : {1'h0, (|(S_AXI_ARADDR[31:17])) & _slave_r_bits_T_24}) == 2'h2
+    | ((_slave_r_bits_T_76 & _slave_r_bits_T_77
+          ? 3'h4
+          : (|(S_AXI_ARADDR[31:18])) & _slave_r_bits_T_74
+              ? 3'h3
+              : _slave_r_bits_T_70 & _slave_r_bits_T_71
+                  ? 3'h2
+                  : {2'h0, (|(S_AXI_ARADDR[31:17])) & _slave_r_bits_T_68}) == 3'h2
          ? M_AXI_2_RDATA
+         : 32'h0)
+    | ((_slave_r_bits_T_76 & _slave_r_bits_T_77
+          ? 3'h4
+          : (|(S_AXI_ARADDR[31:18])) & _slave_r_bits_T_74
+              ? 3'h3
+              : _slave_r_bits_T_70 & _slave_r_bits_T_71
+                  ? 3'h2
+                  : {2'h0, (|(S_AXI_ARADDR[31:17])) & _slave_r_bits_T_68}) == 3'h3
+         ? M_AXI_3_RDATA
+         : 32'h0)
+    | ((_slave_r_bits_T_76 & _slave_r_bits_T_77
+          ? 3'h4
+          : (|(S_AXI_ARADDR[31:18])) & _slave_r_bits_T_74
+              ? 3'h3
+              : _slave_r_bits_T_70 & _slave_r_bits_T_71
+                  ? 3'h2
+                  : {2'h0, (|(S_AXI_ARADDR[31:17])) & _slave_r_bits_T_68}) == 3'h4
+         ? M_AXI_4_RDATA
          : 32'h0);
   assign S_AXI_RVALID =
-    (_slave_r_bits_T_26 & _slave_r_bits_T_27
-       ? 2'h2
-       : {1'h0, (|(S_AXI_ARADDR[31:17])) & _slave_r_bits_T_24}) == 2'h0 & M_AXI_0_RVALID
-    | (_slave_r_bits_T_26 & _slave_r_bits_T_27
-         ? 2'h2
-         : {1'h0, (|(S_AXI_ARADDR[31:17])) & _slave_r_bits_T_24}) == 2'h1 & M_AXI_1_RVALID
-    | (_slave_r_bits_T_26 & _slave_r_bits_T_27
-         ? 2'h2
-         : {1'h0, (|(S_AXI_ARADDR[31:17])) & _slave_r_bits_T_24}) == 2'h2
-    & M_AXI_2_RVALID;
+    (_slave_r_bits_T_76 & _slave_r_bits_T_77
+       ? 3'h4
+       : (|(S_AXI_ARADDR[31:18])) & _slave_r_bits_T_74
+           ? 3'h3
+           : _slave_r_bits_T_70 & _slave_r_bits_T_71
+               ? 3'h2
+               : {2'h0, (|(S_AXI_ARADDR[31:17])) & _slave_r_bits_T_68}) == 3'h0
+    & M_AXI_0_RVALID
+    | (_slave_r_bits_T_76 & _slave_r_bits_T_77
+         ? 3'h4
+         : (|(S_AXI_ARADDR[31:18])) & _slave_r_bits_T_74
+             ? 3'h3
+             : _slave_r_bits_T_70 & _slave_r_bits_T_71
+                 ? 3'h2
+                 : {2'h0, (|(S_AXI_ARADDR[31:17])) & _slave_r_bits_T_68}) == 3'h1
+    & M_AXI_1_RVALID
+    | (_slave_r_bits_T_76 & _slave_r_bits_T_77
+         ? 3'h4
+         : (|(S_AXI_ARADDR[31:18])) & _slave_r_bits_T_74
+             ? 3'h3
+             : _slave_r_bits_T_70 & _slave_r_bits_T_71
+                 ? 3'h2
+                 : {2'h0, (|(S_AXI_ARADDR[31:17])) & _slave_r_bits_T_68}) == 3'h2
+    & M_AXI_2_RVALID
+    | (_slave_r_bits_T_76 & _slave_r_bits_T_77
+         ? 3'h4
+         : (|(S_AXI_ARADDR[31:18])) & _slave_r_bits_T_74
+             ? 3'h3
+             : _slave_r_bits_T_70 & _slave_r_bits_T_71
+                 ? 3'h2
+                 : {2'h0, (|(S_AXI_ARADDR[31:17])) & _slave_r_bits_T_68}) == 3'h3
+    & M_AXI_3_RVALID
+    | (_slave_r_bits_T_76 & _slave_r_bits_T_77
+         ? 3'h4
+         : (|(S_AXI_ARADDR[31:18])) & _slave_r_bits_T_74
+             ? 3'h3
+             : _slave_r_bits_T_70 & _slave_r_bits_T_71
+                 ? 3'h2
+                 : {2'h0, (|(S_AXI_ARADDR[31:17])) & _slave_r_bits_T_68}) == 3'h4
+    & M_AXI_4_RVALID;
   assign M_AXI_0_AWADDR = S_AXI_AWADDR;
   assign M_AXI_0_AWVALID =
     S_AXI_AWVALID
-    & (_slave_b_bits_T_26 & _slave_b_bits_T_27
-         ? 2'h2
-         : {1'h0, (|(S_AXI_AWADDR[31:17])) & _slave_b_bits_T_24}) == 2'h0;
+    & (_slave_b_bits_T_76 & _slave_b_bits_T_77
+         ? 3'h4
+         : (|(S_AXI_AWADDR[31:18])) & _slave_b_bits_T_74
+             ? 3'h3
+             : _slave_b_bits_T_70 & _slave_b_bits_T_71
+                 ? 3'h2
+                 : {2'h0, (|(S_AXI_AWADDR[31:17])) & _slave_b_bits_T_68}) == 3'h0;
   assign M_AXI_0_WDATA = S_AXI_WDATA;
   assign M_AXI_0_WVALID =
     S_AXI_WVALID
-    & (_slave_b_bits_T_26 & _slave_b_bits_T_27
-         ? 2'h2
-         : {1'h0, (|(S_AXI_AWADDR[31:17])) & _slave_b_bits_T_24}) == 2'h0;
+    & (_slave_b_bits_T_76 & _slave_b_bits_T_77
+         ? 3'h4
+         : (|(S_AXI_AWADDR[31:18])) & _slave_b_bits_T_74
+             ? 3'h3
+             : _slave_b_bits_T_70 & _slave_b_bits_T_71
+                 ? 3'h2
+                 : {2'h0, (|(S_AXI_AWADDR[31:17])) & _slave_b_bits_T_68}) == 3'h0;
   assign M_AXI_0_BREADY =
     S_AXI_BREADY
-    & (_slave_b_bits_T_26 & _slave_b_bits_T_27
-         ? 2'h2
-         : {1'h0, (|(S_AXI_AWADDR[31:17])) & _slave_b_bits_T_24}) == 2'h0;
+    & (_slave_b_bits_T_76 & _slave_b_bits_T_77
+         ? 3'h4
+         : (|(S_AXI_AWADDR[31:18])) & _slave_b_bits_T_74
+             ? 3'h3
+             : _slave_b_bits_T_70 & _slave_b_bits_T_71
+                 ? 3'h2
+                 : {2'h0, (|(S_AXI_AWADDR[31:17])) & _slave_b_bits_T_68}) == 3'h0;
   assign M_AXI_0_ARADDR = S_AXI_ARADDR;
   assign M_AXI_0_ARVALID =
     S_AXI_ARVALID
-    & (_slave_r_bits_T_26 & _slave_r_bits_T_27
-         ? 2'h2
-         : {1'h0, (|(S_AXI_ARADDR[31:17])) & _slave_r_bits_T_24}) == 2'h0;
+    & (_slave_r_bits_T_76 & _slave_r_bits_T_77
+         ? 3'h4
+         : (|(S_AXI_ARADDR[31:18])) & _slave_r_bits_T_74
+             ? 3'h3
+             : _slave_r_bits_T_70 & _slave_r_bits_T_71
+                 ? 3'h2
+                 : {2'h0, (|(S_AXI_ARADDR[31:17])) & _slave_r_bits_T_68}) == 3'h0;
   assign M_AXI_0_RREADY =
     S_AXI_RREADY
-    & (_slave_r_bits_T_26 & _slave_r_bits_T_27
-         ? 2'h2
-         : {1'h0, (|(S_AXI_ARADDR[31:17])) & _slave_r_bits_T_24}) == 2'h0;
+    & (_slave_r_bits_T_76 & _slave_r_bits_T_77
+         ? 3'h4
+         : (|(S_AXI_ARADDR[31:18])) & _slave_r_bits_T_74
+             ? 3'h3
+             : _slave_r_bits_T_70 & _slave_r_bits_T_71
+                 ? 3'h2
+                 : {2'h0, (|(S_AXI_ARADDR[31:17])) & _slave_r_bits_T_68}) == 3'h0;
   assign M_AXI_1_AWADDR = S_AXI_AWADDR;
   assign M_AXI_1_AWVALID =
     S_AXI_AWVALID
-    & (_slave_b_bits_T_26 & _slave_b_bits_T_27
-         ? 2'h2
-         : {1'h0, (|(S_AXI_AWADDR[31:17])) & _slave_b_bits_T_24}) == 2'h1;
+    & (_slave_b_bits_T_76 & _slave_b_bits_T_77
+         ? 3'h4
+         : (|(S_AXI_AWADDR[31:18])) & _slave_b_bits_T_74
+             ? 3'h3
+             : _slave_b_bits_T_70 & _slave_b_bits_T_71
+                 ? 3'h2
+                 : {2'h0, (|(S_AXI_AWADDR[31:17])) & _slave_b_bits_T_68}) == 3'h1;
   assign M_AXI_1_WDATA = S_AXI_WDATA;
   assign M_AXI_1_WVALID =
     S_AXI_WVALID
-    & (_slave_b_bits_T_26 & _slave_b_bits_T_27
-         ? 2'h2
-         : {1'h0, (|(S_AXI_AWADDR[31:17])) & _slave_b_bits_T_24}) == 2'h1;
+    & (_slave_b_bits_T_76 & _slave_b_bits_T_77
+         ? 3'h4
+         : (|(S_AXI_AWADDR[31:18])) & _slave_b_bits_T_74
+             ? 3'h3
+             : _slave_b_bits_T_70 & _slave_b_bits_T_71
+                 ? 3'h2
+                 : {2'h0, (|(S_AXI_AWADDR[31:17])) & _slave_b_bits_T_68}) == 3'h1;
   assign M_AXI_1_BREADY =
     S_AXI_BREADY
-    & (_slave_b_bits_T_26 & _slave_b_bits_T_27
-         ? 2'h2
-         : {1'h0, (|(S_AXI_AWADDR[31:17])) & _slave_b_bits_T_24}) == 2'h1;
+    & (_slave_b_bits_T_76 & _slave_b_bits_T_77
+         ? 3'h4
+         : (|(S_AXI_AWADDR[31:18])) & _slave_b_bits_T_74
+             ? 3'h3
+             : _slave_b_bits_T_70 & _slave_b_bits_T_71
+                 ? 3'h2
+                 : {2'h0, (|(S_AXI_AWADDR[31:17])) & _slave_b_bits_T_68}) == 3'h1;
   assign M_AXI_1_ARADDR = S_AXI_ARADDR;
   assign M_AXI_1_ARVALID =
     S_AXI_ARVALID
-    & (_slave_r_bits_T_26 & _slave_r_bits_T_27
-         ? 2'h2
-         : {1'h0, (|(S_AXI_ARADDR[31:17])) & _slave_r_bits_T_24}) == 2'h1;
+    & (_slave_r_bits_T_76 & _slave_r_bits_T_77
+         ? 3'h4
+         : (|(S_AXI_ARADDR[31:18])) & _slave_r_bits_T_74
+             ? 3'h3
+             : _slave_r_bits_T_70 & _slave_r_bits_T_71
+                 ? 3'h2
+                 : {2'h0, (|(S_AXI_ARADDR[31:17])) & _slave_r_bits_T_68}) == 3'h1;
   assign M_AXI_1_RREADY =
     S_AXI_RREADY
-    & (_slave_r_bits_T_26 & _slave_r_bits_T_27
-         ? 2'h2
-         : {1'h0, (|(S_AXI_ARADDR[31:17])) & _slave_r_bits_T_24}) == 2'h1;
+    & (_slave_r_bits_T_76 & _slave_r_bits_T_77
+         ? 3'h4
+         : (|(S_AXI_ARADDR[31:18])) & _slave_r_bits_T_74
+             ? 3'h3
+             : _slave_r_bits_T_70 & _slave_r_bits_T_71
+                 ? 3'h2
+                 : {2'h0, (|(S_AXI_ARADDR[31:17])) & _slave_r_bits_T_68}) == 3'h1;
   assign M_AXI_2_AWADDR = S_AXI_AWADDR;
   assign M_AXI_2_AWVALID =
     S_AXI_AWVALID
-    & (_slave_b_bits_T_26 & _slave_b_bits_T_27
-         ? 2'h2
-         : {1'h0, (|(S_AXI_AWADDR[31:17])) & _slave_b_bits_T_24}) == 2'h2;
+    & (_slave_b_bits_T_76 & _slave_b_bits_T_77
+         ? 3'h4
+         : (|(S_AXI_AWADDR[31:18])) & _slave_b_bits_T_74
+             ? 3'h3
+             : _slave_b_bits_T_70 & _slave_b_bits_T_71
+                 ? 3'h2
+                 : {2'h0, (|(S_AXI_AWADDR[31:17])) & _slave_b_bits_T_68}) == 3'h2;
   assign M_AXI_2_WDATA = S_AXI_WDATA;
   assign M_AXI_2_WVALID =
     S_AXI_WVALID
-    & (_slave_b_bits_T_26 & _slave_b_bits_T_27
-         ? 2'h2
-         : {1'h0, (|(S_AXI_AWADDR[31:17])) & _slave_b_bits_T_24}) == 2'h2;
+    & (_slave_b_bits_T_76 & _slave_b_bits_T_77
+         ? 3'h4
+         : (|(S_AXI_AWADDR[31:18])) & _slave_b_bits_T_74
+             ? 3'h3
+             : _slave_b_bits_T_70 & _slave_b_bits_T_71
+                 ? 3'h2
+                 : {2'h0, (|(S_AXI_AWADDR[31:17])) & _slave_b_bits_T_68}) == 3'h2;
   assign M_AXI_2_BREADY =
     S_AXI_BREADY
-    & (_slave_b_bits_T_26 & _slave_b_bits_T_27
-         ? 2'h2
-         : {1'h0, (|(S_AXI_AWADDR[31:17])) & _slave_b_bits_T_24}) == 2'h2;
+    & (_slave_b_bits_T_76 & _slave_b_bits_T_77
+         ? 3'h4
+         : (|(S_AXI_AWADDR[31:18])) & _slave_b_bits_T_74
+             ? 3'h3
+             : _slave_b_bits_T_70 & _slave_b_bits_T_71
+                 ? 3'h2
+                 : {2'h0, (|(S_AXI_AWADDR[31:17])) & _slave_b_bits_T_68}) == 3'h2;
   assign M_AXI_2_ARADDR = S_AXI_ARADDR;
   assign M_AXI_2_ARVALID =
     S_AXI_ARVALID
-    & (_slave_r_bits_T_26 & _slave_r_bits_T_27
-         ? 2'h2
-         : {1'h0, (|(S_AXI_ARADDR[31:17])) & _slave_r_bits_T_24}) == 2'h2;
+    & (_slave_r_bits_T_76 & _slave_r_bits_T_77
+         ? 3'h4
+         : (|(S_AXI_ARADDR[31:18])) & _slave_r_bits_T_74
+             ? 3'h3
+             : _slave_r_bits_T_70 & _slave_r_bits_T_71
+                 ? 3'h2
+                 : {2'h0, (|(S_AXI_ARADDR[31:17])) & _slave_r_bits_T_68}) == 3'h2;
   assign M_AXI_2_RREADY =
     S_AXI_RREADY
-    & (_slave_r_bits_T_26 & _slave_r_bits_T_27
-         ? 2'h2
-         : {1'h0, (|(S_AXI_ARADDR[31:17])) & _slave_r_bits_T_24}) == 2'h2;
+    & (_slave_r_bits_T_76 & _slave_r_bits_T_77
+         ? 3'h4
+         : (|(S_AXI_ARADDR[31:18])) & _slave_r_bits_T_74
+             ? 3'h3
+             : _slave_r_bits_T_70 & _slave_r_bits_T_71
+                 ? 3'h2
+                 : {2'h0, (|(S_AXI_ARADDR[31:17])) & _slave_r_bits_T_68}) == 3'h2;
+  assign M_AXI_3_AWADDR = S_AXI_AWADDR;
+  assign M_AXI_3_AWVALID =
+    S_AXI_AWVALID
+    & (_slave_b_bits_T_76 & _slave_b_bits_T_77
+         ? 3'h4
+         : (|(S_AXI_AWADDR[31:18])) & _slave_b_bits_T_74
+             ? 3'h3
+             : _slave_b_bits_T_70 & _slave_b_bits_T_71
+                 ? 3'h2
+                 : {2'h0, (|(S_AXI_AWADDR[31:17])) & _slave_b_bits_T_68}) == 3'h3;
+  assign M_AXI_3_WDATA = S_AXI_WDATA;
+  assign M_AXI_3_WVALID =
+    S_AXI_WVALID
+    & (_slave_b_bits_T_76 & _slave_b_bits_T_77
+         ? 3'h4
+         : (|(S_AXI_AWADDR[31:18])) & _slave_b_bits_T_74
+             ? 3'h3
+             : _slave_b_bits_T_70 & _slave_b_bits_T_71
+                 ? 3'h2
+                 : {2'h0, (|(S_AXI_AWADDR[31:17])) & _slave_b_bits_T_68}) == 3'h3;
+  assign M_AXI_3_BREADY =
+    S_AXI_BREADY
+    & (_slave_b_bits_T_76 & _slave_b_bits_T_77
+         ? 3'h4
+         : (|(S_AXI_AWADDR[31:18])) & _slave_b_bits_T_74
+             ? 3'h3
+             : _slave_b_bits_T_70 & _slave_b_bits_T_71
+                 ? 3'h2
+                 : {2'h0, (|(S_AXI_AWADDR[31:17])) & _slave_b_bits_T_68}) == 3'h3;
+  assign M_AXI_3_ARADDR = S_AXI_ARADDR;
+  assign M_AXI_3_ARVALID =
+    S_AXI_ARVALID
+    & (_slave_r_bits_T_76 & _slave_r_bits_T_77
+         ? 3'h4
+         : (|(S_AXI_ARADDR[31:18])) & _slave_r_bits_T_74
+             ? 3'h3
+             : _slave_r_bits_T_70 & _slave_r_bits_T_71
+                 ? 3'h2
+                 : {2'h0, (|(S_AXI_ARADDR[31:17])) & _slave_r_bits_T_68}) == 3'h3;
+  assign M_AXI_3_RREADY =
+    S_AXI_RREADY
+    & (_slave_r_bits_T_76 & _slave_r_bits_T_77
+         ? 3'h4
+         : (|(S_AXI_ARADDR[31:18])) & _slave_r_bits_T_74
+             ? 3'h3
+             : _slave_r_bits_T_70 & _slave_r_bits_T_71
+                 ? 3'h2
+                 : {2'h0, (|(S_AXI_ARADDR[31:17])) & _slave_r_bits_T_68}) == 3'h3;
+  assign M_AXI_4_AWADDR = S_AXI_AWADDR;
+  assign M_AXI_4_AWVALID =
+    S_AXI_AWVALID
+    & (_slave_b_bits_T_76 & _slave_b_bits_T_77
+         ? 3'h4
+         : (|(S_AXI_AWADDR[31:18])) & _slave_b_bits_T_74
+             ? 3'h3
+             : _slave_b_bits_T_70 & _slave_b_bits_T_71
+                 ? 3'h2
+                 : {2'h0, (|(S_AXI_AWADDR[31:17])) & _slave_b_bits_T_68}) == 3'h4;
+  assign M_AXI_4_WDATA = S_AXI_WDATA;
+  assign M_AXI_4_WVALID =
+    S_AXI_WVALID
+    & (_slave_b_bits_T_76 & _slave_b_bits_T_77
+         ? 3'h4
+         : (|(S_AXI_AWADDR[31:18])) & _slave_b_bits_T_74
+             ? 3'h3
+             : _slave_b_bits_T_70 & _slave_b_bits_T_71
+                 ? 3'h2
+                 : {2'h0, (|(S_AXI_AWADDR[31:17])) & _slave_b_bits_T_68}) == 3'h4;
+  assign M_AXI_4_BREADY =
+    S_AXI_BREADY
+    & (_slave_b_bits_T_76 & _slave_b_bits_T_77
+         ? 3'h4
+         : (|(S_AXI_AWADDR[31:18])) & _slave_b_bits_T_74
+             ? 3'h3
+             : _slave_b_bits_T_70 & _slave_b_bits_T_71
+                 ? 3'h2
+                 : {2'h0, (|(S_AXI_AWADDR[31:17])) & _slave_b_bits_T_68}) == 3'h4;
+  assign M_AXI_4_ARADDR = S_AXI_ARADDR;
+  assign M_AXI_4_ARVALID =
+    S_AXI_ARVALID
+    & (_slave_r_bits_T_76 & _slave_r_bits_T_77
+         ? 3'h4
+         : (|(S_AXI_ARADDR[31:18])) & _slave_r_bits_T_74
+             ? 3'h3
+             : _slave_r_bits_T_70 & _slave_r_bits_T_71
+                 ? 3'h2
+                 : {2'h0, (|(S_AXI_ARADDR[31:17])) & _slave_r_bits_T_68}) == 3'h4;
+  assign M_AXI_4_RREADY =
+    S_AXI_RREADY
+    & (_slave_r_bits_T_76 & _slave_r_bits_T_77
+         ? 3'h4
+         : (|(S_AXI_ARADDR[31:18])) & _slave_r_bits_T_74
+             ? 3'h3
+             : _slave_r_bits_T_70 & _slave_r_bits_T_71
+                 ? 3'h2
+                 : {2'h0, (|(S_AXI_ARADDR[31:17])) & _slave_r_bits_T_68}) == 3'h4;
 endmodule
 
 module mmap_regs_32x32_r4 (
@@ -1115,6 +1483,7 @@ module acm2108_wrapper (
   reg  [31:0] axi_araddr;
   reg  [31:0] axi_rdata;
   reg         axi_rvalid;
+  wire [31:0] _raddr_T = axi_araddr - 32'h30000;
   wire        _GEN = ~axi_awready & S_AXI_AWVALID;
   wire        _GEN_0 = ~axi_bvalid & axi_wready & S_AXI_WVALID;
   wire        _GEN_1 = axi_awaddr[7:0] == 8'h8;
@@ -1186,29 +1555,29 @@ module acm2108_wrapper (
       if (_GEN_12) axi_araddr <= S_AXI_ARADDR;
       if (_GEN_13)
         axi_rdata <=
-          axi_araddr[7:0] == 8'h34
+          _raddr_T == 32'h34
             ? {31'h0, _acm2108_led[1]}
-            : axi_araddr[7:0] == 8'h30
+            : _raddr_T == 32'h30
                 ? {16'h0, regLocalPort}
-                : axi_araddr[7:0] == 8'h2C
+                : _raddr_T == 32'h2C
                     ? regLocalIp
-                    : axi_araddr[7:0] == 8'h28
+                    : _raddr_T == 32'h28
                         ? regLocalMacLo
-                        : axi_araddr[7:0] == 8'h24
+                        : _raddr_T == 32'h24
                             ? {16'h0, regLocalMacHi}
-                            : axi_araddr[7:0] == 8'h20
+                            : _raddr_T == 32'h20
                                 ? regDdsFtw
-                                : axi_araddr[7:0] == 8'h1C
+                                : _raddr_T == 32'h1C
                                     ? {29'h0, regDdsWaveSel}
-                                    : axi_araddr[7:0] == 8'h10
+                                    : _raddr_T == 32'h10
                                         ? regAdcSpeed
-                                        : axi_araddr[7:0] == 8'hC
+                                        : _raddr_T == 32'hC
                                             ? regDataNum
-                                            : axi_araddr[7:0] == 8'h8
+                                            : _raddr_T == 32'h8
                                                 ? {24'h0, regChannelSel}
-                                                : axi_araddr[7:0] == 8'h4
+                                                : _raddr_T == 32'h4
                                                     ? {30'h0, _acm2108_led}
-                                                    : axi_araddr[7:0] == 8'h0
+                                                    : _raddr_T == 32'h0
                                                         ? {31'h0, regRestartReq}
                                                         : 32'h0;
       axi_rvalid <= _GEN_13 | ~(axi_rvalid & S_AXI_RREADY) & axi_rvalid;
@@ -1271,6 +1640,209 @@ module acm2108_wrapper (
   assign S_AXI_RVALID  = axi_rvalid;
 endmodule
 
+module signal_measure_wrapper (
+    input         clock,
+    reset,
+    input  [31:0] S_AXI_AWADDR,
+    input         S_AXI_AWVALID,
+    output        S_AXI_AWREADY,
+    input  [31:0] S_AXI_WDATA,
+    input         S_AXI_WVALID,
+    output        S_AXI_WREADY,
+    S_AXI_BVALID,
+    input         S_AXI_BREADY,
+    input  [31:0] S_AXI_ARADDR,
+    input         S_AXI_ARVALID,
+    output        S_AXI_ARREADY,
+    output [31:0] S_AXI_RDATA,
+    output        S_AXI_RVALID,
+    input         S_AXI_RREADY,
+    sig_in
+);
+
+  wire        _signalMeasure_busy;
+  wire        _signalMeasure_finish;
+  wire [25:0] _signalMeasure_period_out;
+  wire [ 7:0] _signalMeasure_duty;
+  wire [19:0] _signalMeasure_high_time;
+  wire [19:0] _signalMeasure_low_time;
+  reg         regEnable;
+  reg         axi_awready;
+  reg  [31:0] axi_awaddr;
+  reg         axi_wready;
+  reg         axi_bvalid;
+  reg         axi_arready;
+  reg  [31:0] axi_araddr;
+  reg  [31:0] axi_rdata;
+  reg         axi_rvalid;
+  wire [31:0] _raddr_T = axi_araddr - 32'h40000;
+  wire        _GEN = ~axi_awready & S_AXI_AWVALID;
+  wire        _GEN_0 = ~axi_bvalid & axi_wready & S_AXI_WVALID;
+  wire        _GEN_1 = ~axi_arready & S_AXI_ARVALID;
+  wire        _GEN_2 = ~axi_rvalid & axi_arready & S_AXI_ARVALID;
+  always @(posedge clock) begin
+    if (reset) begin
+      regEnable   <= 1'h0;
+      axi_awready <= 1'h0;
+      axi_awaddr  <= 32'h0;
+      axi_wready  <= 1'h0;
+      axi_bvalid  <= 1'h0;
+      axi_arready <= 1'h0;
+      axi_araddr  <= 32'h0;
+      axi_rdata   <= 32'h0;
+      axi_rvalid  <= 1'h0;
+    end else begin
+      regEnable <=
+        _GEN_0 & axi_awaddr - 32'h40000 == 32'h0
+          ? S_AXI_WDATA[0]
+          : ~(regEnable & _signalMeasure_busy) & regEnable;
+      axi_awready <= _GEN;
+      if (_GEN) axi_awaddr <= S_AXI_AWADDR;
+      axi_wready <=
+        ~axi_wready & axi_awready & S_AXI_AWVALID | ~(axi_wready & S_AXI_WVALID)
+        & axi_wready;
+      axi_bvalid <= _GEN_0 | ~(S_AXI_BREADY & axi_bvalid) & axi_bvalid;
+      axi_arready <= _GEN_1;
+      if (_GEN_1) axi_araddr <= S_AXI_ARADDR;
+      if (_GEN_2)
+        axi_rdata <=
+          _raddr_T == 32'h14
+            ? {12'h0, _signalMeasure_low_time}
+            : _raddr_T == 32'h10
+                ? {12'h0, _signalMeasure_high_time}
+                : _raddr_T == 32'hC
+                    ? {24'h0, _signalMeasure_duty}
+                    : _raddr_T == 32'h8
+                        ? {6'h0, _signalMeasure_period_out}
+                        : _raddr_T == 32'h4
+                            ? {30'h0, _signalMeasure_finish, _signalMeasure_busy}
+                            : _raddr_T == 32'h0 ? {31'h0, regEnable} : 32'h0;
+      axi_rvalid <= _GEN_2 | ~(axi_rvalid & S_AXI_RREADY) & axi_rvalid;
+    end
+  end  // always @(posedge)
+  signal_measure_ctrl signalMeasure (
+      .clk       (clock),
+      .rst_n     (~reset),
+      .enable    (regEnable),
+      .sig_in    (sig_in),
+      .busy      (_signalMeasure_busy),
+      .finish    (_signalMeasure_finish),
+      .period_out(_signalMeasure_period_out),
+      .duty      (_signalMeasure_duty),
+      .high_time (_signalMeasure_high_time),
+      .low_time  (_signalMeasure_low_time)
+  );
+  assign S_AXI_AWREADY = axi_awready;
+  assign S_AXI_WREADY  = axi_wready;
+  assign S_AXI_BVALID  = axi_bvalid;
+  assign S_AXI_ARREADY = axi_arready;
+  assign S_AXI_RDATA   = axi_rdata;
+  assign S_AXI_RVALID  = axi_rvalid;
+endmodule
+
+
+module dds_ctrl_wrapper (
+    input         clock,
+    reset,
+    input  [31:0] S_AXI_AWADDR,
+    input         S_AXI_AWVALID,
+    output        S_AXI_AWREADY,
+    input  [31:0] S_AXI_WDATA,
+    input         S_AXI_WVALID,
+    output        S_AXI_WREADY,
+    S_AXI_BVALID,
+    input         S_AXI_BREADY,
+    input  [31:0] S_AXI_ARADDR,
+    input         S_AXI_ARVALID,
+    output        S_AXI_ARREADY,
+    output [31:0] S_AXI_RDATA,
+    output        S_AXI_RVALID,
+    input         S_AXI_RREADY,
+    clk125m,
+    output [ 7:0] DA0_Data,
+    output        DA0_Clk,
+    interrupt
+);
+
+  reg  [ 2:0] regWaveSel;
+  reg  [31:0] regFtw;
+  reg         regApplyPulse;
+  reg         axi_awready;
+  reg  [31:0] axi_awaddr;
+  reg         axi_wready;
+  reg         axi_bvalid;
+  reg         axi_arready;
+  reg  [31:0] axi_araddr;
+  reg  [31:0] axi_rdata;
+  reg         axi_rvalid;
+  reg         applyPulseReg;
+  wire [31:0] _raddr_T = axi_araddr - 32'h50000;
+  wire        _GEN = ~axi_awready & S_AXI_AWVALID;
+  wire        _GEN_0 = ~axi_bvalid & axi_wready & S_AXI_WVALID;
+  wire [31:0] _waddr_T = axi_awaddr - 32'h50000;
+  wire        _GEN_1 = _waddr_T == 32'h0;
+  wire        _GEN_2 = _waddr_T == 32'h8;
+  wire        _GEN_3 = ~axi_arready & S_AXI_ARVALID;
+  wire        _GEN_4 = ~axi_rvalid & axi_arready & S_AXI_ARVALID;
+  always @(posedge clock) begin
+    if (reset) begin
+      regWaveSel <= 3'h0;
+      regFtw <= 32'h0;
+      regApplyPulse <= 1'h0;
+      axi_awready <= 1'h0;
+      axi_awaddr <= 32'h0;
+      axi_wready <= 1'h0;
+      axi_bvalid <= 1'h0;
+      axi_arready <= 1'h0;
+      axi_araddr <= 32'h0;
+      axi_rdata <= 32'h0;
+      axi_rvalid <= 1'h0;
+    end else begin
+      if (~_GEN_0 | _GEN_1 | ~_GEN_2) begin
+      end else regWaveSel <= S_AXI_WDATA[2:0];
+      if (~_GEN_0 | _GEN_1 | _GEN_2 | _waddr_T != 32'hC) begin
+      end else regFtw <= regFtw & 32'hFFFFFF | {S_AXI_WDATA[31:24], 24'h0};
+      regApplyPulse <= _GEN_0 & _GEN_1 & S_AXI_WDATA[0];
+      axi_awready   <= _GEN;
+      if (_GEN) axi_awaddr <= S_AXI_AWADDR;
+      axi_wready <=
+        ~axi_wready & axi_awready & S_AXI_AWVALID | ~(axi_wready & S_AXI_WVALID)
+        & axi_wready;
+      axi_bvalid <= _GEN_0 | ~(S_AXI_BREADY & axi_bvalid) & axi_bvalid;
+      axi_arready <= _GEN_3;
+      if (_GEN_3) axi_araddr <= S_AXI_ARADDR;
+      if (_GEN_4)
+        axi_rdata <=
+          _raddr_T == 32'h10
+            ? 32'h7735940
+            : _raddr_T == 32'hC
+                ? regFtw
+                : _raddr_T == 32'h8
+                    ? {29'h0, regWaveSel}
+                    : _raddr_T == 32'h4 | (|_raddr_T) ? 32'h0 : {31'h0, regApplyPulse};
+      axi_rvalid <= _GEN_4 | ~(axi_rvalid & S_AXI_RREADY) & axi_rvalid;
+    end
+    applyPulseReg <= regApplyPulse;
+  end  // always @(posedge)
+  state_ctrl_dds_min ddsCtrl (
+      .Clk            (clock),
+      .Rst_n          (~reset),
+      .wave_sel_in    (regWaveSel),
+      .ftw_in         (regFtw),
+      .dds_apply_pulse(regApplyPulse),
+      .clk125m        (clk125m),
+      .DA0_Data       (DA0_Data),
+      .DA0_Clk        (DA0_Clk)
+  );
+  assign S_AXI_AWREADY = axi_awready;
+  assign S_AXI_WREADY = axi_wready;
+  assign S_AXI_BVALID = axi_bvalid;
+  assign S_AXI_ARREADY = axi_arready;
+  assign S_AXI_RDATA = axi_rdata;
+  assign S_AXI_RVALID = axi_rvalid;
+  assign interrupt = regApplyPulse & ~applyPulseReg;
+endmodule
+
 module axi_cmd_test_module (
     input         clock,
     reset,
@@ -1310,9 +1882,25 @@ module axi_cmd_test_module (
     acm_rgmii_tx_clk,
     output [ 3:0] acm_rgmii_txd,
     output        acm_rgmii_txen,
-    interrupt
+    acm_interrupt,
+    input         sig_in,
+    clk125m,
+    output [ 7:0] DA0_Data,
+    output        DA0_Clk,
+    da_interrupt
 );
-
+  wire        _slave5_S_AXI_AWREADY;
+  wire        _slave5_S_AXI_WREADY;
+  wire        _slave5_S_AXI_BVALID;
+  wire        _slave5_S_AXI_ARREADY;
+  wire [31:0] _slave5_S_AXI_RDATA;
+  wire        _slave5_S_AXI_RVALID;
+  wire        _slave4_S_AXI_AWREADY;
+  wire        _slave4_S_AXI_WREADY;
+  wire        _slave4_S_AXI_BVALID;
+  wire        _slave4_S_AXI_ARREADY;
+  wire [31:0] _slave4_S_AXI_RDATA;
+  wire        _slave4_S_AXI_RVALID;
   wire        _slave3_S_AXI_AWREADY;
   wire        _slave3_S_AXI_WREADY;
   wire        _slave3_S_AXI_BVALID;
@@ -1361,6 +1949,22 @@ module axi_cmd_test_module (
   wire [31:0] _interconnect_M_AXI_2_ARADDR;
   wire        _interconnect_M_AXI_2_ARVALID;
   wire        _interconnect_M_AXI_2_RREADY;
+  wire [31:0] _interconnect_M_AXI_3_AWADDR;
+  wire        _interconnect_M_AXI_3_AWVALID;
+  wire [31:0] _interconnect_M_AXI_3_WDATA;
+  wire        _interconnect_M_AXI_3_WVALID;
+  wire        _interconnect_M_AXI_3_BREADY;
+  wire [31:0] _interconnect_M_AXI_3_ARADDR;
+  wire        _interconnect_M_AXI_3_ARVALID;
+  wire        _interconnect_M_AXI_3_RREADY;
+  wire [31:0] _interconnect_M_AXI_4_AWADDR;
+  wire        _interconnect_M_AXI_4_AWVALID;
+  wire [31:0] _interconnect_M_AXI_4_WDATA;
+  wire        _interconnect_M_AXI_4_WVALID;
+  wire        _interconnect_M_AXI_4_BREADY;
+  wire [31:0] _interconnect_M_AXI_4_ARADDR;
+  wire        _interconnect_M_AXI_4_ARVALID;
+  wire        _interconnect_M_AXI_4_RREADY;
   wire        _lite2fullBridge_S_AXI_AWREADY;
   wire        _lite2fullBridge_S_AXI_WREADY;
   wire        _lite2fullBridge_S_AXI_BVALID;
@@ -1433,7 +2037,7 @@ module axi_cmd_test_module (
       .M_AXI_RDATA  (_slave2_S_AXI_RDATA),
       .M_AXI_RVALID (_slave2_S_AXI_RVALID)
   );
-  axilite_interconnect3_32x32 interconnect_0 (
+  axilite_interconnect5_32x32 interconnect_0 (
       .S_AXI_AWADDR   (_master_M_AXI_AWADDR),
       .S_AXI_AWVALID  (_master_M_AXI_AWVALID),
       .S_AXI_AWREADY  (_interconnect_S_AXI_AWREADY),
@@ -1489,7 +2093,35 @@ module axi_cmd_test_module (
       .M_AXI_2_ARREADY(_slave3_S_AXI_ARREADY),
       .M_AXI_2_RDATA  (_slave3_S_AXI_RDATA),
       .M_AXI_2_RVALID (_slave3_S_AXI_RVALID),
-      .M_AXI_2_RREADY (_interconnect_M_AXI_2_RREADY)
+      .M_AXI_2_RREADY (_interconnect_M_AXI_2_RREADY),
+      .M_AXI_3_AWADDR (_interconnect_M_AXI_3_AWADDR),
+      .M_AXI_3_AWVALID(_interconnect_M_AXI_3_AWVALID),
+      .M_AXI_3_AWREADY(_slave4_S_AXI_AWREADY),
+      .M_AXI_3_WDATA  (_interconnect_M_AXI_3_WDATA),
+      .M_AXI_3_WVALID (_interconnect_M_AXI_3_WVALID),
+      .M_AXI_3_WREADY (_slave4_S_AXI_WREADY),
+      .M_AXI_3_BVALID (_slave4_S_AXI_BVALID),
+      .M_AXI_3_BREADY (_interconnect_M_AXI_3_BREADY),
+      .M_AXI_3_ARADDR (_interconnect_M_AXI_3_ARADDR),
+      .M_AXI_3_ARVALID(_interconnect_M_AXI_3_ARVALID),
+      .M_AXI_3_ARREADY(_slave4_S_AXI_ARREADY),
+      .M_AXI_3_RDATA  (_slave4_S_AXI_RDATA),
+      .M_AXI_3_RVALID (_slave4_S_AXI_RVALID),
+      .M_AXI_3_RREADY (_interconnect_M_AXI_3_RREADY),
+      .M_AXI_4_AWADDR (_interconnect_M_AXI_4_AWADDR),
+      .M_AXI_4_AWVALID(_interconnect_M_AXI_4_AWVALID),
+      .M_AXI_4_AWREADY(_slave5_S_AXI_AWREADY),
+      .M_AXI_4_WDATA  (_interconnect_M_AXI_4_WDATA),
+      .M_AXI_4_WVALID (_interconnect_M_AXI_4_WVALID),
+      .M_AXI_4_WREADY (_slave5_S_AXI_WREADY),
+      .M_AXI_4_BVALID (_slave5_S_AXI_BVALID),
+      .M_AXI_4_BREADY (_interconnect_M_AXI_4_BREADY),
+      .M_AXI_4_ARADDR (_interconnect_M_AXI_4_ARADDR),
+      .M_AXI_4_ARVALID(_interconnect_M_AXI_4_ARVALID),
+      .M_AXI_4_ARREADY(_slave5_S_AXI_ARREADY),
+      .M_AXI_4_RDATA  (_slave5_S_AXI_RDATA),
+      .M_AXI_4_RVALID (_slave5_S_AXI_RVALID),
+      .M_AXI_4_RREADY (_interconnect_M_AXI_4_RREADY)
   );
   axilite_slave_mmap_32x32_r4 slave1 (
       .clock        (clock),
@@ -1579,5 +2211,46 @@ module axi_cmd_test_module (
       .acm_rgmii_txd     (acm_rgmii_txd),
       .acm_rgmii_txen    (acm_rgmii_txen)
   );
-  assign interrupt = 1'h0;
+  signal_measure_wrapper slave4 (
+      .clock        (clock),
+      .reset        (reset),
+      .S_AXI_AWADDR (_interconnect_M_AXI_3_AWADDR),
+      .S_AXI_AWVALID(_interconnect_M_AXI_3_AWVALID),
+      .S_AXI_AWREADY(_slave4_S_AXI_AWREADY),
+      .S_AXI_WDATA  (_interconnect_M_AXI_3_WDATA),
+      .S_AXI_WVALID (_interconnect_M_AXI_3_WVALID),
+      .S_AXI_WREADY (_slave4_S_AXI_WREADY),
+      .S_AXI_BVALID (_slave4_S_AXI_BVALID),
+      .S_AXI_BREADY (_interconnect_M_AXI_3_BREADY),
+      .S_AXI_ARADDR (_interconnect_M_AXI_3_ARADDR),
+      .S_AXI_ARVALID(_interconnect_M_AXI_3_ARVALID),
+      .S_AXI_ARREADY(_slave4_S_AXI_ARREADY),
+      .S_AXI_RDATA  (_slave4_S_AXI_RDATA),
+      .S_AXI_RVALID (_slave4_S_AXI_RVALID),
+      .S_AXI_RREADY (_interconnect_M_AXI_3_RREADY),
+      .sig_in       (sig_in)
+  );
+  dds_ctrl_wrapper slave5 (
+      .clock        (clock),
+      .reset        (reset),
+      .S_AXI_AWADDR (_interconnect_M_AXI_4_AWADDR),
+      .S_AXI_AWVALID(_interconnect_M_AXI_4_AWVALID),
+      .S_AXI_AWREADY(_slave5_S_AXI_AWREADY),
+      .S_AXI_WDATA  (_interconnect_M_AXI_4_WDATA),
+      .S_AXI_WVALID (_interconnect_M_AXI_4_WVALID),
+      .S_AXI_WREADY (_slave5_S_AXI_WREADY),
+      .S_AXI_BVALID (_slave5_S_AXI_BVALID),
+      .S_AXI_BREADY (_interconnect_M_AXI_4_BREADY),
+      .S_AXI_ARADDR (_interconnect_M_AXI_4_ARADDR),
+      .S_AXI_ARVALID(_interconnect_M_AXI_4_ARVALID),
+      .S_AXI_ARREADY(_slave5_S_AXI_ARREADY),
+      .S_AXI_RDATA  (_slave5_S_AXI_RDATA),
+      .S_AXI_RVALID (_slave5_S_AXI_RVALID),
+      .S_AXI_RREADY (_interconnect_M_AXI_4_RREADY),
+      .clk125m      (clk125m),
+      .DA0_Data     (DA0_Data),
+      .DA0_Clk      (DA0_Clk),
+      .interrupt    (da_interrupt)
+  );
+  assign acm_interrupt = 1'h0;
 endmodule
