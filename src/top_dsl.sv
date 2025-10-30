@@ -1496,6 +1496,7 @@ endmodule
 module axi_cmd_test_module (
     input         clock,
     reset,
+    clk125m,
     output        TXD,
     input         RXD,
     output [ 1:0] led,
@@ -1849,6 +1850,7 @@ module axi_cmd_test_module (
       .sig_in       (sig_in)
   );
 endmodule
+
 
 module acm2108_ddr3_udp (
     clk,
