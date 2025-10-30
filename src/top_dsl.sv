@@ -908,17 +908,19 @@ module mmap_regs_32x32_r4 (
   reg [31:0] regs_2;
   reg [31:0] regs_3;
   wire _MMAP_read_data_T = MMAP_read_addr == 32'h10000;
-  wire _MMAP_read_data_T_1 = MMAP_read_addr == 32'h14000;
-  wire _MMAP_read_data_T_2 = MMAP_read_addr == 32'h18000;
-  wire _MMAP_read_data_T_3 = MMAP_read_addr == 32'h1C000;
-  wire _write_addr_match_T = MMAP_write_addr == 32'h10000;
-  wire _write_addr_match_T_1 = MMAP_write_addr == 32'h14000;
-  wire _write_addr_match_T_2 = MMAP_write_addr == 32'h18000;
-  wire _write_addr_match_T_3 = MMAP_write_addr == 32'h1C000;
+  wire _MMAP_read_data_T_2 = MMAP_read_addr == 32'h14000;
+  wire _MMAP_read_data_T_4 = MMAP_read_addr == 32'h18000;
+  wire _MMAP_read_data_T_6 = MMAP_read_addr == 32'h1C000;
+  wire _write_access_allowed_T = MMAP_write_addr == 32'h10000;
+  wire _write_access_allowed_T_1 = MMAP_write_addr == 32'h14000;
+  wire _write_access_allowed_T_2 = MMAP_write_addr == 32'h18000;
+  wire _write_access_allowed_T_4 = MMAP_write_addr == 32'h1C000;
   wire        _GEN =
     MMAP_write_en
-    & (_write_addr_match_T | _write_addr_match_T_1 | _write_addr_match_T_2
-       | _write_addr_match_T_3);
+    & (_write_access_allowed_T | _write_access_allowed_T_1 | _write_access_allowed_T_2
+       | _write_access_allowed_T_4)
+    & (_write_access_allowed_T | _write_access_allowed_T_1 | _write_access_allowed_T_2
+       | _write_access_allowed_T_4);
   always @(posedge clock) begin
     if (reset) begin
       regs_0 <= 32'h0;
@@ -926,21 +928,23 @@ module mmap_regs_32x32_r4 (
       regs_2 <= 32'h0;
       regs_3 <= 32'h0;
     end else begin
-      if (_GEN & _write_addr_match_T) regs_0 <= MMAP_write_data;
-      if (_GEN & _write_addr_match_T_1) regs_1 <= MMAP_write_data;
-      if (_GEN & _write_addr_match_T_2) regs_2 <= MMAP_write_data;
-      if (_GEN & _write_addr_match_T_3) regs_3 <= MMAP_write_data;
+      if (_GEN & _write_access_allowed_T) regs_0 <= MMAP_write_data;
+      if (_GEN & _write_access_allowed_T_1) regs_1 <= MMAP_write_data;
+      if (_GEN & _write_access_allowed_T_2) regs_2 <= MMAP_write_data;
+      if (_GEN & _write_access_allowed_T_4) regs_3 <= MMAP_write_data;
     end
   end  // always @(posedge)
   assign MMAP_read_data =
     MMAP_read_en
-    & (_MMAP_read_data_T | _MMAP_read_data_T_1 | _MMAP_read_data_T_2
-       | _MMAP_read_data_T_3)
+    & (_MMAP_read_data_T | _MMAP_read_data_T_2 | _MMAP_read_data_T_4
+       | _MMAP_read_data_T_6)
+    & (_MMAP_read_data_T | _MMAP_read_data_T_2 | _MMAP_read_data_T_4
+       | _MMAP_read_data_T_6)
       ? (_MMAP_read_data_T
            ? regs_0
-           : _MMAP_read_data_T_1
+           : _MMAP_read_data_T_2
                ? regs_1
-               : _MMAP_read_data_T_2 ? regs_2 : _MMAP_read_data_T_3 ? regs_3 : 32'h0)
+               : _MMAP_read_data_T_4 ? regs_2 : _MMAP_read_data_T_6 ? regs_3 : 32'h0)
       : 32'h0;
 endmodule
 
@@ -1019,68 +1023,60 @@ module axilite_slave_mmap_32x32_r4 (
   assign S_AXI_RVALID  = axi_rvalid;
 endmodule
 
-module ram_32x32_s8_b131072 (
+// VCS coverage exclude_file
+module ram_8x32 (
+    input  [ 2:0] R0_addr,
+    input         R0_en,
+    R0_clk,
+    output [31:0] R0_data,
+    input  [ 2:0] W0_addr,
+    input         W0_en,
+    W0_clk,
+    input  [31:0] W0_data,
+    input  [ 3:0] W0_mask
+);
+
+  reg [31:0] Memory      [0:7];
+  reg        _R0_en_d0;
+  reg [ 2:0] _R0_addr_d0;
+  always @(posedge R0_clk) begin
+    _R0_en_d0   <= R0_en;
+    _R0_addr_d0 <= R0_addr;
+  end  // always @(posedge)
+  always @(posedge W0_clk) begin
+    if (W0_en & W0_mask[0]) Memory[W0_addr][32'h0+:8] <= W0_data[7:0];
+    if (W0_en & W0_mask[1]) Memory[W0_addr][32'h8+:8] <= W0_data[15:8];
+    if (W0_en & W0_mask[2]) Memory[W0_addr][32'h10+:8] <= W0_data[23:16];
+    if (W0_en & W0_mask[3]) Memory[W0_addr][32'h18+:8] <= W0_data[31:24];
+  end  // always @(posedge)
+  assign R0_data = _R0_en_d0 ? Memory[_R0_addr_d0] : 32'bx;
+endmodule
+
+module ram_syncmem_32x32_s8_b131072 (
     input         clock,
-    reset,
     RAM_write_en,
     input  [31:0] RAM_write_addr,
     RAM_write_data,
-    input         RAM_read_en,
+    input  [ 3:0] RAM_write_strb,
     input  [31:0] RAM_read_addr,
     output [31:0] RAM_read_data,
     output        RAM_read_resp
 );
 
-  reg [31:0] ram_0;
-  reg [31:0] ram_1;
-  reg [31:0] ram_2;
-  reg [31:0] ram_3;
-  reg [31:0] ram_4;
-  reg [31:0] ram_5;
-  reg [31:0] ram_6;
-  reg [31:0] ram_7;
   wire [31:0] _aw_offset_addr_T = RAM_write_addr - 32'h20000;
   wire [31:0] _ar_offset_addr_T = RAM_read_addr - 32'h20000;
-  wire ar_valid = (|(RAM_read_addr[31:17])) & _ar_offset_addr_T < 32'h20;
-  wire [2:0]  _mem_addr_T_3 =
-    RAM_read_en ? _ar_offset_addr_T[4:2] : RAM_write_en ? _aw_offset_addr_T[4:2] : 3'h0;
-  reg [31:0] casez_tmp;
-  always_comb begin
-    casez (_mem_addr_T_3)
-      3'b000:  casez_tmp = ram_0;
-      3'b001:  casez_tmp = ram_1;
-      3'b010:  casez_tmp = ram_2;
-      3'b011:  casez_tmp = ram_3;
-      3'b100:  casez_tmp = ram_4;
-      3'b101:  casez_tmp = ram_5;
-      3'b110:  casez_tmp = ram_6;
-      default: casez_tmp = ram_7;
-    endcase
-  end  // always_comb
-  wire _GEN = RAM_write_en & (|(RAM_write_addr[31:17])) & _aw_offset_addr_T < 32'h20;
-  always @(posedge clock) begin
-    if (reset) begin
-      ram_0 <= 32'h0;
-      ram_1 <= 32'h0;
-      ram_2 <= 32'h0;
-      ram_3 <= 32'h0;
-      ram_4 <= 32'h0;
-      ram_5 <= 32'h0;
-      ram_6 <= 32'h0;
-      ram_7 <= 32'h0;
-    end else begin
-      if (_GEN & _mem_addr_T_3 == 3'h0) ram_0 <= RAM_write_data;
-      if (_GEN & _mem_addr_T_3 == 3'h1) ram_1 <= RAM_write_data;
-      if (_GEN & _mem_addr_T_3 == 3'h2) ram_2 <= RAM_write_data;
-      if (_GEN & _mem_addr_T_3 == 3'h3) ram_3 <= RAM_write_data;
-      if (_GEN & _mem_addr_T_3 == 3'h4) ram_4 <= RAM_write_data;
-      if (_GEN & _mem_addr_T_3 == 3'h5) ram_5 <= RAM_write_data;
-      if (_GEN & _mem_addr_T_3 == 3'h6) ram_6 <= RAM_write_data;
-      if (_GEN & (&_mem_addr_T_3)) ram_7 <= RAM_write_data;
-    end
-  end  // always @(posedge)
-  assign RAM_read_data = RAM_read_en & ar_valid ? casez_tmp : 32'h0;
-  assign RAM_read_resp = ar_valid;
+  ram_8x32 ram_ext (
+      .R0_addr(_ar_offset_addr_T[4:2]),
+      .R0_en  (1'h1),
+      .R0_clk (clock),
+      .R0_data(RAM_read_data),
+      .W0_addr(_aw_offset_addr_T[4:2]),
+      .W0_en  (RAM_write_en & (|(RAM_write_addr[31:17])) & _aw_offset_addr_T < 32'h20),
+      .W0_clk (clock),
+      .W0_data(RAM_write_data),
+      .W0_mask(RAM_write_strb)
+  );
+  assign RAM_read_resp = (|(RAM_read_addr[31:17])) & _ar_offset_addr_T < 32'h20;
 endmodule
 
 module axifull_slave_ram_32x32_i4_u1_s8_b131072 (
@@ -1185,13 +1181,12 @@ module axifull_slave_ram_32x32_i4_u1_s8_b131072 (
       axi_rvalid <= axi_arv_arr_flag & ~axi_rvalid | ~_GEN_3 & axi_rvalid;
     end
   end  // always @(posedge)
-  ram_32x32_s8_b131072 mmap_region (
+  ram_syncmem_32x32_s8_b131072 mmap_region (
       .clock         (clock),
-      .reset         (reset),
       .RAM_write_en  (axi_wready & S_AXI_WVALID),
       .RAM_write_addr(axi_awaddr),
       .RAM_write_data(S_AXI_WDATA),
-      .RAM_read_en   (axi_arv_arr_flag),
+      .RAM_write_strb(4'hF),
       .RAM_read_addr (axi_araddr),
       .RAM_read_data (_mmap_region_RAM_read_data),
       .RAM_read_resp (_mmap_region_RAM_read_resp)
@@ -1305,14 +1300,14 @@ module acm2108_wrapper (
     end else begin
       if (_GEN_0 & _GEN_1) regChannelSel <= S_AXI_WDATA[7:0];
       if (~_GEN_0 | _GEN_1 | ~_GEN_2) begin
-      end else regDataNum <= regDataNum & 32'hFFFFFF | {S_AXI_WDATA[31:24], 24'h0};
+      end else regDataNum <= S_AXI_WDATA;
       if (~_GEN_0 | _GEN_1 | _GEN_2 | ~_GEN_3) begin
-      end else regAdcSpeed <= regAdcSpeed & 32'hFFFFFF | {S_AXI_WDATA[31:24], 24'h0};
+      end else regAdcSpeed <= S_AXI_WDATA;
       regRestartReq <= _GEN_0 & ~(_GEN_1 | _GEN_2 | _GEN_3) & _GEN_4 & S_AXI_WDATA[0];
       if (~_GEN_0 | _GEN_1 | _GEN_2 | _GEN_3 | _GEN_4 | ~_GEN_5) begin
       end else regDdsWaveSel <= S_AXI_WDATA[2:0];
       if (~_GEN_0 | _GEN_1 | _GEN_2 | _GEN_3 | _GEN_4 | _GEN_5 | ~_GEN_6) begin
-      end else regDdsFtw <= regDdsFtw & 32'hFFFFFF | {S_AXI_WDATA[31:24], 24'h0};
+      end else regDdsFtw <= S_AXI_WDATA;
       regDdsRestart <=
         _GEN_0 & ~(_GEN_1 | _GEN_2 | _GEN_3 | _GEN_4 | _GEN_5 | _GEN_6)
         & _waddr_T == 32'h18 & S_AXI_WDATA[0];
@@ -1854,7 +1849,6 @@ module axi_cmd_test_module (
       .sig_in       (sig_in)
   );
 endmodule
-
 
 module acm2108_ddr3_udp (
     clk,
