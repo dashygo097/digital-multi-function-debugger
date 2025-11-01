@@ -66,14 +66,16 @@
 
 #### CSR
 
-| Name         | Offset | Func                                                  |
-| ------------ | ------ | ----------------------------------------------------- |
-| `CONTROL`    | `0x00` | `[0]: sync_enable, [1]: arm_load, [2]: group_start`   |
-| `STATUS`     | `0x04` | `[7:0]: playing` - Channel playing status (read only) |
-| `ARM_MASK`   | `0x08` | `[7:0]: arm_mask_in` - Channel arm mask               |
-| `WR_CONTROL` | `0x0C` | `[2:0]: wr_ch, [7]: wr_en` - Write control            |
-| `WR_ADDR`    | `0x10` | `[7:0]: wr_addr` - Write address for sequence memory  |
-| `WR_DATA`    | `0x14` | `[0]: wr_bit` - Write data bit                        |
+| Name         | Offset | Func                                                             |
+| ------------ | ------ | ---------------------------------------------------------------- |
+| `CONTROL`    | `0x00` | `[0]: sync_enable, [1]: arm_load, [2]: group_start` (auto-clear) |
+| `STATUS`     | `0x04` | `[7:0]: playing` - Channel playing status (read only)            |
+| `ARM_MASK`   | `0x08` | `[7:0]: arm_mask_in` - Channel arm mask for sync start           |
+| `START_CH`   | `0x0C` | `[7:0]: start_ch_bus` - Individual channel start (auto-clear)    |
+| `STOP_CH`    | `0x10` | `[7:0]: stop_ch_bus` - Individual channel stop (auto-clear)      |
+| `WR_CONTROL` | `0x14` | `[2:0]: wr_ch, [7]: wr_en` - Write control                       |
+| `WR_ADDR`    | `0x18` | `[7:0]: wr_addr` - Write address for sequence memory             |
+| `WR_DATA`    | `0x1C` | `[0]: wr_bit` - Write data bit                                   |
 
 #### Channel Configuration Registers (Ch0-Ch7)
 
