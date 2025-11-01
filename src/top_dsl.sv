@@ -1757,12 +1757,12 @@ module bitseq_looper_wrapper (
   reg  [31:0] axi_araddr;
   reg  [31:0] axi_rdata;
   reg         axi_rvalid;
-  wire [31:0] _raddr_T = axi_araddr - 32'h40000;
+  wire [31:0] _raddr_T = axi_araddr - 32'h50000;
   wire        _GEN = ~axi_awready & S_AXI_AWVALID;
   wire        _GEN_0 = ~axi_arready & S_AXI_ARVALID;
   wire        _GEN_1 = ~axi_rvalid & axi_arready & S_AXI_ARVALID;
   wire        _GEN_2 = ~axi_bvalid & axi_wready & S_AXI_WVALID;
-  wire [31:0] _waddr_T = axi_awaddr - 32'h40000;
+  wire [31:0] _waddr_T = axi_awaddr - 32'h50000;
   wire        _GEN_3 = _waddr_T == 32'h0;
   wire        _GEN_4 = _waddr_T == 32'h8;
   wire        _GEN_5 = _waddr_T == 32'hC;
