@@ -1983,7 +1983,7 @@ module axi_cmd_test_module (
     output [ 3:0] rgmii_txd,
     output        rgmii_txen,
     input         sig_in,
-    output        io_out
+    output [ 7:0] io_out
 );
 
   wire        _slave5_S_AXI_AWREADY;
@@ -1992,7 +1992,6 @@ module axi_cmd_test_module (
   wire        _slave5_S_AXI_ARREADY;
   wire [31:0] _slave5_S_AXI_RDATA;
   wire        _slave5_S_AXI_RVALID;
-  wire [ 7:0] _slave5_io_out;
   wire        _slave4_S_AXI_AWREADY;
   wire        _slave4_S_AXI_WREADY;
   wire        _slave4_S_AXI_BVALID;
@@ -2345,9 +2344,8 @@ module axi_cmd_test_module (
       .S_AXI_RDATA  (_slave5_S_AXI_RDATA),
       .S_AXI_RVALID (_slave5_S_AXI_RVALID),
       .S_AXI_RREADY (_interconnect_M_AXI_4_RREADY),
-      .io_out       (_slave5_io_out)
+      .io_out       (io_out)
   );
-  assign io_out = _slave5_io_out[0];
 endmodule
 
 module acm2108_ddr3_udp (
