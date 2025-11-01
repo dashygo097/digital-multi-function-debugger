@@ -3227,30 +3227,30 @@ module bitseq_looper_wrapper (
                                        : _raddr_T == 32'h60 ? regPhaseOffBus_0 : 32'h0);
       axi_rvalid <= _GEN_1 | ~(axi_rvalid & S_AXI_RREADY) & axi_rvalid;
     end
-    regLenBus_0 <= _GEN_2 & _waddr_T == 32'h20 ? S_AXI_WDATA : 32'h1;
-    regLenBus_1 <= _GEN_2 & _waddr_T == 32'h24 ? S_AXI_WDATA : 32'h1;
-    regLenBus_2 <= _GEN_2 & _waddr_T == 32'h28 ? S_AXI_WDATA : 32'h1;
-    regLenBus_3 <= _GEN_2 & _waddr_T == 32'h2C ? S_AXI_WDATA : 32'h1;
-    regLenBus_4 <= _GEN_2 & _waddr_T == 32'h30 ? S_AXI_WDATA : 32'h1;
-    regLenBus_5 <= _GEN_2 & _waddr_T == 32'h34 ? S_AXI_WDATA : 32'h1;
-    regLenBus_6 <= _GEN_2 & _waddr_T == 32'h38 ? S_AXI_WDATA : 32'h1;
-    regLenBus_7 <= _GEN_2 & _waddr_T == 32'h3C ? S_AXI_WDATA : 32'h1;
-    regRateDivBus_0 <= _GEN_2 & _waddr_T == 32'h40 ? S_AXI_WDATA : 32'h0;
-    regRateDivBus_1 <= _GEN_2 & _waddr_T == 32'h44 ? S_AXI_WDATA : 32'h0;
-    regRateDivBus_2 <= _GEN_2 & _waddr_T == 32'h48 ? S_AXI_WDATA : 32'h0;
-    regRateDivBus_3 <= _GEN_2 & _waddr_T == 32'h4C ? S_AXI_WDATA : 32'h0;
-    regRateDivBus_4 <= _GEN_2 & _waddr_T == 32'h50 ? S_AXI_WDATA : 32'h0;
-    regRateDivBus_5 <= _GEN_2 & _waddr_T == 32'h54 ? S_AXI_WDATA : 32'h0;
-    regRateDivBus_6 <= _GEN_2 & _waddr_T == 32'h58 ? S_AXI_WDATA : 32'h0;
-    regRateDivBus_7 <= _GEN_2 & _waddr_T == 32'h5C ? S_AXI_WDATA : 32'h0;
-    regPhaseOffBus_0 <= _GEN_2 & _waddr_T == 32'h60 ? S_AXI_WDATA : 32'h0;
-    regPhaseOffBus_1 <= _GEN_2 & _waddr_T == 32'h64 ? S_AXI_WDATA : 32'h0;
-    regPhaseOffBus_2 <= _GEN_2 & _waddr_T == 32'h68 ? S_AXI_WDATA : 32'h0;
-    regPhaseOffBus_3 <= _GEN_2 & _waddr_T == 32'h6C ? S_AXI_WDATA : 32'h0;
-    regPhaseOffBus_4 <= _GEN_2 & _waddr_T == 32'h70 ? S_AXI_WDATA : 32'h0;
-    regPhaseOffBus_5 <= _GEN_2 & _waddr_T == 32'h74 ? S_AXI_WDATA : 32'h0;
-    regPhaseOffBus_6 <= _GEN_2 & _waddr_T == 32'h78 ? S_AXI_WDATA : 32'h0;
-    regPhaseOffBus_7 <= _GEN_2 & _waddr_T == 32'h7C ? S_AXI_WDATA : 32'h0;
+    if (_GEN_2 & _waddr_T == 32'h20) regLenBus_0 <= S_AXI_WDATA;
+    if (_GEN_2 & _waddr_T == 32'h24) regLenBus_1 <= S_AXI_WDATA;
+    if (_GEN_2 & _waddr_T == 32'h28) regLenBus_2 <= S_AXI_WDATA;
+    if (_GEN_2 & _waddr_T == 32'h2C) regLenBus_3 <= S_AXI_WDATA;
+    if (_GEN_2 & _waddr_T == 32'h30) regLenBus_4 <= S_AXI_WDATA;
+    if (_GEN_2 & _waddr_T == 32'h34) regLenBus_5 <= S_AXI_WDATA;
+    if (_GEN_2 & _waddr_T == 32'h38) regLenBus_6 <= S_AXI_WDATA;
+    if (_GEN_2 & _waddr_T == 32'h3C) regLenBus_7 <= S_AXI_WDATA;
+    if (_GEN_2 & _waddr_T == 32'h40) regRateDivBus_0 <= S_AXI_WDATA;
+    if (_GEN_2 & _waddr_T == 32'h44) regRateDivBus_1 <= S_AXI_WDATA;
+    if (_GEN_2 & _waddr_T == 32'h48) regRateDivBus_2 <= S_AXI_WDATA;
+    if (_GEN_2 & _waddr_T == 32'h4C) regRateDivBus_3 <= S_AXI_WDATA;
+    if (_GEN_2 & _waddr_T == 32'h50) regRateDivBus_4 <= S_AXI_WDATA;
+    if (_GEN_2 & _waddr_T == 32'h54) regRateDivBus_5 <= S_AXI_WDATA;
+    if (_GEN_2 & _waddr_T == 32'h58) regRateDivBus_6 <= S_AXI_WDATA;
+    if (_GEN_2 & _waddr_T == 32'h5C) regRateDivBus_7 <= S_AXI_WDATA;
+    if (_GEN_2 & _waddr_T == 32'h60) regPhaseOffBus_0 <= S_AXI_WDATA;
+    if (_GEN_2 & _waddr_T == 32'h64) regPhaseOffBus_1 <= S_AXI_WDATA;
+    if (_GEN_2 & _waddr_T == 32'h68) regPhaseOffBus_2 <= S_AXI_WDATA;
+    if (_GEN_2 & _waddr_T == 32'h6C) regPhaseOffBus_3 <= S_AXI_WDATA;
+    if (_GEN_2 & _waddr_T == 32'h70) regPhaseOffBus_4 <= S_AXI_WDATA;
+    if (_GEN_2 & _waddr_T == 32'h74) regPhaseOffBus_5 <= S_AXI_WDATA;
+    if (_GEN_2 & _waddr_T == 32'h78) regPhaseOffBus_6 <= S_AXI_WDATA;
+    if (_GEN_2 & _waddr_T == 32'h7C) regPhaseOffBus_7 <= S_AXI_WDATA;
   end  // always @(posedge)
   bitseq_looper_top_v2 #(
       .AW (8),
@@ -4284,7 +4284,7 @@ module axi_cmd_test_module (
   wire        _master_M_AXI_RREADY;
   axilite_master_uart_cmd_32x32_b115200_f50000000 master (
       .clock        (clock),
-      .reset        (!reset),
+      .reset        (reset),
       .M_AXI_AWADDR (_master_M_AXI_AWADDR),
       .M_AXI_AWVALID(_master_M_AXI_AWVALID),
       .M_AXI_AWREADY(_interconnect_S_AXI_AWREADY),
@@ -4682,7 +4682,6 @@ module axi_cmd_test_module (
       .i2c_sda      (i2c_sda)
   );
 endmodule
-
 
 module acm2108_ddr3_udp (
     clk,
