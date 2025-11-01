@@ -3660,26 +3660,10 @@ module pwm_engine_wrapper (
   wire [ 7:0] _pwmEngine_pwm_out;
   reg         regPwmEnable;
   reg  [ 7:0] regChannelEnable;
-  reg  [ 2:0] regChannelConfig;
+  reg  [ 2:0] regChannelSel;
   reg  [31:0] regHighCount;
   reg  [31:0] regLowCount;
   reg         regConfigSet;
-  reg  [31:0] regChHighCount_0;
-  reg  [31:0] regChHighCount_1;
-  reg  [31:0] regChHighCount_2;
-  reg  [31:0] regChHighCount_3;
-  reg  [31:0] regChHighCount_4;
-  reg  [31:0] regChHighCount_5;
-  reg  [31:0] regChHighCount_6;
-  reg  [31:0] regChHighCount_7;
-  reg  [31:0] regChLowCount_0;
-  reg  [31:0] regChLowCount_1;
-  reg  [31:0] regChLowCount_2;
-  reg  [31:0] regChLowCount_3;
-  reg  [31:0] regChLowCount_4;
-  reg  [31:0] regChLowCount_5;
-  reg  [31:0] regChLowCount_6;
-  reg  [31:0] regChLowCount_7;
   reg         axi_awready;
   reg  [31:0] axi_awaddr;
   reg         axi_wready;
@@ -3690,35 +3674,19 @@ module pwm_engine_wrapper (
   reg         axi_rvalid;
   wire [31:0] _raddr_T = axi_araddr - 32'h2C000;
   wire        _GEN = ~axi_awready & S_AXI_AWVALID;
-  wire        _GEN_0 = ~axi_arready & S_AXI_ARVALID;
-  wire        _GEN_1 = ~axi_rvalid & axi_arready & S_AXI_ARVALID;
-  wire        _GEN_2 = ~axi_bvalid & axi_wready & S_AXI_WVALID;
+  wire        _GEN_0 = ~axi_bvalid & axi_wready & S_AXI_WVALID;
   wire [31:0] _waddr_T = axi_awaddr - 32'h2C000;
-  wire        _GEN_3 = _waddr_T == 32'h0;
-  wire        _GEN_4 = _GEN_2 & _GEN_3;
-  wire        _GEN_5 = _waddr_T == 32'h4;
-  wire        _GEN_6 = _waddr_T == 32'h10;
-  wire        _GEN_7 = _waddr_T == 32'h14;
-  wire        _GEN_8 = _waddr_T == 32'h20;
-  wire        _GEN_9 = _waddr_T == 32'h24;
-  wire        _GEN_10 = _waddr_T == 32'h30;
-  wire        _GEN_11 = _waddr_T == 32'h34;
-  wire [31:0] _GEN_12 = _GEN_4 ? S_AXI_WDATA : 32'h3E8;
-  wire [31:0] _GEN_13 = _GEN_2 & _GEN_5 ? S_AXI_WDATA : 32'h3E8;
-  wire [31:0] _GEN_14 = _GEN_2 & _GEN_6 ? S_AXI_WDATA : 32'h3E8;
-  wire [31:0] _GEN_15 = _GEN_2 & _GEN_7 ? S_AXI_WDATA : 32'h3E8;
-  wire        _GEN_16 = _waddr_T == 32'h60;
-  wire        _GEN_17 = _waddr_T == 32'h64;
-  wire        _GEN_18 = _waddr_T == 32'h70;
-  wire        _GEN_19 = _waddr_T == 32'h74;
-  wire        _GEN_20 = _GEN_3 | _GEN_5;
-  wire        _GEN_21 = _GEN_9 | _GEN_8;
-  wire        _GEN_22 = _GEN_7 | _GEN_6;
+  wire        _GEN_1 = _waddr_T == 32'h0;
+  wire        _GEN_2 = _waddr_T == 32'h4;
+  wire        _GEN_3 = _waddr_T == 32'h8;
+  wire        _GEN_4 = _waddr_T == 32'hC;
+  wire        _GEN_5 = ~axi_arready & S_AXI_ARVALID;
+  wire        _GEN_6 = ~axi_rvalid & axi_arready & S_AXI_ARVALID;
   always @(posedge clock) begin
     if (reset) begin
       regPwmEnable <= 1'h0;
       regChannelEnable <= 8'h0;
-      regChannelConfig <= 3'h0;
+      regChannelSel <= 3'h0;
       regHighCount <= 32'h3E8;
       regLowCount <= 32'h3E8;
       regConfigSet <= 1'h0;
@@ -3731,144 +3699,46 @@ module pwm_engine_wrapper (
       axi_rdata <= 32'h0;
       axi_rvalid <= 1'h0;
     end else begin
-      if (_GEN_4) begin
+      if (_GEN_0 & _GEN_1) begin
         regPwmEnable <= S_AXI_WDATA[0];
         regChannelEnable <= S_AXI_WDATA[8:1];
       end
-      if (_GEN_2) begin
-        if (_GEN_22) regChannelConfig <= 3'h7;
-        else if (_GEN_20) regChannelConfig <= 3'h6;
-        else if (_GEN_19 | _GEN_18) regChannelConfig <= 3'h5;
-        else if (_GEN_17 | _GEN_16) regChannelConfig <= 3'h4;
-        else if (_GEN_22) regChannelConfig <= 3'h3;
-        else if (_GEN_20) regChannelConfig <= 3'h2;
-        else if (_GEN_11 | _GEN_10) regChannelConfig <= 3'h1;
-        else if (_GEN_21) regChannelConfig <= 3'h0;
-        else
-        if (_GEN_3 | ~_GEN_5) begin
-        end else regChannelConfig <= S_AXI_WDATA[2:0];
-      end
-      if (_GEN_2 & (_GEN_6 | _GEN_3 | _GEN_18 | _GEN_16 | _GEN_10 | _GEN_8 | ~(_GEN_20 | ~_GEN_6)))
-        regHighCount <= S_AXI_WDATA;
-      if (_GEN_2
-          & (_GEN_7 | _GEN_5 | _GEN_19 | _GEN_17 | _GEN_11 | _GEN_9
-             | ~(_GEN_3 | _GEN_5 | _GEN_6 | ~_GEN_7)))
-        regLowCount <= S_AXI_WDATA;
+      if (~_GEN_0 | _GEN_1 | ~_GEN_2) begin
+      end else regChannelSel <= S_AXI_WDATA[2:0];
+      if (~_GEN_0 | _GEN_1 | _GEN_2 | ~_GEN_3) begin
+      end else regHighCount <= S_AXI_WDATA;
+      if (~_GEN_0 | _GEN_1 | _GEN_2 | _GEN_3 | ~_GEN_4) begin
+      end else regLowCount <= S_AXI_WDATA;
       regConfigSet <=
-        _GEN_2
-        & (_GEN_7 | _GEN_6 | _GEN_5 | _GEN_3 | _GEN_19 | _GEN_18 | _GEN_17 | _GEN_16
-           | _GEN_11 | _GEN_10 | _GEN_21 | ~_GEN_3 & _GEN_5 & S_AXI_WDATA[31]);
+        _GEN_0 & ~(_GEN_1 | _GEN_2 | _GEN_3 | _GEN_4) & _waddr_T == 32'h10
+        & S_AXI_WDATA[0];
       axi_awready <= _GEN;
       if (_GEN) axi_awaddr <= S_AXI_AWADDR;
       axi_wready <=
         ~axi_wready & axi_awready & S_AXI_AWVALID | ~(axi_wready & S_AXI_WVALID)
         & axi_wready;
-      axi_bvalid <= _GEN_2 | ~(S_AXI_BREADY & axi_bvalid) & axi_bvalid;
-      axi_arready <= _GEN_0;
-      if (_GEN_0) axi_araddr <= S_AXI_ARADDR;
-      if (_GEN_1)
+      axi_bvalid <= _GEN_0 | ~(S_AXI_BREADY & axi_bvalid) & axi_bvalid;
+      axi_arready <= _GEN_5;
+      if (_GEN_5) axi_araddr <= S_AXI_ARADDR;
+      if (_GEN_6)
         axi_rdata <=
-          (_raddr_T == 32'hA4
-             ? {24'h0, regChannelEnable}
-             : _raddr_T == 32'hA0
-                 ? {24'h0, _pwmEngine_pwm_out}
-                 : _raddr_T == 32'h14
-                     ? regLowCount
-                     : _raddr_T == 32'h10
-                         ? regHighCount
-                         : _raddr_T == 32'h4
-                             ? {regConfigSet, 28'h0, regChannelConfig}
-                             : (|_raddr_T)
-                                 ? 32'h0
-                                 : {23'h0, regChannelEnable, regPwmEnable})
-          | (_raddr_T == 32'h1C
-               ? 32'h0
-               : _raddr_T == 32'h18
-                   ? regChHighCount_7 + regChLowCount_7
-                   : _raddr_T == 32'h14
-                       ? regChLowCount_7
-                       : _raddr_T == 32'h10
-                           ? regChHighCount_7
-                           : _raddr_T == 32'hC
-                               ? 32'h0
-                               : _raddr_T == 32'h8
-                                   ? regChHighCount_6 + regChLowCount_6
-                                   : _raddr_T == 32'h4
-                                       ? regChLowCount_6
-                                       : (|_raddr_T)
-                                           ? (_raddr_T == 32'h7C
-                                                ? 32'h0
-                                                : _raddr_T == 32'h78
-                                                    ? regChHighCount_5 + regChLowCount_5
-                                                    : _raddr_T == 32'h74
-                                                        ? regChLowCount_5
-                                                        : _raddr_T == 32'h70
-                                                            ? regChHighCount_5
-                                                            : _raddr_T == 32'h6C
-                                                                ? 32'h0
-                                                                : _raddr_T == 32'h68
-                                                                    ? regChHighCount_4
-                                                                      + regChLowCount_4
-                                                                    : _raddr_T == 32'h64
-                                                                        ? regChLowCount_4
-                                                                        : _raddr_T == 32'h60
-                                                                            ? regChHighCount_4
-                                                                            : _raddr_T == 32'h1C
-                                                                                ? 32'h0
-                                                                                : _raddr_T == 32'h18
-                                                                                    ? regChHighCount_3
-                                                                                      + regChLowCount_3
-                                                                                    : _raddr_T == 32'h14
-                                                                                        ? regChLowCount_3
-                                                                                        : _raddr_T == 32'h10
-                                                                                            ? regChHighCount_3
-                                                                                            : _raddr_T == 32'hC
-                                                                                                ? 32'h0
-                                                                                                : _raddr_T == 32'h8
-                                                                                                    ? regChHighCount_2
-                                                                                                      + regChLowCount_2
-                                                                                                    : _raddr_T == 32'h4
-                                                                                                        ? regChLowCount_2
-                                                                                                        : (|_raddr_T)
-                                                                                                            ? (_raddr_T == 32'h3C
-                                                                                                                 ? 32'h0
-                                                                                                                 : _raddr_T == 32'h38
-                                                                                                                     ? regChHighCount_1
-                                                                                                                       + regChLowCount_1
-                                                                                                                     : _raddr_T == 32'h34
-                                                                                                                         ? regChLowCount_1
-                                                                                                                         : _raddr_T == 32'h30
-                                                                                                                             ? regChHighCount_1
-                                                                                                                             : _raddr_T == 32'h2C
-                                                                                                                                 ? 32'h0
-                                                                                                                                 : _raddr_T == 32'h28
-                                                                                                                                     ? regChHighCount_0
-                                                                                                                                       + regChLowCount_0
-                                                                                                                                     : _raddr_T == 32'h24
-                                                                                                                                         ? regChLowCount_0
-                                                                                                                                         : _raddr_T == 32'h20
-                                                                                                                                             ? regChHighCount_0
-                                                                                                                                             : 32'h0)
-                                                                                                            : regChHighCount_2)
-                                           : regChHighCount_6);
-      axi_rvalid <= _GEN_1 | ~(axi_rvalid & S_AXI_RREADY) & axi_rvalid;
+          _raddr_T == 32'h18
+            ? {24'h0, regChannelEnable}
+            : _raddr_T == 32'h14
+                ? {24'h0, _pwmEngine_pwm_out}
+                : _raddr_T == 32'h10
+                    ? {31'h0, regConfigSet}
+                    : _raddr_T == 32'hC
+                        ? regLowCount
+                        : _raddr_T == 32'h8
+                            ? regHighCount
+                            : _raddr_T == 32'h4
+                                ? {29'h0, regChannelSel}
+                                : _raddr_T == 32'h0
+                                    ? {23'h0, regChannelEnable, regPwmEnable}
+                                    : 32'h0;
+      axi_rvalid <= _GEN_6 | ~(axi_rvalid & S_AXI_RREADY) & axi_rvalid;
     end
-    regChHighCount_0 <= _GEN_2 & _GEN_8 ? S_AXI_WDATA : 32'h3E8;
-    regChHighCount_1 <= _GEN_2 & _GEN_10 ? S_AXI_WDATA : 32'h3E8;
-    regChHighCount_2 <= _GEN_12;
-    regChHighCount_3 <= _GEN_14;
-    regChHighCount_4 <= _GEN_2 & _GEN_16 ? S_AXI_WDATA : 32'h3E8;
-    regChHighCount_5 <= _GEN_2 & _GEN_18 ? S_AXI_WDATA : 32'h3E8;
-    regChHighCount_6 <= _GEN_12;
-    regChHighCount_7 <= _GEN_14;
-    regChLowCount_0  <= _GEN_2 & _GEN_9 ? S_AXI_WDATA : 32'h3E8;
-    regChLowCount_1  <= _GEN_2 & _GEN_11 ? S_AXI_WDATA : 32'h3E8;
-    regChLowCount_2  <= _GEN_13;
-    regChLowCount_3  <= _GEN_15;
-    regChLowCount_4  <= _GEN_2 & _GEN_17 ? S_AXI_WDATA : 32'h3E8;
-    regChLowCount_5  <= _GEN_2 & _GEN_19 ? S_AXI_WDATA : 32'h3E8;
-    regChLowCount_6  <= _GEN_13;
-    regChLowCount_7  <= _GEN_15;
   end  // always @(posedge)
   pwm_engine pwmEngine (
       .clk               (clock),
@@ -3877,7 +3747,7 @@ module pwm_engine_wrapper (
       .pwm_channel_enable(regChannelEnable),
       .pwm_high_count    (regHighCount),
       .pwm_low_count     (regLowCount),
-      .chanel_config     (regChannelConfig),
+      .chanel_config     (regChannelSel),
       .config_set        (regConfigSet),
       .pwm_out           (_pwmEngine_pwm_out)
   );
@@ -4284,7 +4154,7 @@ module axi_cmd_test_module (
   wire        _master_M_AXI_RREADY;
   axilite_master_uart_cmd_32x32_b115200_f50000000 master (
       .clock        (clock),
-      .reset        (reset),
+      .reset        (!reset),
       .M_AXI_AWADDR (_master_M_AXI_AWADDR),
       .M_AXI_AWVALID(_master_M_AXI_AWVALID),
       .M_AXI_AWREADY(_interconnect_S_AXI_AWREADY),
