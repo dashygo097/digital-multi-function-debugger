@@ -1,0 +1,27 @@
+//Copyright (C)2014-2025 Gowin Semiconductor Corporation.
+//All rights reserved.
+//File Title: Template file for instantiation
+//Tool Version: V1.9.12 (64-bit)
+//Part Number: GW5A-LV25UG324C2/I1
+//Device: GW5A-25
+//Device Version: A
+//Created Time: Mon Oct 20 11:45:03 2025
+
+//Change the instance name and port connections to the signal names
+//--------Copy here to design--------
+
+	fifo_tx your_instance_name(
+		.Data(Data), //input [15:0] Data
+		.Reset(Reset), //input Reset
+		.WrClk(WrClk), //input WrClk
+		.RdClk(RdClk), //input RdClk
+		.WrEn(WrEn), //input WrEn
+		.RdEn(RdEn), //input RdEn
+		.Wnum(Wnum), //output [10:0] Wnum
+		.Rnum(Rnum), //output [11:0] Rnum
+		.Q(Q), //output [7:0] Q
+		.Empty(Empty), //output Empty
+		.Full(Full) //output Full
+	);
+
+//--------Copy end-------------------
