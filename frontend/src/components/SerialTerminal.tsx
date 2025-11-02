@@ -74,7 +74,7 @@ class SerialTerminalBase extends React.Component<
     const contextState = this.getContextState();
     if (contextState.shouldAutoReconnect && contextState.selectedPortInfo) {
       console.log("🔄 Auto-reconnect enabled, attempting to reconnect...");
-      setTimeout(() => this.attemptAutoReconnect(), 3000);
+      setTimeout(() => this.attemptAutoReconnect(), 1000);
     }
   }
 
@@ -87,14 +87,16 @@ class SerialTerminalBase extends React.Component<
 
     // If connected, save state and disconnect cleanly
     if (this.isActuallyConnected()) {
+      console.log("💾 Component unmounting - saving connection info...");
+
       const port = this.state.selectedPort;
       const portInfo = port?.getInfo();
 
       // Save connection info to context for auto-reconnect
       this.updateContext({
-        shouldAutoReconnect: true,
+        shouldAutoReconnect: true, // Enable auto-reconnect on unmount
         selectedPortInfo: portInfo,
-        isConnected: false, // Mark as disconnected in context
+        isConnected: false,
       });
 
       // Cleanup connection
@@ -161,7 +163,7 @@ class SerialTerminalBase extends React.Component<
     try {
       // Get available ports
       const ports = await navigator.serial.getPorts();
-      console.log(`Found ${ports.length} ports`);
+      console.log(`Found ${ports.length} ports for reconnection`);
 
       // Find the matching port by vendor/product ID
       const matchingPort = ports.find((port) => {
@@ -174,6 +176,7 @@ class SerialTerminalBase extends React.Component<
 
       if (matchingPort) {
         console.log("✓ Found matching port, reconnecting...");
+        this.addMessage("INFO", "✓ Found previous port");
 
         // Set the port in local state
         this.setState({
@@ -311,7 +314,7 @@ class SerialTerminalBase extends React.Component<
       try {
         await port.close();
         console.log("Closed previously open port");
-        await new Promise((r) => setTimeout(r, 500));
+        await new Promise((r) => setTimeout(r, 100));
       } catch (e) {
         // Port wasn't open, that's fine
       }
@@ -375,7 +378,6 @@ class SerialTerminalBase extends React.Component<
         "INFO",
         `✓ Connected at ${this.getContextState().baudRate} baud`,
       );
-      this.addMessage("INFO", "💾 Will auto-reconnect when you return");
 
       console.log("✓✓✓ Connection complete");
 
@@ -497,7 +499,7 @@ class SerialTerminalBase extends React.Component<
     this.shouldStopRef = true;
     this.keepReading = false;
 
-    await new Promise((r) => setTimeout(r, 1000));
+    await new Promise((r) => setTimeout(r, 100));
 
     if (this.readerRef) {
       try {
@@ -533,7 +535,7 @@ class SerialTerminalBase extends React.Component<
       }
     }
 
-    await new Promise((r) => setTimeout(r, 3000));
+    await new Promise((r) => setTimeout(r, 100));
 
     console.log("=== Cleanup complete ===");
   };
@@ -550,9 +552,10 @@ class SerialTerminalBase extends React.Component<
 
       await this.cleanupConnection();
 
+      // IMPORTANT: User manually disconnected - disable auto-reconnect
       this.updateContext({
         isConnected: false,
-        shouldAutoReconnect: true,
+        shouldAutoReconnect: false, // Disable auto-reconnect on manual disconnect
       });
 
       this.addMessage("INFO", "✓ Disconnected");
