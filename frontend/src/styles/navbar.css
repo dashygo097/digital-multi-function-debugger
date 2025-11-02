@@ -50,52 +50,293 @@
   transition: all 0.8s cubic-bezier(0.175, 0.885, 0.32, 0.975);
 }
 
-.navbar-home,
+.navbar-welcome,
+.navbar-main,
+.navbar-csr,
 .navbar-doc,
 .navbar-about {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  box-shadow: 1px 2px 4px rgba(0, 0, 0, 0.8);
+  position: relative;
+  border-radius: 10px;
+  text-decoration: none;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.navbar-home {
-  margin-left: auto;
+.navbar-welcome::before,
+.navbar-main::before,
+.navbar-csr::before,
+.navbar-doc::before,
+.navbar-about::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 10px;
+  background: linear-gradient(
+    135deg,
+    rgba(88, 166, 255, 0.2),
+    rgba(124, 58, 237, 0.2)
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
 }
 
-.navbar-home.active,
+.navbar-welcome:hover::before,
+.navbar-main:hover::before,
+.navbar-csr:hover::before,
+.navbar-doc:hover::before,
+.navbar-about:hover::before {
+  opacity: 1;
+}
+
+.navbar-welcome.active,
+.navbar-main.active,
+.navbar-csr.active,
 .navbar-doc.active,
 .navbar-about.active {
-  background-color: #c4a4ff;
+  background: linear-gradient(
+    135deg,
+    rgba(88, 166, 255, 0.15),
+    rgba(124, 58, 237, 0.15)
+  );
+  box-shadow:
+    0 0 0 1px rgba(88, 166, 255, 0.3),
+    0 4px 12px rgba(88, 166, 255, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
-.navbar-home:hover,
-.navbar-doc:hover,
-.navbar-about:hover {
-  border-color: #946ccf;
+.navbar-welcome.active::after,
+.navbar-main.active::after,
+.navbar-csr.active::after,
+.navbar-doc.active::after,
+.navbar-about.active::after {
+  content: "";
+  position: absolute;
+  bottom: -2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #58a6ff, transparent);
+  border-radius: 2px;
+  box-shadow: 0 0 8px rgba(88, 166, 255, 0.6);
 }
 
+/* Navbar Button */
 .navbar-button {
-  text-align: center;
-  font-size: 1em;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  min-width: 80px;
+  padding: 10px 20px;
+
+  font-size: 14px;
   font-weight: 500;
   font-family: inherit;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.9);
 
-  width: 80px;
-  border-radius: 6px;
-  border: 1px solid transparent;
-  padding: 0.6em;
-
-  background-color: #1c1c1c;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
 
   cursor: pointer;
-  transition: all 0.8s cubic-bezier(0.175, 0.885, 0.32, 0.975);
+  user-select: none;
+
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.navbar-button::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 10px;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.1),
+    rgba(255, 255, 255, 0.05)
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
 
 .navbar-button:hover {
-  border-color: #946ccf;
-  transform: scale(1.1);
+  transform: translateY(-2px);
+  border-color: rgba(88, 166, 255, 0.5);
+  box-shadow:
+    0 4px 16px rgba(88, 166, 255, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.navbar-button:hover::before {
+  opacity: 1;
 }
 
 .navbar-button:active {
-  background-color: #a8a8a8;
+  transform: translateY(0);
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.3),
+    inset 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* Active state button */
+.navbar-welcome.active .navbar-button,
+.navbar-main.active .navbar-button,
+.navbar-csr.active .navbar-button,
+.navbar-doc.active .navbar-button,
+.navbar-about.active .navbar-button {
+  background: linear-gradient(
+    135deg,
+    rgba(88, 166, 255, 0.2),
+    rgba(124, 58, 237, 0.2)
+  );
+  border-color: rgba(88, 166, 255, 0.4);
+  color: #ffffff;
+  font-weight: 600;
+  box-shadow:
+    0 4px 16px rgba(88, 166, 255, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+/* GitHub Icon (assuming you have a GitHub icon component) */
+.navbar > :last-child {
+  margin-left: 12px;
+  transition: all 0.3s ease;
+}
+
+.navbar > :last-child:hover {
+  transform: rotate(360deg) scale(1.1);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .navbar {
+    flex-wrap: wrap;
+    padding: 12px 16px;
+    gap: 6px;
+  }
+
+  .navbar-header h1 {
+    font-size: 18px;
+  }
+
+  .navbar-header-subtitle {
+    font-size: 10px;
+  }
+
+  .navbar-button {
+    min-width: 70px;
+    padding: 8px 16px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .navbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .navbar-header {
+    margin-right: 0;
+    padding-right: 0;
+    margin-bottom: 8px;
+    text-align: center;
+  }
+
+  .navbar-welcome,
+  .navbar-main,
+  .navbar-csr,
+  .navbar-doc,
+  .navbar-about {
+    width: 100%;
+  }
+
+  .navbar-button {
+    width: 100%;
+  }
+}
+
+/* Smooth entrance animation */
+@keyframes navbarSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.navbar {
+  animation: navbarSlideIn 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Ripple effect on click */
+@keyframes ripple {
+  0% {
+    transform: scale(0);
+    opacity: 0.5;
+  }
+
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+.navbar-button::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  pointer-events: none;
+}
+
+.navbar-button:active::after {
+  animation: ripple 0.6s ease-out;
+}
+
+/* Glow effect for active items */
+@keyframes glow {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px rgba(88, 166, 255, 0.3),
+      0 4px 12px rgba(88, 166, 255, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+
+  50% {
+    box-shadow:
+      0 0 0 1px rgba(88, 166, 255, 0.5),
+      0 4px 20px rgba(88, 166, 255, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  }
+}
+
+.navbar-welcome.active,
+.navbar-main.active,
+.navbar-csr.active,
+.navbar-doc.active,
+.navbar-about.active {
+  animation: glow 3s ease-in-out infinite;
 }
