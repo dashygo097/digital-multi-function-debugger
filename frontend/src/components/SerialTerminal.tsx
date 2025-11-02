@@ -352,17 +352,6 @@ class SerialTerminalBase extends React.Component<
         `Connecting to ${this.getContextState().selectedPortName} at ${this.getContextState().baudRate} baud...`,
       );
 
-      // Try to close if already open
-      try {
-        console.log("Attempting to close port if already open...");
-        await port.close();
-        console.log("✓ Closed previously open port");
-        await new Promise((r) => setTimeout(r, 200));
-      } catch (e: any) {
-        console.log("Port close attempt:", e.message);
-        // Port wasn't open or already closed, that's fine
-      }
-
       console.log(
         `Opening port with baudRate: ${this.getContextState().baudRate}...`,
       );
