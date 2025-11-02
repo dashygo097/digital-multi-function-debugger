@@ -18,8 +18,6 @@ interface SerialTerminalState {
   selectedPort: SerialPort | null;
 }
 
-// ==================== FSM States & Events ====================
-
 enum ConnectionState {
   DISCONNECTED = "DISCONNECTED",
   CONNECTING = "CONNECTING",
@@ -36,8 +34,6 @@ enum ConnectionEvent {
   DISCONNECTION_COMPLETE = "DISCONNECTION_COMPLETE",
   DEVICE_DISCONNECTED = "DEVICE_DISCONNECTED",
 }
-
-// ==================== Global Serial Connection Singleton ====================
 
 class GlobalSerialConnection {
   private static instance: GlobalSerialConnection;
@@ -63,8 +59,6 @@ class GlobalSerialConnection {
     }
     return GlobalSerialConnection.instance;
   }
-
-  // ==================== FSM State Machine ====================
 
   async handleEvent(event: ConnectionEvent, data?: any): Promise<void> {
     const currentState = this.state;
@@ -115,8 +109,6 @@ class GlobalSerialConnection {
         break;
     }
   }
-
-  // ==================== Connection Operations ====================
 
   private async performConnect(
     port: SerialPort,
@@ -190,8 +182,6 @@ class GlobalSerialConnection {
     }
   }
 
-  // ==================== Read Loop ====================
-
   private async readLoop(): Promise<void> {
     if (!this.reader) return;
 
@@ -217,8 +207,6 @@ class GlobalSerialConnection {
     }
   }
 
-  // ==================== Send Data ====================
-
   async send(data: Uint8Array): Promise<void> {
     if (this.state !== ConnectionState.CONNECTED || !this.writer) {
       throw new Error("Not connected");
@@ -233,8 +221,6 @@ class GlobalSerialConnection {
       throw error;
     }
   }
-
-  // ==================== Callbacks ====================
 
   private setState(state: ConnectionState): void {
     this.state = state;
@@ -276,8 +262,6 @@ class GlobalSerialConnection {
     this.stateCallbacks.delete(callback);
   }
 }
-
-// ==================== Serial Terminal Component ====================
 
 class SerialTerminalBase extends React.Component<
   SerialTerminalProps,
@@ -696,13 +680,6 @@ class SerialTerminalBase extends React.Component<
                 title="Refresh port list"
               >
                 🔄
-              </button>
-              <button
-                onClick={this.requestPort}
-                disabled={isConnected || isConnecting}
-                title="Request new port"
-              >
-                ➕
               </button>
             </div>
           </div>

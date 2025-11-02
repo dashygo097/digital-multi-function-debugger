@@ -21,6 +21,7 @@ interface CSRPageState {
   autoScroll: boolean;
   selectedSection: string;
   connectionState: ConnectionState;
+  showRxAsHex: boolean;
 
   sections: Array<{
     id: string;
@@ -51,9 +52,10 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
       csrData: "0xDEADBEEF",
       csrOperation: "WRITE",
       messages: [],
-      autoScroll: false,
+      autoScroll: true,
       selectedSection: "all",
       connectionState: this.connection.state,
+      showRxAsHex: true,
 
       sections: [
         {
@@ -113,7 +115,7 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
       ],
 
       presets: [
-        // SLV_REGS Section (0x10000 - 0x14000)
+        // ========== SLV_REGS Section (0x10000 - 0x14000) ==========
         {
           name: "SLV_REG0",
           address: "0x10000",
@@ -139,7 +141,7 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
           section: "slv_regs",
         },
 
-        // SLV_RAM Section (0x14000 - 0x18000)
+        // ========== SLV_RAM Section (0x14000 - 0x18000) ==========
         {
           name: "RAM_REGION",
           address: "0x14000",
@@ -147,7 +149,7 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
           section: "slv_ram",
         },
 
-        // ACM2108 Section
+        // ========== ACM2108 Section (0x18000 - 0x1C000) ==========
         {
           name: "CONTROL",
           address: "0x18000",
@@ -209,7 +211,7 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
           section: "acm2108",
         },
 
-        // Signal Measure Section
+        // ========== Signal Measure Section (0x1C000 - 0x20000) ==========
         {
           name: "SIG_CONTROL",
           address: "0x1C000",
@@ -235,37 +237,466 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
           section: "signal_measure",
         },
 
-        // BitSeq Section (abbreviated for brevity - include all your presets)
+        // ========== BitSeq Section (0x20000 - 0x24000) ==========
+        // CSR Registers
         {
           name: "BS_CONTROL",
           address: "0x20000",
           description: "[0]: sync_enable, [1]: arm_load, [2]: group_start",
           section: "bitseq",
         },
+        {
+          name: "BS_STATUS",
+          address: "0x20004",
+          description: "[7:0]: playing - Channel playing status",
+          section: "bitseq",
+        },
+        {
+          name: "BS_ARM_MASK",
+          address: "0x20008",
+          description: "[7:0]: arm_mask_in - Channel arm mask",
+          section: "bitseq",
+        },
+        {
+          name: "BS_START_CH",
+          address: "0x2000C",
+          description: "[7:0]: start_ch_bus - Channel start",
+          section: "bitseq",
+        },
+        {
+          name: "BS_STOP_CH",
+          address: "0x20010",
+          description: "[7:0]: stop_ch_bus - Channel stop",
+          section: "bitseq",
+        },
+        {
+          name: "BS_WR_CTRL",
+          address: "0x20014",
+          description: "[2:0]: wr_ch, [7]: wr_en - Write control",
+          section: "bitseq",
+        },
+        {
+          name: "BS_WR_ADDR",
+          address: "0x20018",
+          description: "[7:0]: wr_addr - Write address",
+          section: "bitseq",
+        },
+        {
+          name: "BS_WR_DATA",
+          address: "0x2001C",
+          description: "[0]: wr_bit - Write data bit",
+          section: "bitseq",
+        },
 
-        // UART Engine Section
+        // Length Registers
+        {
+          name: "LEN_CH0",
+          address: "0x20020",
+          description: "[31:0]: len - Channel 0 sequence length",
+          section: "bitseq",
+        },
+        {
+          name: "LEN_CH1",
+          address: "0x20024",
+          description: "[31:0]: len - Channel 1 sequence length",
+          section: "bitseq",
+        },
+        {
+          name: "LEN_CH2",
+          address: "0x20028",
+          description: "[31:0]: len - Channel 2 sequence length",
+          section: "bitseq",
+        },
+        {
+          name: "LEN_CH3",
+          address: "0x2002C",
+          description: "[31:0]: len - Channel 3 sequence length",
+          section: "bitseq",
+        },
+        {
+          name: "LEN_CH4",
+          address: "0x20030",
+          description: "[31:0]: len - Channel 4 sequence length",
+          section: "bitseq",
+        },
+        {
+          name: "LEN_CH5",
+          address: "0x20034",
+          description: "[31:0]: len - Channel 5 sequence length",
+          section: "bitseq",
+        },
+        {
+          name: "LEN_CH6",
+          address: "0x20038",
+          description: "[31:0]: len - Channel 6 sequence length",
+          section: "bitseq",
+        },
+        {
+          name: "LEN_CH7",
+          address: "0x2003C",
+          description: "[31:0]: len - Channel 7 sequence length",
+          section: "bitseq",
+        },
+
+        // Rate Divider Registers
+        {
+          name: "RATE_DIV_CH0",
+          address: "0x20040",
+          description: "[31:0]: rate_div - Channel 0 rate divider",
+          section: "bitseq",
+        },
+        {
+          name: "RATE_DIV_CH1",
+          address: "0x20044",
+          description: "[31:0]: rate_div - Channel 1 rate divider",
+          section: "bitseq",
+        },
+        {
+          name: "RATE_DIV_CH2",
+          address: "0x20048",
+          description: "[31:0]: rate_div - Channel 2 rate divider",
+          section: "bitseq",
+        },
+        {
+          name: "RATE_DIV_CH3",
+          address: "0x2004C",
+          description: "[31:0]: rate_div - Channel 3 rate divider",
+          section: "bitseq",
+        },
+        {
+          name: "RATE_DIV_CH4",
+          address: "0x20050",
+          description: "[31:0]: rate_div - Channel 4 rate divider",
+          section: "bitseq",
+        },
+        {
+          name: "RATE_DIV_CH5",
+          address: "0x20054",
+          description: "[31:0]: rate_div - Channel 5 rate divider",
+          section: "bitseq",
+        },
+        {
+          name: "RATE_DIV_CH6",
+          address: "0x20058",
+          description: "[31:0]: rate_div - Channel 6 rate divider",
+          section: "bitseq",
+        },
+        {
+          name: "RATE_DIV_CH7",
+          address: "0x2005C",
+          description: "[31:0]: rate_div - Channel 7 rate divider",
+          section: "bitseq",
+        },
+
+        // Phase Offset Registers
+        {
+          name: "PHASE_OFF_CH0",
+          address: "0x20060",
+          description: "[31:0]: phase_off - Channel 0 phase offset",
+          section: "bitseq",
+        },
+        {
+          name: "PHASE_OFF_CH1",
+          address: "0x20064",
+          description: "[31:0]: phase_off - Channel 1 phase offset",
+          section: "bitseq",
+        },
+        {
+          name: "PHASE_OFF_CH2",
+          address: "0x20068",
+          description: "[31:0]: phase_off - Channel 2 phase offset",
+          section: "bitseq",
+        },
+        {
+          name: "PHASE_OFF_CH3",
+          address: "0x2006C",
+          description: "[31:0]: phase_off - Channel 3 phase offset",
+          section: "bitseq",
+        },
+        {
+          name: "PHASE_OFF_CH4",
+          address: "0x20070",
+          description: "[31:0]: phase_off - Channel 4 phase offset",
+          section: "bitseq",
+        },
+        {
+          name: "PHASE_OFF_CH5",
+          address: "0x20074",
+          description: "[31:0]: phase_off - Channel 5 phase offset",
+          section: "bitseq",
+        },
+        {
+          name: "PHASE_OFF_CH6",
+          address: "0x20078",
+          description: "[31:0]: phase_off - Channel 6 phase offset",
+          section: "bitseq",
+        },
+        {
+          name: "PHASE_OFF_CH7",
+          address: "0x2007C",
+          description: "[31:0]: phase_off - Channel 7 phase offset",
+          section: "bitseq",
+        },
+
+        // ========== UART Engine Section (0x24000 - 0x28000) ==========
         {
           name: "UART_CONFIG",
           address: "0x24000",
           description: "[31:0]: clk_div",
           section: "uart_engine",
         },
+        {
+          name: "UART_PARITY_CFG",
+          address: "0x24004",
+          description: "[0]: check_en, [2:1]: check_type",
+          section: "uart_engine",
+        },
+        {
+          name: "UART_FRAME_CFG",
+          address: "0x24008",
+          description: "[1:0]: data_bit, [3:2]: stop_bit",
+          section: "uart_engine",
+        },
+        {
+          name: "UART_TX_DATA",
+          address: "0x24010",
+          description: "[7:0]: tx_fifo_data",
+          section: "uart_engine",
+        },
+        {
+          name: "UART_TX_CTRL",
+          address: "0x24014",
+          description: "[0]: tx_fifo_valid (write 1 to push)",
+          section: "uart_engine",
+        },
+        {
+          name: "UART_RX_DATA",
+          address: "0x24020",
+          description: "[7:0]: rx_fifo_data (read only)",
+          section: "uart_engine",
+        },
+        {
+          name: "UART_RX_CTRL",
+          address: "0x24024",
+          description: "[0]: rx_fifo_ready (write 1 to pop)",
+          section: "uart_engine",
+        },
+        {
+          name: "UART_STATUS",
+          address: "0x24030",
+          description: "[0]: tx_busy, [1]: rx_busy, [2]: rx_error",
+          section: "uart_engine",
+        },
+        {
+          name: "UART_TX_COUNT",
+          address: "0x24034",
+          description: "[15:0]: tx_byte_count",
+          section: "uart_engine",
+        },
+        {
+          name: "UART_RX_COUNT",
+          address: "0x24038",
+          description: "[15:0]: rx_byte_count",
+          section: "uart_engine",
+        },
+        {
+          name: "UART_FIFO_STATUS",
+          address: "0x2403C",
+          description: "[0]: tx_fifo_ready, [1]: rx_fifo_valid",
+          section: "uart_engine",
+        },
 
-        // Add all your other presets here...
+        // ========== SPI Engine Section (0x28000 - 0x2C000) ==========
+        {
+          name: "SPI_CONFIG",
+          address: "0x28000",
+          description: "[31:0]: clk_div",
+          section: "spi_engine",
+        },
+        {
+          name: "SPI_CONTROL",
+          address: "0x28004",
+          description: "[0]: spi_enable, [2:1]: spi_mode, [3]: spi_msb_first",
+          section: "spi_engine",
+        },
+        {
+          name: "SPI_TX_DATA",
+          address: "0x28010",
+          description: "[7:0]: tx_fifo_data",
+          section: "spi_engine",
+        },
+        {
+          name: "SPI_TX_CTRL",
+          address: "0x28014",
+          description: "[0]: tx_fifo_valid (write 1 to push)",
+          section: "spi_engine",
+        },
+        {
+          name: "SPI_RX_DATA",
+          address: "0x28020",
+          description: "[7:0]: rx_fifo_data (read only)",
+          section: "spi_engine",
+        },
+        {
+          name: "SPI_RX_CTRL",
+          address: "0x28024",
+          description: "[0]: rx_fifo_ready (write 1 to pop)",
+          section: "spi_engine",
+        },
+        {
+          name: "SPI_STATUS",
+          address: "0x28030",
+          description: "[0]: spi_busy, [1]: spi_mosi_oe",
+          section: "spi_engine",
+        },
+        {
+          name: "SPI_TX_COUNT",
+          address: "0x28034",
+          description: "[15:0]: spi_tx_count",
+          section: "spi_engine",
+        },
+        {
+          name: "SPI_RX_COUNT",
+          address: "0x28038",
+          description: "[15:0]: spi_rx_count",
+          section: "spi_engine",
+        },
+        {
+          name: "SPI_FIFO_STATUS",
+          address: "0x2803C",
+          description: "[0]: tx_fifo_ready, [1]: rx_fifo_valid",
+          section: "spi_engine",
+        },
+        {
+          name: "SPI_PIN_STATUS",
+          address: "0x28040",
+          description:
+            "[0]: spi_sck, [1]: spi_mosi, [2]: spi_miso, [3]: spi_cs",
+          section: "spi_engine",
+        },
+
+        // ========== PWM Engine Section (0x2C000 - 0x30000) ==========
+        {
+          name: "PWM_CONTROL",
+          address: "0x2C000",
+          description: "[0]: pwm_enable, [8:1]: pwm_channel_enable",
+          section: "pwm_engine",
+        },
+        {
+          name: "PWM_CH_SEL",
+          address: "0x2C004",
+          description: "[2:0]: channel_config - Select channel",
+          section: "pwm_engine",
+        },
+        {
+          name: "PWM_HIGH_COUNT",
+          address: "0x2C008",
+          description: "[31:0]: pwm_high_count - High period",
+          section: "pwm_engine",
+        },
+        {
+          name: "PWM_LOW_COUNT",
+          address: "0x2C00C",
+          description: "[31:0]: pwm_low_count - Low period",
+          section: "pwm_engine",
+        },
+        {
+          name: "PWM_CONFIG_SET",
+          address: "0x2C010",
+          description: "[0]: config_set - Write 1 to apply",
+          section: "pwm_engine",
+        },
+        {
+          name: "PWM_OUTPUT",
+          address: "0x2C014",
+          description: "[7:0]: pwm_out - Current PWM outputs",
+          section: "pwm_engine",
+        },
+        {
+          name: "PWM_CH_STATUS",
+          address: "0x2C018",
+          description: "[7:0]: channel_enable - Channel enable status",
+          section: "pwm_engine",
+        },
+
+        // ========== I2C Engine Section (0x30000 - 0x34000) ==========
+        {
+          name: "I2C_CONFIG",
+          address: "0x30000",
+          description: "[31:0]: clk_div",
+          section: "i2c_engine",
+        },
+        {
+          name: "I2C_CONTROL",
+          address: "0x30004",
+          description:
+            "[0]: i2c_enable, [1]: master_mode, [2]: 10bit_addr, [3]: restart",
+          section: "i2c_engine",
+        },
+        {
+          name: "I2C_DEV_ADDR",
+          address: "0x30008",
+          description: "[9:0]: i2c_dev_addr (7-bit or 10-bit)",
+          section: "i2c_engine",
+        },
+        {
+          name: "I2C_TRANS_CFG",
+          address: "0x3000C",
+          description: "[7:0]: tx_count, [15:8]: rx_count, [31]: start",
+          section: "i2c_engine",
+        },
+        {
+          name: "I2C_TX_DATA",
+          address: "0x30010",
+          description: "[7:0]: tx_fifo_data",
+          section: "i2c_engine",
+        },
+        {
+          name: "I2C_TX_CTRL",
+          address: "0x30014",
+          description: "[0]: tx_fifo_valid (write 1 to push)",
+          section: "i2c_engine",
+        },
+        {
+          name: "I2C_RX_DATA",
+          address: "0x30020",
+          description: "[7:0]: rx_fifo_data (read only)",
+          section: "i2c_engine",
+        },
+        {
+          name: "I2C_RX_CTRL",
+          address: "0x30024",
+          description: "[0]: rx_fifo_ready (write 1 to pop)",
+          section: "i2c_engine",
+        },
+        {
+          name: "I2C_STATUS",
+          address: "0x30030",
+          description: "[0]: busy, [1]: done, [2]: ack_error",
+          section: "i2c_engine",
+        },
+        {
+          name: "I2C_CNT_STATUS",
+          address: "0x30034",
+          description: "[7:0]: tx_cnt_rem, [15:8]: rx_cnt_rem",
+          section: "i2c_engine",
+        },
+        {
+          name: "I2C_FIFO_STATUS",
+          address: "0x30038",
+          description: "[0]: tx_fifo_ready, [1]: rx_fifo_valid",
+          section: "i2c_engine",
+        },
       ],
     };
   }
 
   componentDidMount() {
-    // Subscribe to connection state changes
     this.connection.subscribeState(this.handleConnectionStateChange);
-
-    // Subscribe to received messages
     this.connection.subscribeMessages(this.handleReceivedMessage);
   }
 
   componentWillUnmount() {
-    // Unsubscribe from connection events
     this.connection.unsubscribeState(this.handleConnectionStateChange);
     this.connection.unsubscribeMessages(this.handleReceivedMessage);
   }
@@ -279,18 +710,28 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
     }
   }
 
-  // Handle connection state changes
   private handleConnectionStateChange = (state: ConnectionState) => {
     this.setState({ connectionState: state });
   };
 
-  // Handle received messages from serial port
+  private stringToHex = (str: string): string => {
+    const encoder = new TextEncoder();
+    const bytes = encoder.encode(str);
+    return Array.from(bytes)
+      .map((b) => b.toString(16).padStart(2, "0").toUpperCase())
+      .join(" ");
+  };
+
   private handleReceivedMessage = (msg: {
     direction: string;
     data: string;
   }) => {
     if (msg.direction === "RX") {
-      this.addMessage("RX", msg.data);
+      const displayData = this.state.showRxAsHex
+        ? `[HEX] ${this.stringToHex(msg.data)}`
+        : msg.data;
+
+      this.addMessage("RX", displayData);
     }
   };
 
@@ -315,21 +756,20 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
         }
       }
 
-      // Build 9-byte CSR command
       const cmd = new Uint8Array(9);
-      cmd[0] = this.state.csrOperation === "WRITE" ? 0x00 : 0x01; // Command type
-      cmd[1] = (address >> 24) & 0xff; // Address byte 3 (MSB)
-      cmd[2] = (address >> 16) & 0xff; // Address byte 2
-      cmd[3] = (address >> 8) & 0xff; // Address byte 1
-      cmd[4] = address & 0xff; // Address byte 0 (LSB)
+      cmd[0] = this.state.csrOperation === "WRITE" ? 0x00 : 0x01;
+      cmd[1] = (address >> 24) & 0xff;
+      cmd[2] = (address >> 16) & 0xff;
+      cmd[3] = (address >> 8) & 0xff;
+      cmd[4] = address & 0xff;
 
       if (this.state.csrOperation === "WRITE") {
-        cmd[5] = (data >> 24) & 0xff; // Data byte 3 (MSB)
-        cmd[6] = (data >> 16) & 0xff; // Data byte 2
-        cmd[7] = (data >> 8) & 0xff; // Data byte 1
-        cmd[8] = data & 0xff; // Data byte 0 (LSB)
+        cmd[5] = (data >> 24) & 0xff;
+        cmd[6] = (data >> 16) & 0xff;
+        cmd[7] = (data >> 8) & 0xff;
+        cmd[8] = data & 0xff;
       } else {
-        cmd[5] = cmd[6] = cmd[7] = cmd[8] = 0x00; // Zero data for READ
+        cmd[5] = cmd[6] = cmd[7] = cmd[8] = 0x00;
       }
 
       return cmd;
@@ -340,7 +780,6 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
   };
 
   private sendCSRCommand = async () => {
-    // Check connection state
     if (this.state.connectionState !== ConnectionState.CONNECTED) {
       this.addMessage(
         "ERROR",
@@ -371,7 +810,6 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
     this.addMessage("INFO", `Raw bytes: ${hexDisplay}`);
 
     try {
-      // Send via GlobalSerialConnection
       await this.connection.send(cmd);
       this.addMessage("INFO", "✓ Command sent successfully");
       console.log("CSR Command sent:", hexDisplay);
@@ -488,6 +926,7 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
       selectedSection,
       sections,
       connectionState,
+      showRxAsHex,
     } = this.state;
 
     const filteredPresets = this.getFilteredPresets();
@@ -503,12 +942,10 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
         </div>
 
         <div className="csr-content">
-          {/* Left Panel - Controls */}
           <div className="csr-left-panel">
             <div className="csr-controls">
               <h2>Command Builder</h2>
 
-              {/* Connection Status Banner */}
               <div
                 className={`connection-status-banner ${this.getConnectionStatusClass()}`}
               >
@@ -523,7 +960,6 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
                 )}
               </div>
 
-              {/* Operation Type */}
               <div className="control-group">
                 <label>Operation:</label>
                 <div className="radio-group">
@@ -548,7 +984,6 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
                 </div>
               </div>
 
-              {/* Address Input */}
               <div className="control-group">
                 <label>Address (4 bytes):</label>
                 <input
@@ -562,7 +997,6 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
                 />
               </div>
 
-              {/* Data Input (only for WRITE) */}
               {csrOperation === "WRITE" && (
                 <div className="control-group">
                   <label>Data (4 bytes):</label>
@@ -576,7 +1010,6 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
                 </div>
               )}
 
-              {/* Send Button */}
               <div className="control-group">
                 <button
                   onClick={this.sendCSRCommand}
@@ -593,7 +1026,6 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
               </div>
             </div>
 
-            {/* Preset Registers */}
             <div className="preset-registers">
               <div className="preset-header">
                 <h2>Quick Access Registers</h2>
@@ -637,12 +1069,21 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
             </div>
           </div>
 
-          {/* Right Panel - Message Log */}
           <div className="csr-right-panel">
             <div className="message-log">
               <div className="log-header">
                 <h2>CSR Command Log</h2>
                 <div className="log-controls">
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={showRxAsHex}
+                      onChange={(e) =>
+                        this.setState({ showRxAsHex: e.target.checked })
+                      }
+                    />
+                    Show RX as Hex
+                  </label>
                   <label>
                     <input
                       type="checkbox"
