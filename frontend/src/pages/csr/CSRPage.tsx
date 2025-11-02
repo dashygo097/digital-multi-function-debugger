@@ -722,15 +722,40 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
       .join(" ");
   };
 
+  private formatRxData = (data: string): string => {
+    if (!this.state.showRxAsHex) {
+      return data;
+    }
+
+    const bytes: number[] = [];
+    const ascii: string[] = [];
+
+    for (let i = 0; i < data.length; i++) {
+      const byte = data.charCodeAt(i);
+      bytes.push(byte);
+
+      if (byte >= 32 && byte <= 126) {
+        ascii.push(data.charAt(i));
+      } else {
+        ascii.push(".");
+      }
+    }
+
+    const hexString = bytes
+      .map((b) => b.toString(16).padStart(2, "0").toUpperCase())
+      .join(" ");
+
+    const asciiString = ascii.join("");
+
+    return `[HEX] ${hexString} | ${asciiString}`;
+  };
+
   private handleReceivedMessage = (msg: {
     direction: string;
     data: string;
   }) => {
     if (msg.direction === "RX") {
-      const displayData = this.state.showRxAsHex
-        ? `[HEX] ${this.stringToHex(msg.data)}`
-        : msg.data;
-
+      const displayData = this.formatRxData(msg.data);
       this.addMessage("RX", displayData);
     }
   };
