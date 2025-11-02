@@ -276,16 +276,17 @@ export class SerialTerminal extends React.Component<
         }
 
         if (value && value.length > 0) {
-          let displayText = new TextDecoder().decode(value);
+          let displayText: string;
 
           if (this.state.showHex) {
-            const hexStr = Array.from(value)
+            displayText = Array.from(value)
               .map((b) => {
                 const hex = b.toString(16).padStart(2, "0");
                 return `${this.state.hexPrefix}${hex}`;
               })
               .join(" ");
-            displayText = `${displayText} [${hexStr}]`;
+          } else {
+            displayText = new TextDecoder().decode(value);
           }
 
           console.log("RX:", displayText);
