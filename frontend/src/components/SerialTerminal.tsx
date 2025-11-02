@@ -16,6 +16,7 @@ interface SerialTerminalProps {
 interface SerialTerminalState {
   ports: SerialPort[];
   selectedPort: SerialPort | null;
+  isReconnecting: boolean; // NEW: Track reconnection state
 }
 
 class SerialTerminalBase extends React.Component<
@@ -41,6 +42,7 @@ class SerialTerminalBase extends React.Component<
     this.state = {
       ports: [],
       selectedPort: null,
+      isReconnecting: false,
     };
   }
 
@@ -57,7 +59,7 @@ class SerialTerminalBase extends React.Component<
     await this.refreshPorts();
     this.startAutoRefresh();
 
-    // NEW: Auto-reconnect if we have saved connection info
+    // Auto-reconnect with a delay to ensure ports are loaded
     setTimeout(() => this.attemptAutoReconnect(), 1000);
   }
 
@@ -67,7 +69,6 @@ class SerialTerminalBase extends React.Component<
       clearInterval(this.refreshInterval);
     }
     // Don't cleanup connection on unmount if we want to auto-reconnect
-    // Just release locks
     this.shouldStopRef = true;
     this.keepReading = false;
   }
@@ -121,6 +122,8 @@ class SerialTerminalBase extends React.Component<
       return;
     }
 
+    this.setState({ isReconnecting: true });
+
     try {
       this.addMessage("INFO", "🔄 Searching for previous port...");
 
@@ -146,19 +149,20 @@ class SerialTerminalBase extends React.Component<
         );
         this.addMessage("INFO", "⏳ Reconnecting...");
 
-        // Set the port
+        // IMPORTANT: Set the port in local state BEFORE connecting
         this.setState({
           selectedPort: matchingPort,
           ports: ports,
         });
 
+        // Update context with port name
         this.updateContext({
           selectedPortName: this.getPortDisplayName(matchingPort),
           baudRate: baudRate || 115200,
         });
 
         // Small delay to ensure state is set
-        await new Promise((r) => setTimeout(r, 300));
+        await new Promise((r) => setTimeout(r, 500));
 
         // Attempt connection
         await this.connectPort();
@@ -169,11 +173,13 @@ class SerialTerminalBase extends React.Component<
           "⚠️ Previous port not found. Please reconnect manually.",
         );
         this.updateContext({ shouldAutoReconnect: false });
+        this.setState({ isReconnecting: false });
       }
     } catch (error) {
       console.error("Auto-reconnect failed:", error);
       this.addMessage("ERROR", `Auto-reconnect failed: ${error}`);
       this.updateContext({ shouldAutoReconnect: false });
+      this.setState({ isReconnecting: false });
     }
   };
 
@@ -323,31 +329,39 @@ class SerialTerminalBase extends React.Component<
       this.readerRef = port.readable.getReader();
       console.log("✓ Reader ready");
 
+      // Start read loop
       this.readLoop();
 
-      // NEW: Save port info and enable auto-reconnect after successful connection
+      // Save port info and update connection state
       const portInfo = port.getInfo();
       console.log("✓ Saving port info for auto-reconnect:", portInfo);
 
+      // IMPORTANT: Update both context and local state
       this.updateContext({
         isConnected: true,
         selectedPortInfo: portInfo,
-        shouldAutoReconnect: true, // Enable auto-reconnect for future
+        shouldAutoReconnect: true,
       });
+
+      this.setState({ isReconnecting: false });
 
       this.addMessage(
         "INFO",
         `✓ Connected at ${this.getContextState().baudRate} baud`,
       );
       this.addMessage("INFO", "💾 Connection saved (will auto-reconnect)");
+
+      // Force a re-render to update UI
+      this.forceUpdate();
     } catch (error: any) {
       console.error("Connection failed:", error);
       this.addMessage("ERROR", `Connection failed: ${error.message || error}`);
       const stats = this.getContextState().stats;
       this.updateContext({
         stats: { ...stats, errors: stats.errors + 1 },
-        shouldAutoReconnect: false, // Disable on failure
+        shouldAutoReconnect: false,
       });
+      this.setState({ isReconnecting: false });
       await this.cleanupConnection();
     }
   };
@@ -472,13 +486,15 @@ class SerialTerminalBase extends React.Component<
 
       await this.cleanupConnection();
 
-      // NEW: Clear auto-reconnect when user manually disconnects
       this.updateContext({
         isConnected: false,
-        shouldAutoReconnect: false, // User manually disconnected - don't auto-reconnect
+        shouldAutoReconnect: false,
       });
 
       this.addMessage("INFO", "✓ Disconnected (auto-reconnect disabled)");
+
+      // Force re-render
+      this.forceUpdate();
     } catch (error) {
       console.error("Disconnect error:", error);
       this.updateContext({
@@ -499,11 +515,14 @@ class SerialTerminalBase extends React.Component<
       return;
     }
 
-    if (
-      !this.getContextState().isConnected ||
-      !this.writerRef ||
-      !this.state.selectedPort
-    ) {
+    // Check both context state AND local state
+    const isConnected = this.getContextState().isConnected;
+    const hasWriter = this.writerRef !== null;
+    const hasPort = this.state.selectedPort !== null;
+
+    console.log("Send check:", { isConnected, hasWriter, hasPort, text });
+
+    if (!isConnected || !hasWriter || !hasPort) {
       this.addMessage("ERROR", "Port not connected");
       const stats = this.getContextState().stats;
       this.updateContext({
@@ -557,11 +576,11 @@ class SerialTerminalBase extends React.Component<
       return;
     }
 
-    if (
-      !this.getContextState().isConnected ||
-      !this.writerRef ||
-      !this.state.selectedPort
-    ) {
+    const isConnected = this.getContextState().isConnected;
+    const hasWriter = this.writerRef !== null;
+    const hasPort = this.state.selectedPort !== null;
+
+    if (!isConnected || !hasWriter || !hasPort) {
       this.addMessage("ERROR", "Port not connected");
       const stats = this.getContextState().stats;
       this.updateContext({
@@ -696,13 +715,36 @@ class SerialTerminalBase extends React.Component<
       shouldAutoReconnect = false,
     } = contextState;
 
+    const { isReconnecting } = this.state;
+
+    // Determine actual connection status
+    const actuallyConnected =
+      isConnected &&
+      this.state.selectedPort !== null &&
+      this.writerRef !== null;
+
+    console.log("Render state:", {
+      isConnected,
+      hasSelectedPort: this.state.selectedPort !== null,
+      hasWriter: this.writerRef !== null,
+      actuallyConnected,
+      isReconnecting,
+    });
+
     return (
       <div className={className}>
         <div className="control-panel">
           <div className="section">
             <label>
-              {isConnected ? "✓ Connected" : "○ Disconnected"}
-              {shouldAutoReconnect && !isConnected && " (Will auto-reconnect)"}
+              {actuallyConnected
+                ? "✓ Connected"
+                : isReconnecting
+                  ? "🔄 Reconnecting..."
+                  : "○ Disconnected"}
+              {shouldAutoReconnect &&
+                !actuallyConnected &&
+                !isReconnecting &&
+                " (Will auto-reconnect)"}
             </label>
           </div>
           <div className="section">
@@ -716,7 +758,7 @@ class SerialTerminalBase extends React.Component<
                   );
                   this.handlePortSelection(index);
                 }}
-                disabled={isConnected}
+                disabled={actuallyConnected || isReconnecting}
                 style={{ flex: 1 }}
               >
                 <option value="">Select...</option>
@@ -729,7 +771,10 @@ class SerialTerminalBase extends React.Component<
                   );
                 })}
               </select>
-              <button onClick={this.refreshPorts} disabled={isConnected}>
+              <button
+                onClick={this.refreshPorts}
+                disabled={actuallyConnected || isReconnecting}
+              >
                 🔄
               </button>
             </div>
@@ -742,7 +787,7 @@ class SerialTerminalBase extends React.Component<
               onChange={(e) =>
                 this.updateContext({ baudRate: Number(e.target.value) })
               }
-              disabled={isConnected}
+              disabled={actuallyConnected || isReconnecting}
             >
               <option value={9600}>9600</option>
               <option value={19200}>19200</option>
@@ -762,7 +807,7 @@ class SerialTerminalBase extends React.Component<
               onChange={(e) =>
                 this.updateContext({ lineEnding: e.target.value as any })
               }
-              disabled={!isConnected}
+              disabled={!actuallyConnected}
             >
               <option value="NONE">None</option>
               <option value="LF">LF (\n)</option>
@@ -778,7 +823,7 @@ class SerialTerminalBase extends React.Component<
               onChange={(e) =>
                 this.updateContext({ inputMode: e.target.value as any })
               }
-              disabled={!isConnected}
+              disabled={!actuallyConnected}
             >
               <option value="TEXT">Text</option>
               <option value="HEX">Hex</option>
@@ -822,13 +867,17 @@ class SerialTerminalBase extends React.Component<
           </div>
 
           <div className="buttons">
-            {!isConnected ? (
+            {!actuallyConnected && !isReconnecting ? (
               <button
                 onClick={this.connectPort}
                 className="btn-primary"
                 disabled={!this.state.selectedPort}
               >
                 Connect
+              </button>
+            ) : isReconnecting ? (
+              <button className="btn-primary" disabled>
+                Reconnecting...
               </button>
             ) : (
               <button onClick={this.disconnectPort} className="btn-danger">
@@ -897,11 +946,11 @@ class SerialTerminalBase extends React.Component<
                   ? "Type message..."
                   : "Hex: 01 02 03 or 0x01 0x02 0x03"
               }
-              disabled={!isConnected}
+              disabled={!actuallyConnected}
             />
             <button
               onClick={inputMode === "TEXT" ? this.sendText : this.sendHex}
-              disabled={!isConnected}
+              disabled={!actuallyConnected}
             >
               Send
             </button>
