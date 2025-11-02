@@ -21,17 +21,39 @@ class MainPage extends React.Component<WithRouterProps, MainPageState> {
   render() {
     return (
       <div className="main-page">
-        <div className="main-header">
-          <h1>Control Panel</h1>
+        {/* Animated Background */}
+        <div className="background-animation">
+          <div className="gradient-orb orb-1"></div>
+          <div className="gradient-orb orb-2"></div>
+          <div className="gradient-orb orb-3"></div>
         </div>
-        <SerialTerminal className="main-serialterminal" />
-        <UDPTerminal
-          className="main-udpterminal"
-          bridgeUrl="ws://localhost:8080"
-        />
+
+        {/* Main Content */}
+        <div className="main-content">
+          <div className="main-header fade-in">
+            <h1 className="main-title">Control Panel</h1>
+            <p className="main-subtitle">System Monitoring & Communication</p>
+          </div>
+
+          <div className="terminals-wrapper slide-up">
+            <div className="terminal-wrapper">
+              <h2 className="terminal-heading">Serial Terminal</h2>
+              <SerialTerminal className="main-serialterminal" />
+            </div>
+
+            <div className="terminal-wrapper">
+              <h2 className="terminal-heading">UDP Terminal</h2>
+              <UDPTerminal
+                className="main-udpterminal"
+                bridgeUrl="ws://localhost:8080"
+              />
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
 }
+
 const WrappedMainPage = WithRouter(MainPage);
 export default WrappedMainPage;
