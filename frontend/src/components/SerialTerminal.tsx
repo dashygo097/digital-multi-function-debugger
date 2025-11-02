@@ -13,32 +13,265 @@ interface SerialTerminalProps {
   terminalContext?: any;
 }
 
-// FSM States
+interface SerialTerminalState {
+  ports: SerialPort[];
+  selectedPort: SerialPort | null;
+}
+
 enum ConnectionState {
   DISCONNECTED = "DISCONNECTED",
   CONNECTING = "CONNECTING",
   CONNECTED = "CONNECTED",
   DISCONNECTING = "DISCONNECTING",
-  RECONNECTING = "RECONNECTING",
   ERROR = "ERROR",
 }
 
-// FSM Events
 enum ConnectionEvent {
   CONNECT = "CONNECT",
-  DISCONNECT = "DISCONNECT",
   CONNECTION_SUCCESS = "CONNECTION_SUCCESS",
   CONNECTION_FAILED = "CONNECTION_FAILED",
+  DISCONNECT = "DISCONNECT",
+  DISCONNECTION_COMPLETE = "DISCONNECTION_COMPLETE",
   DEVICE_DISCONNECTED = "DEVICE_DISCONNECTED",
-  AUTO_RECONNECT = "AUTO_RECONNECT",
-  RECONNECT_FAILED = "RECONNECT_FAILED",
 }
 
-interface SerialTerminalState {
-  ports: SerialPort[];
-  selectedPort: SerialPort | null;
-  connectionState: ConnectionState;
+class GlobalSerialConnection {
+  private static instance: GlobalSerialConnection;
+
+  // Connection resources
+  public port: SerialPort | null = null;
+  public writer: WritableStreamDefaultWriter<Uint8Array> | null = null;
+  public reader: ReadableStreamDefaultReader<Uint8Array> | null = null;
+
+  // State
+  public state: ConnectionState = ConnectionState.DISCONNECTED;
+  public keepReading = false;
+
+  // Callbacks
+  private messageCallbacks: Set<(msg: Message) => void> = new Set();
+  private stateCallbacks: Set<(state: ConnectionState) => void> = new Set();
+
+  private constructor() {}
+
+  static getInstance(): GlobalSerialConnection {
+    if (!GlobalSerialConnection.instance) {
+      GlobalSerialConnection.instance = new GlobalSerialConnection();
+    }
+    return GlobalSerialConnection.instance;
+  }
+
+  async handleEvent(event: ConnectionEvent, data?: any): Promise<void> {
+    const currentState = this.state;
+    console.log(`🔄 FSM: ${currentState} + ${event}`);
+
+    switch (currentState) {
+      case ConnectionState.DISCONNECTED:
+        if (event === ConnectionEvent.CONNECT) {
+          this.setState(ConnectionState.CONNECTING);
+          await this.performConnect(data.port, data.baudRate);
+        }
+        break;
+
+      case ConnectionState.CONNECTING:
+        if (event === ConnectionEvent.CONNECTION_SUCCESS) {
+          this.setState(ConnectionState.CONNECTED);
+          this.notifyMessage("INFO", "✓ Connected successfully");
+        } else if (event === ConnectionEvent.CONNECTION_FAILED) {
+          this.setState(ConnectionState.ERROR);
+          this.notifyMessage("ERROR", `❌ Connection failed: ${data?.error}`);
+          setTimeout(() => this.setState(ConnectionState.DISCONNECTED), 2000);
+        }
+        break;
+
+      case ConnectionState.CONNECTED:
+        if (event === ConnectionEvent.DISCONNECT) {
+          this.setState(ConnectionState.DISCONNECTING);
+          await this.performDisconnect();
+        } else if (event === ConnectionEvent.DEVICE_DISCONNECTED) {
+          this.setState(ConnectionState.DISCONNECTING);
+          this.notifyMessage("ERROR", "Device disconnected");
+          await this.performDisconnect();
+        }
+        break;
+
+      case ConnectionState.DISCONNECTING:
+        if (event === ConnectionEvent.DISCONNECTION_COMPLETE) {
+          this.setState(ConnectionState.DISCONNECTED);
+          this.notifyMessage("INFO", "✓ Disconnected");
+        }
+        break;
+
+      case ConnectionState.ERROR:
+        if (event === ConnectionEvent.CONNECT) {
+          this.setState(ConnectionState.CONNECTING);
+          await this.performConnect(data.port, data.baudRate);
+        }
+        break;
+    }
+  }
+
+  // ==================== Connection Operations ====================
+
+  private async performConnect(
+    port: SerialPort,
+    baudRate: number,
+  ): Promise<void> {
+    try {
+      await port.open({
+        baudRate,
+        dataBits: 8,
+        stopBits: 1,
+        parity: "none",
+        flowControl: "none",
+        bufferSize: 4096,
+      });
+
+      try {
+        await port.setSignals({
+          dataTerminalReady: true,
+          requestToSend: true,
+        });
+      } catch (e) {
+        console.log("Could not set signals:", e);
+      }
+
+      this.port = port;
+      this.writer = port.writable!.getWriter();
+      this.reader = port.readable!.getReader();
+      this.keepReading = true;
+
+      this.readLoop();
+
+      await this.handleEvent(ConnectionEvent.CONNECTION_SUCCESS);
+    } catch (error: any) {
+      await this.handleEvent(ConnectionEvent.CONNECTION_FAILED, {
+        error: error.message,
+      });
+      await this.cleanup();
+    }
+  }
+
+  private async performDisconnect(): Promise<void> {
+    await this.cleanup();
+    await this.handleEvent(ConnectionEvent.DISCONNECTION_COMPLETE);
+  }
+
+  private async cleanup(): Promise<void> {
+    this.keepReading = false;
+
+    if (this.reader) {
+      try {
+        await this.reader.cancel();
+      } catch (e) {}
+      try {
+        this.reader.releaseLock();
+      } catch (e) {}
+      this.reader = null;
+    }
+
+    if (this.writer) {
+      try {
+        await this.writer.releaseLock();
+      } catch (e) {}
+      this.writer = null;
+    }
+
+    if (this.port) {
+      try {
+        await this.port.close();
+      } catch (e) {}
+      this.port = null;
+    }
+  }
+
+  // ==================== Read Loop ====================
+
+  private async readLoop(): Promise<void> {
+    if (!this.reader) return;
+
+    try {
+      while (this.keepReading) {
+        const { value, done } = await this.reader.read();
+
+        if (done) break;
+
+        if (value && value.length > 0) {
+          const displayText = new TextDecoder().decode(value);
+          this.notifyMessage("RX", displayText);
+        }
+      }
+    } catch (error: any) {
+      if (this.keepReading) {
+        if (error.name === "NetworkError" || error.name === "NotFoundError") {
+          await this.handleEvent(ConnectionEvent.DEVICE_DISCONNECTED);
+        } else if (error.name !== "AbortError") {
+          this.notifyMessage("ERROR", `Read error: ${error.message}`);
+        }
+      }
+    }
+  }
+
+  // ==================== Send Data ====================
+
+  async send(data: Uint8Array): Promise<void> {
+    if (this.state !== ConnectionState.CONNECTED || !this.writer) {
+      throw new Error("Not connected");
+    }
+
+    try {
+      await this.writer.write(data);
+    } catch (error: any) {
+      if (error.name === "NetworkError" || error.name === "NotFoundError") {
+        await this.handleEvent(ConnectionEvent.DEVICE_DISCONNECTED);
+      }
+      throw error;
+    }
+  }
+
+  // ==================== Callbacks ====================
+
+  private setState(state: ConnectionState): void {
+    this.state = state;
+    this.stateCallbacks.forEach((cb) => cb(state));
+  }
+
+  private notifyMessage(
+    direction: "TX" | "RX" | "INFO" | "ERROR",
+    data: string,
+  ): void {
+    const msg: Message = {
+      timestamp: new Date().toLocaleTimeString("en-US", {
+        hour12: false,
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        fractionalSecondDigits: 3,
+      }),
+      direction,
+      data,
+      id: `${Date.now()}-${Math.random()}`,
+    };
+    this.messageCallbacks.forEach((cb) => cb(msg));
+  }
+
+  subscribeMessages(callback: (msg: Message) => void): void {
+    this.messageCallbacks.add(callback);
+  }
+
+  unsubscribeMessages(callback: (msg: Message) => void): void {
+    this.messageCallbacks.delete(callback);
+  }
+
+  subscribeState(callback: (state: ConnectionState) => void): void {
+    this.stateCallbacks.add(callback);
+  }
+
+  unsubscribeState(callback: (state: ConnectionState) => void): void {
+    this.stateCallbacks.delete(callback);
+  }
 }
+
+// ==================== Serial Terminal Component ====================
 
 class SerialTerminalBase extends React.Component<
   SerialTerminalProps,
@@ -46,13 +279,8 @@ class SerialTerminalBase extends React.Component<
 > {
   private terminalEndRef: React.RefObject<HTMLDivElement>;
   private terminalRef: React.RefObject<HTMLDivElement>;
-  private writerRef: WritableStreamDefaultWriter<Uint8Array> | null = null;
-  private readerRef: ReadableStreamDefaultReader<Uint8Array> | null = null;
-  private shouldStopRef = false;
-  private keepReading = false;
+  private connection: GlobalSerialConnection;
   private refreshInterval: NodeJS.Timeout | null = null;
-  private reconnectAttempts = 0;
-  private maxReconnectAttempts = 3;
 
   static defaultProps = {
     className: "serial-terminal",
@@ -62,10 +290,11 @@ class SerialTerminalBase extends React.Component<
     super(props);
     this.terminalEndRef = React.createRef();
     this.terminalRef = React.createRef();
+    this.connection = GlobalSerialConnection.getInstance();
+
     this.state = {
       ports: [],
-      selectedPort: null,
-      connectionState: ConnectionState.DISCONNECTED,
+      selectedPort: this.connection.port,
     };
   }
 
@@ -77,131 +306,34 @@ class SerialTerminalBase extends React.Component<
     return this.props.terminalContext?.serialTerminal || {};
   };
 
-  // ==================== FSM State Machine ====================
-
-  private handleConnectionEvent = async (event: ConnectionEvent) => {
-    const currentState = this.state.connectionState;
-    console.log(`🔄 FSM: ${currentState} + ${event}`);
-
-    switch (currentState) {
-      case ConnectionState.DISCONNECTED:
-        if (event === ConnectionEvent.CONNECT) {
-          this.setState({ connectionState: ConnectionState.CONNECTING });
-          await this.performConnect();
-        } else if (event === ConnectionEvent.AUTO_RECONNECT) {
-          this.setState({ connectionState: ConnectionState.RECONNECTING });
-          await this.performReconnect();
-        }
-        break;
-
-      case ConnectionState.CONNECTING:
-        if (event === ConnectionEvent.CONNECTION_SUCCESS) {
-          this.setState({ connectionState: ConnectionState.CONNECTED });
-          this.reconnectAttempts = 0;
-          this.addMessage("INFO", "✓ Connected successfully");
-        } else if (event === ConnectionEvent.CONNECTION_FAILED) {
-          this.setState({ connectionState: ConnectionState.ERROR });
-          this.addMessage("ERROR", "❌ Connection failed");
-          setTimeout(() => {
-            this.setState({ connectionState: ConnectionState.DISCONNECTED });
-          }, 1000);
-        }
-        break;
-
-      case ConnectionState.CONNECTED:
-        if (event === ConnectionEvent.DISCONNECT) {
-          this.setState({ connectionState: ConnectionState.DISCONNECTING });
-          await this.performDisconnect(false); // false = user initiated
-        } else if (event === ConnectionEvent.DEVICE_DISCONNECTED) {
-          this.setState({ connectionState: ConnectionState.DISCONNECTING });
-          await this.performDisconnect(true); // true = device disconnected
-        }
-        break;
-
-      case ConnectionState.DISCONNECTING:
-        // After disconnect completes, transition based on context
-        this.setState({ connectionState: ConnectionState.DISCONNECTED });
-        break;
-
-      case ConnectionState.RECONNECTING:
-        if (event === ConnectionEvent.CONNECTION_SUCCESS) {
-          this.setState({ connectionState: ConnectionState.CONNECTED });
-          this.reconnectAttempts = 0;
-          this.addMessage("INFO", "✓ Reconnected successfully");
-        } else if (event === ConnectionEvent.RECONNECT_FAILED) {
-          this.reconnectAttempts++;
-          if (this.reconnectAttempts < this.maxReconnectAttempts) {
-            this.addMessage(
-              "INFO",
-              `⏳ Retry ${this.reconnectAttempts}/${this.maxReconnectAttempts}...`,
-            );
-            setTimeout(() => this.performReconnect(), 2000);
-          } else {
-            this.setState({ connectionState: ConnectionState.ERROR });
-            this.addMessage(
-              "ERROR",
-              "❌ Reconnection failed after max attempts",
-            );
-            this.updateContext({ shouldAutoReconnect: false });
-            setTimeout(() => {
-              this.setState({ connectionState: ConnectionState.DISCONNECTED });
-            }, 1000);
-          }
-        }
-        break;
-
-      case ConnectionState.ERROR:
-        // Can only reset from error state
-        if (event === ConnectionEvent.CONNECT) {
-          this.reconnectAttempts = 0;
-          this.setState({ connectionState: ConnectionState.CONNECTING });
-          await this.performConnect();
-        }
-        break;
-    }
-  };
-
-  // ==================== Lifecycle Methods ====================
+  // ==================== Lifecycle ====================
 
   async componentDidMount() {
     console.log("=== SerialTerminal componentDidMount ===");
 
+    // Subscribe to connection events
+    this.connection.subscribeMessages(this.handleMessage);
+    this.connection.subscribeState(this.handleStateChange);
+
     await this.refreshPorts();
     this.startAutoRefresh();
 
-    // Check if we should auto-reconnect
-    const contextState = this.getContextState();
-    if (contextState.shouldAutoReconnect && contextState.selectedPortInfo) {
-      console.log("🔄 Auto-reconnect enabled");
-      setTimeout(() => {
-        this.handleConnectionEvent(ConnectionEvent.AUTO_RECONNECT);
-      }, 1000);
-    }
+    // Sync state
+    this.forceUpdate();
   }
 
   componentWillUnmount() {
     console.log("=== SerialTerminal componentWillUnmount ===");
 
+    // Unsubscribe
+    this.connection.unsubscribeMessages(this.handleMessage);
+    this.connection.unsubscribeState(this.handleStateChange);
+
     if (this.refreshInterval) {
       clearInterval(this.refreshInterval);
     }
 
-    // Save state if connected
-    if (this.state.connectionState === ConnectionState.CONNECTED) {
-      const port = this.state.selectedPort;
-      const portInfo = port?.getInfo();
-
-      console.log("💾 Saving connection info for auto-reconnect");
-      this.updateContext({
-        shouldAutoReconnect: true,
-        selectedPortInfo: portInfo,
-        isConnected: false,
-      });
-
-      this.shouldStopRef = true;
-      this.keepReading = false;
-      this.cleanupConnectionSync();
-    }
+    // DO NOT disconnect - keep connection alive!
   }
 
   componentDidUpdate(
@@ -229,258 +361,52 @@ class SerialTerminalBase extends React.Component<
     }
   }
 
-  // ==================== Connection Operations ====================
+  // ==================== Event Handlers ====================
 
-  private performConnect = async () => {
-    if (!this.state.selectedPort) {
-      this.addMessage("ERROR", "No port selected");
-      await this.handleConnectionEvent(ConnectionEvent.CONNECTION_FAILED);
-      return;
-    }
-
-    try {
-      const port = this.state.selectedPort;
-      const baudRate = this.getContextState().baudRate || 115200;
-
-      this.addMessage("INFO", `Connecting at ${baudRate} baud...`);
-
-      await port.open({
-        baudRate,
-        dataBits: 8,
-        stopBits: 1,
-        parity: "none",
-        flowControl: "none",
-        bufferSize: 4096,
-      });
-
-      try {
-        await port.setSignals({
-          dataTerminalReady: true,
-          requestToSend: true,
-        });
-      } catch (e) {
-        console.log("Could not set signals:", e);
-      }
-
-      this.shouldStopRef = false;
-      this.keepReading = true;
-
-      this.writerRef = port.writable!.getWriter();
-      this.readerRef = port.readable!.getReader();
-
-      this.readLoop();
-
-      const portInfo = port.getInfo();
-      this.updateContext({
-        isConnected: true,
-        selectedPortInfo: portInfo,
-        shouldAutoReconnect: true,
-      });
-
-      await this.handleConnectionEvent(ConnectionEvent.CONNECTION_SUCCESS);
-    } catch (error: any) {
-      console.error("Connection error:", error);
-      this.addMessage("ERROR", `Connection failed: ${error.message}`);
-      await this.cleanupConnection();
-      await this.handleConnectionEvent(ConnectionEvent.CONNECTION_FAILED);
-    }
-  };
-
-  private performReconnect = async () => {
-    const contextState = this.getContextState();
-    const { selectedPortInfo } = contextState;
-
-    if (!selectedPortInfo) {
-      await this.handleConnectionEvent(ConnectionEvent.RECONNECT_FAILED);
-      return;
-    }
-
-    try {
-      this.addMessage(
-        "INFO",
-        `🔄 Reconnecting (attempt ${this.reconnectAttempts + 1})...`,
-      );
-
-      const ports = await navigator.serial.getPorts();
-      const matchingPort = ports.find((port) => {
-        const info = port.getInfo();
-        return (
-          info.usbVendorId === selectedPortInfo.usbVendorId &&
-          info.usbProductId === selectedPortInfo.usbProductId
-        );
-      });
-
-      if (!matchingPort) {
-        this.addMessage("ERROR", "Previous port not found");
-        await this.handleConnectionEvent(ConnectionEvent.RECONNECT_FAILED);
-        return;
-      }
-
-      this.setState({
-        selectedPort: matchingPort,
-        ports: ports,
-      });
-
-      this.updateContext({
-        selectedPortName: this.getPortDisplayName(matchingPort),
-      });
-
-      await new Promise((r) => setTimeout(r, 300));
-      await this.performConnect();
-    } catch (error: any) {
-      console.error("Reconnect error:", error);
-      this.addMessage("ERROR", `Reconnect failed: ${error.message}`);
-      await this.handleConnectionEvent(ConnectionEvent.RECONNECT_FAILED);
-    }
-  };
-
-  private performDisconnect = async (isDeviceDisconnected: boolean) => {
-    console.log(`Disconnecting (device=${isDeviceDisconnected})`);
-
-    if (isDeviceDisconnected) {
-      this.addMessage("ERROR", "Device disconnected");
-    } else {
-      this.addMessage("INFO", "Disconnecting...");
-    }
-
-    await this.cleanupConnection();
-
+  private handleMessage = (msg: Message) => {
+    const currentMessages = this.getContextState().messages || [];
     this.updateContext({
-      isConnected: false,
-      shouldAutoReconnect: isDeviceDisconnected, // Only auto-reconnect if device disconnected
+      messages: [...currentMessages, msg],
     });
 
-    if (!isDeviceDisconnected) {
-      this.addMessage("INFO", "✓ Disconnected");
-    }
-
-    await this.handleConnectionEvent(ConnectionEvent.DISCONNECT);
-  };
-
-  // ==================== Serial Port Operations ====================
-
-  private readLoop = async () => {
-    const reader = this.readerRef;
-    if (!reader) return;
-
-    console.log("Read loop started");
-
-    try {
-      while (this.keepReading) {
-        const { value, done } = await reader.read();
-
-        if (done) break;
-
-        if (value && value.length > 0) {
-          let displayText: string;
-
-          if (this.getContextState().showHex) {
-            displayText = Array.from(value)
-              .map((b) => {
-                const hex = b.toString(16).padStart(2, "0");
-                return `${this.getContextState().hexPrefix}${hex}`;
-              })
-              .join(" ");
-          } else {
-            displayText = new TextDecoder().decode(value);
-          }
-
-          this.addMessage("RX", displayText);
-          const stats = this.getContextState().stats;
-          this.updateContext({
-            stats: { ...stats, rx: stats.rx + 1 },
-          });
-        }
-      }
-    } catch (error: any) {
-      if (this.shouldStopRef) return;
-
-      if (error.name === "NetworkError" || error.name === "NotFoundError") {
-        await this.handleConnectionEvent(ConnectionEvent.DEVICE_DISCONNECTED);
-      } else if (error.name !== "AbortError") {
-        console.error("Read error:", error);
-        this.addMessage("ERROR", `Read error: ${error.message}`);
-      }
+    if (msg.direction === "RX") {
+      const stats = this.getContextState().stats || { tx: 0, rx: 0, errors: 0 };
+      this.updateContext({
+        stats: { ...stats, rx: stats.rx + 1 },
+      });
     }
   };
 
-  private cleanupConnectionSync = () => {
-    console.log("=== Sync cleanup ===");
-
-    try {
-      if (this.readerRef) {
-        this.readerRef.releaseLock();
-        this.readerRef = null;
-      }
-    } catch (e) {
-      console.log("Reader release error:", e);
-    }
-
-    try {
-      if (this.writerRef) {
-        this.writerRef.releaseLock();
-        this.writerRef = null;
-      }
-    } catch (e) {
-      console.log("Writer release error:", e);
-    }
-
-    try {
-      if (this.state.selectedPort) {
-        this.state.selectedPort.close();
-      }
-    } catch (e) {
-      console.log("Port close error:", e);
-    }
-  };
-
-  private cleanupConnection = async () => {
-    console.log("=== Async cleanup ===");
-
-    this.shouldStopRef = true;
-    this.keepReading = false;
-
-    await new Promise((r) => setTimeout(r, 100));
-
-    if (this.readerRef) {
-      try {
-        await this.readerRef.cancel();
-      } catch (e) {}
-      try {
-        this.readerRef.releaseLock();
-      } catch (e) {}
-      this.readerRef = null;
-    }
-
-    if (this.writerRef) {
-      try {
-        await this.writerRef.releaseLock();
-      } catch (e) {}
-      this.writerRef = null;
-    }
-
-    if (this.state.selectedPort) {
-      try {
-        await this.state.selectedPort.close();
-      } catch (e) {}
-    }
+  private handleStateChange = (state: ConnectionState) => {
+    console.log("State changed:", state);
+    this.forceUpdate();
   };
 
   // ==================== User Actions ====================
 
-  private handleConnect = () => {
-    this.handleConnectionEvent(ConnectionEvent.CONNECT);
+  private handleConnect = async () => {
+    if (!this.state.selectedPort) {
+      this.addMessage("ERROR", "Please select a port first");
+      return;
+    }
+
+    const baudRate = this.getContextState().baudRate || 115200;
+
+    await this.connection.handleEvent(ConnectionEvent.CONNECT, {
+      port: this.state.selectedPort,
+      baudRate,
+    });
   };
 
-  private handleDisconnect = () => {
-    this.handleConnectionEvent(ConnectionEvent.DISCONNECT);
+  private handleDisconnect = async () => {
+    await this.connection.handleEvent(ConnectionEvent.DISCONNECT);
   };
 
-  // ==================== Helper Methods ====================
+  // ==================== Port Management ====================
 
   private startAutoRefresh = () => {
     this.refreshInterval = setInterval(() => {
-      if (this.state.connectionState !== ConnectionState.CONNECTED) {
+      if (this.connection.state === ConnectionState.DISCONNECTED) {
         this.refreshPorts();
       }
     }, 2000);
@@ -495,6 +421,23 @@ class SerialTerminalBase extends React.Component<
     }
   };
 
+  private requestPort = async () => {
+    try {
+      const port = await navigator.serial.requestPort();
+      await this.refreshPorts();
+      this.setState({ selectedPort: port });
+      this.updateContext({
+        selectedPortName: this.getPortDisplayName(port),
+      });
+      this.addMessage("INFO", "✓ New port authorized and selected");
+    } catch (error: any) {
+      if (error.name !== "NotFoundError") {
+        console.error("Error requesting port:", error);
+        this.addMessage("ERROR", `Failed to request port: ${error.message}`);
+      }
+    }
+  };
+
   private getPortDisplayName = (port: SerialPort): string => {
     const info = port.getInfo();
     if (info.usbVendorId && info.usbProductId) {
@@ -504,7 +447,7 @@ class SerialTerminalBase extends React.Component<
   };
 
   private handlePortSelection = (index: number) => {
-    if (this.state.connectionState === ConnectionState.CONNECTED) return;
+    if (this.connection.state === ConnectionState.CONNECTED) return;
 
     if (index >= 0 && index < this.state.ports.length) {
       const port = this.state.ports[index];
@@ -517,6 +460,85 @@ class SerialTerminalBase extends React.Component<
       this.updateContext({ selectedPortName: "" });
     }
   };
+
+  private sendText = async () => {
+    const text = this.getContextState().inputText?.trim() || "";
+    if (!text) return;
+
+    try {
+      const dataToSend = text + this.getLineEnding();
+      const encoded = new TextEncoder().encode(dataToSend);
+
+      await this.connection.send(encoded);
+
+      this.addMessage("TX", text);
+      const stats = this.getContextState().stats || { tx: 0, rx: 0, errors: 0 };
+      this.updateContext({
+        stats: { ...stats, tx: stats.tx + 1 },
+        inputText: "",
+      });
+    } catch (error: any) {
+      this.addMessage("ERROR", `Send failed: ${error.message}`);
+      const stats = this.getContextState().stats || { tx: 0, rx: 0, errors: 0 };
+      this.updateContext({
+        stats: { ...stats, errors: stats.errors + 1 },
+      });
+    }
+  };
+
+  private sendHex = async () => {
+    const hex = this.getContextState().inputHex?.trim() || "";
+    if (!hex) return;
+
+    try {
+      const hexValues = hex
+        .split(/[\s,]+/)
+        .filter((x) => x.length > 0)
+        .map((x) => {
+          const cleaned = x.replace(/^0x/i, "").replace(/^\\x/i, "");
+          return parseInt(cleaned, 16);
+        });
+
+      if (hexValues.some(isNaN) || hexValues.some((v) => v < 0 || v > 255)) {
+        this.addMessage(
+          "ERROR",
+          "Invalid hex format. Use: 01 02 03 or 0x01 0x02 0x03",
+        );
+        return;
+      }
+
+      const bytes = new Uint8Array(hexValues);
+      await this.connection.send(bytes);
+
+      const hexDisplay = Array.from(bytes)
+        .map((b) => `0x${b.toString(16).padStart(2, "0")}`)
+        .join(" ");
+      this.addMessage("TX", `[HEX] ${hexDisplay}`);
+      const stats = this.getContextState().stats || { tx: 0, rx: 0, errors: 0 };
+      this.updateContext({
+        stats: { ...stats, tx: stats.tx + 1 },
+        inputHex: "",
+      });
+    } catch (error: any) {
+      this.addMessage("ERROR", `Hex send failed: ${error.message}`);
+      const stats = this.getContextState().stats || { tx: 0, rx: 0, errors: 0 };
+      this.updateContext({
+        stats: { ...stats, errors: stats.errors + 1 },
+      });
+    }
+  };
+
+  // Helper method to send raw bytes (for CSR page)
+  public async sendBytes(bytes: Uint8Array): Promise<void> {
+    return this.connection.send(bytes);
+  }
+
+  private getLineEnding = (): string => {
+    const endings = { NONE: "", LF: "\n", CR: "\r", CRLF: "\r\n" };
+    return endings[this.getContextState().lineEnding] || "";
+  };
+
+  // ==================== UI Helpers ====================
 
   private handleScroll = () => {
     const terminal = this.terminalRef.current;
@@ -545,76 +567,11 @@ class SerialTerminalBase extends React.Component<
     }
   };
 
-  private getLineEnding = (): string => {
-    const endings = { NONE: "", LF: "\n", CR: "\r", CRLF: "\r\n" };
-    return endings[this.getContextState().lineEnding] || "";
-  };
-
-  private sendText = async () => {
-    const text = this.getContextState().inputText?.trim() || "";
-    if (!text || this.state.connectionState !== ConnectionState.CONNECTED)
-      return;
-
-    try {
-      const dataToSend = text + this.getLineEnding();
-      const encoded = new TextEncoder().encode(dataToSend);
-
-      await this.writerRef!.write(encoded);
-
-      this.addMessage("TX", text);
-      const stats = this.getContextState().stats;
-      this.updateContext({
-        stats: { ...stats, tx: stats.tx + 1 },
-        inputText: "",
-      });
-    } catch (error: any) {
-      console.error("Send error:", error);
-      this.addMessage("ERROR", `Send failed: ${error.message}`);
-    }
-  };
-
-  private sendHex = async () => {
-    const hex = this.getContextState().inputHex?.trim() || "";
-    if (!hex || this.state.connectionState !== ConnectionState.CONNECTED)
-      return;
-
-    try {
-      const hexValues = hex
-        .split(/[\s,]+/)
-        .filter((x) => x.length > 0)
-        .map((x) => {
-          const cleaned = x.replace(/^0x/i, "").replace(/^\\x/i, "");
-          return parseInt(cleaned, 16);
-        });
-
-      if (hexValues.some(isNaN) || hexValues.some((v) => v < 0 || v > 255)) {
-        this.addMessage("ERROR", "Invalid hex format");
-        return;
-      }
-
-      const bytes = new Uint8Array(hexValues);
-      await this.writerRef!.write(bytes);
-
-      const hexDisplay = Array.from(bytes)
-        .map((b) => `0x${b.toString(16).padStart(2, "0")}`)
-        .join(" ");
-      this.addMessage("TX", `[HEX] ${hexDisplay}`);
-      const stats = this.getContextState().stats;
-      this.updateContext({
-        stats: { ...stats, tx: stats.tx + 1 },
-        inputHex: "",
-      });
-    } catch (error: any) {
-      console.error("Hex send error:", error);
-      this.addMessage("ERROR", `Hex send failed: ${error.message}`);
-    }
-  };
-
   private addMessage = (
     direction: "TX" | "RX" | "INFO" | "ERROR",
     data: string,
   ) => {
-    const newMessage = {
+    const msg: Message = {
       timestamp: new Date().toLocaleTimeString("en-US", {
         hour12: false,
         hour: "2-digit",
@@ -629,7 +586,7 @@ class SerialTerminalBase extends React.Component<
 
     const currentMessages = this.getContextState().messages || [];
     this.updateContext({
-      messages: [...currentMessages, newMessage],
+      messages: [...currentMessages, msg],
     });
   };
 
@@ -678,14 +635,12 @@ class SerialTerminalBase extends React.Component<
       newMessagesCount = 0,
       showHex = false,
       hexPrefix = "0x",
-      shouldAutoReconnect = false,
     } = contextState;
 
-    const { connectionState } = this.state;
+    const connectionState = this.connection.state;
     const isConnected = connectionState === ConnectionState.CONNECTED;
-    const isConnecting =
-      connectionState === ConnectionState.CONNECTING ||
-      connectionState === ConnectionState.RECONNECTING;
+    const isConnecting = connectionState === ConnectionState.CONNECTING;
+    const isDisconnecting = connectionState === ConnectionState.DISCONNECTING;
 
     return (
       <div className={className}>
@@ -695,18 +650,14 @@ class SerialTerminalBase extends React.Component<
               {connectionState === ConnectionState.CONNECTED && "✓ Connected"}
               {connectionState === ConnectionState.CONNECTING &&
                 "⏳ Connecting..."}
-              {connectionState === ConnectionState.RECONNECTING &&
-                "🔄 Reconnecting..."}
               {connectionState === ConnectionState.DISCONNECTING &&
                 "⏳ Disconnecting..."}
               {connectionState === ConnectionState.DISCONNECTED &&
                 "○ Disconnected"}
               {connectionState === ConnectionState.ERROR && "❌ Error"}
-              {shouldAutoReconnect &&
-                connectionState === ConnectionState.DISCONNECTED &&
-                " (Will auto-reconnect)"}
             </label>
           </div>
+
           <div className="section">
             <label>Port:</label>
             <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
@@ -734,6 +685,7 @@ class SerialTerminalBase extends React.Component<
               <button
                 onClick={this.refreshPorts}
                 disabled={isConnected || isConnecting}
+                title="Refresh port list"
               >
                 🔄
               </button>
@@ -827,7 +779,7 @@ class SerialTerminalBase extends React.Component<
           </div>
 
           <div className="buttons">
-            {!isConnected && !isConnecting ? (
+            {!isConnected && !isConnecting && !isDisconnecting ? (
               <button
                 onClick={this.handleConnect}
                 className="btn-primary"
@@ -835,11 +787,9 @@ class SerialTerminalBase extends React.Component<
               >
                 Connect
               </button>
-            ) : isConnecting ? (
+            ) : isConnecting || isDisconnecting ? (
               <button className="btn-primary" disabled>
-                {connectionState === ConnectionState.RECONNECTING
-                  ? "Reconnecting..."
-                  : "Connecting..."}
+                {isConnecting ? "Connecting..." : "Disconnecting..."}
               </button>
             ) : (
               <button onClick={this.handleDisconnect} className="btn-danger">
@@ -924,3 +874,6 @@ class SerialTerminalBase extends React.Component<
 }
 
 export const SerialTerminal = withTerminalContext(SerialTerminalBase);
+
+// Export singleton for external access (e.g., from CSR page)
+export { GlobalSerialConnection, ConnectionState };
