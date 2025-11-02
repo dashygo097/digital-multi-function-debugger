@@ -296,8 +296,6 @@ class SerialTerminalBase extends React.Component<
     return this.props.terminalContext?.serialTerminal || {};
   };
 
-  // ==================== Lifecycle ====================
-
   async componentDidMount() {
     console.log("=== SerialTerminal componentDidMount ===");
 
@@ -306,6 +304,7 @@ class SerialTerminalBase extends React.Component<
     this.connection.subscribeState(this.handleStateChange);
 
     await this.refreshPorts();
+    await this.requestPort();
     this.startAutoRefresh();
 
     // Sync state
