@@ -1,4 +1,5 @@
 import React from "react";
+import { withTerminalContext } from "../contexts/TerminalContext";
 
 interface Message {
   timestamp: string;
@@ -9,28 +10,15 @@ interface Message {
 
 interface SerialTerminalProps {
   className?: string;
+  terminalContext?: any; // Will be injected by HOC
 }
 
 interface SerialTerminalState {
   ports: SerialPort[];
   selectedPort: SerialPort | null;
-  selectedPortName: string;
-  isConnected: boolean;
-  baudRate: number;
-  messages: Message[];
-  inputText: string;
-  inputHex: string;
-  inputMode: "TEXT" | "HEX";
-  lineEnding: "NONE" | "LF" | "CR" | "CRLF";
-  stats: { tx: number; rx: number; errors: number };
-  autoScroll: boolean;
-  showScrollIndicator: boolean;
-  newMessagesCount: number;
-  showHex: boolean;
-  hexPrefix: "0x" | "\\x" | "";
 }
 
-export class SerialTerminal extends React.Component<
+class SerialTerminalBase extends React.Component<
   SerialTerminalProps,
   SerialTerminalState
 > {
@@ -53,22 +41,18 @@ export class SerialTerminal extends React.Component<
     this.state = {
       ports: [],
       selectedPort: null,
-      selectedPortName: "",
-      isConnected: false,
-      baudRate: 115200,
-      messages: [],
-      inputText: "",
-      inputHex: "",
-      inputMode: "TEXT",
-      lineEnding: "NONE",
-      stats: { tx: 0, rx: 0, errors: 0 },
-      autoScroll: false,
-      showScrollIndicator: false,
-      newMessagesCount: 0,
-      showHex: false,
-      hexPrefix: "0x",
     };
   }
+
+  // Helper to update context
+  private updateContext = (updates: any) => {
+    this.props.terminalContext?.updateSerialTerminal(updates);
+  };
+
+  // Helper to get context state
+  private getContextState = () => {
+    return this.props.terminalContext?.serialTerminal || {};
+  };
 
   async componentDidMount() {
     await this.refreshPorts();
@@ -86,25 +70,26 @@ export class SerialTerminal extends React.Component<
     prevProps: SerialTerminalProps,
     prevState: SerialTerminalState,
   ) {
-    if (prevState.messages.length !== this.state.messages.length) {
+    const currentMessages = this.getContextState().messages || [];
+    const prevMessages =
+      this.props.terminalContext?.serialTerminal?.messages || [];
+
+    if (prevMessages.length !== currentMessages.length) {
       const terminal = this.terminalRef.current;
       const isNearBottom = terminal
         ? terminal.scrollHeight - terminal.scrollTop - terminal.clientHeight <
           50
         : true;
 
-      if (this.state.autoScroll) {
+      if (this.getContextState().autoScroll) {
         this.scrollToBottom();
       } else if (!isNearBottom) {
-        // Increment new messages count
-        this.setState((prev) => ({
-          newMessagesCount: prev.newMessagesCount + 1,
-        }));
+        this.updateContext({
+          newMessagesCount: this.getContextState().newMessagesCount + 1,
+        });
       }
     }
   }
-
-  // ==================== Auto-scroll Methods ====================
 
   private handleScroll = () => {
     const terminal = this.terminalRef.current;
@@ -113,29 +98,29 @@ export class SerialTerminal extends React.Component<
     const { scrollTop, scrollHeight, clientHeight } = terminal;
     const isNearBottom = scrollHeight - scrollTop - clientHeight < 50;
 
-    this.setState({
+    this.updateContext({
       showScrollIndicator: !isNearBottom,
-      newMessagesCount: isNearBottom ? 0 : this.state.newMessagesCount,
+      newMessagesCount: isNearBottom
+        ? 0
+        : this.getContextState().newMessagesCount,
     });
   };
 
   private scrollToBottom = () => {
     this.terminalEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    this.setState({ newMessagesCount: 0 });
+    this.updateContext({ newMessagesCount: 0 });
   };
 
   private toggleAutoScroll = (checked: boolean) => {
-    this.setState({ autoScroll: checked });
+    this.updateContext({ autoScroll: checked });
     if (checked) {
       this.scrollToBottom();
     }
   };
 
-  // ==================== Serial Port Methods ====================
-
   private startAutoRefresh = () => {
     this.refreshInterval = setInterval(() => {
-      if (!this.state.isConnected) {
+      if (!this.getContextState().isConnected) {
         this.refreshPorts();
       }
     }, 2000);
@@ -147,11 +132,13 @@ export class SerialTerminal extends React.Component<
       console.log(`Found ${ports.length} authorized ports`);
 
       this.setState({ ports });
+      this.updateContext({ ports });
 
       if (this.state.selectedPort) {
         const stillExists = ports.find((p) => p === this.state.selectedPort);
         if (!stillExists) {
-          this.setState({ selectedPort: null, selectedPortName: "" });
+          this.setState({ selectedPort: null });
+          this.updateContext({ selectedPort: null, selectedPortName: "" });
         }
       }
     } catch (error) {
@@ -169,25 +156,27 @@ export class SerialTerminal extends React.Component<
   };
 
   private handlePortSelection = (index: number) => {
-    if (this.state.isConnected) return;
+    if (this.getContextState().isConnected) return;
 
     if (index >= 0 && index < this.state.ports.length) {
       const port = this.state.ports[index];
-      this.setState({
-        selectedPort: port,
+      this.setState({ selectedPort: port });
+      this.updateContext({
         selectedPortName: this.getPortDisplayName(port),
       });
     } else {
-      this.setState({ selectedPort: null, selectedPortName: "" });
+      this.setState({ selectedPort: null });
+      this.updateContext({ selectedPort: null, selectedPortName: "" });
     }
   };
 
   private connectPort = async () => {
     if (!this.state.selectedPort) {
       this.addMessage("ERROR", "Please select a port first");
-      this.setState((prev) => ({
-        stats: { ...prev.stats, errors: prev.stats.errors + 1 },
-      }));
+      const stats = this.getContextState().stats;
+      this.updateContext({
+        stats: { ...stats, errors: stats.errors + 1 },
+      });
       return;
     }
 
@@ -196,7 +185,7 @@ export class SerialTerminal extends React.Component<
     try {
       this.addMessage(
         "INFO",
-        `Connecting to ${this.state.selectedPortName} at ${this.state.baudRate} baud...`,
+        `Connecting to ${this.getContextState().selectedPortName} at ${this.getContextState().baudRate} baud...`,
       );
 
       try {
@@ -207,9 +196,11 @@ export class SerialTerminal extends React.Component<
         // Port wasn't open, that's fine
       }
 
-      console.log(`Opening port with baudRate: ${this.state.baudRate}...`);
+      console.log(
+        `Opening port with baudRate: ${this.getContextState().baudRate}...`,
+      );
       await port.open({
-        baudRate: this.state.baudRate,
+        baudRate: this.getContextState().baudRate,
         dataBits: 8,
         stopBits: 1,
         parity: "none",
@@ -245,14 +236,18 @@ export class SerialTerminal extends React.Component<
 
       this.readLoop();
 
-      this.setState({ isConnected: true });
-      this.addMessage("INFO", `✓ Connected at ${this.state.baudRate} baud`);
+      this.updateContext({ isConnected: true });
+      this.addMessage(
+        "INFO",
+        `✓ Connected at ${this.getContextState().baudRate} baud`,
+      );
     } catch (error: any) {
       console.error("Connection failed:", error);
       this.addMessage("ERROR", `Connection failed: ${error.message || error}`);
-      this.setState((prev) => ({
-        stats: { ...prev.stats, errors: prev.stats.errors + 1 },
-      }));
+      const stats = this.getContextState().stats;
+      this.updateContext({
+        stats: { ...stats, errors: stats.errors + 1 },
+      });
       await this.cleanupConnection();
     }
   };
@@ -278,11 +273,11 @@ export class SerialTerminal extends React.Component<
         if (value && value.length > 0) {
           let displayText: string;
 
-          if (this.state.showHex) {
+          if (this.getContextState().showHex) {
             displayText = Array.from(value)
               .map((b) => {
                 const hex = b.toString(16).padStart(2, "0");
-                return `${this.state.hexPrefix}${hex}`;
+                return `${this.getContextState().hexPrefix}${hex}`;
               })
               .join(" ");
           } else {
@@ -291,9 +286,10 @@ export class SerialTerminal extends React.Component<
 
           console.log("RX:", displayText);
           this.addMessage("RX", displayText);
-          this.setState((prev) => ({
-            stats: { ...prev.stats, rx: prev.stats.rx + 1 },
-          }));
+          const stats = this.getContextState().stats;
+          this.updateContext({
+            stats: { ...stats, rx: stats.rx + 1 },
+          });
         }
       }
     } catch (error: any) {
@@ -309,9 +305,10 @@ export class SerialTerminal extends React.Component<
       } else if (error.name !== "AbortError") {
         console.error("Read error:", error);
         this.addMessage("ERROR", `Read error: ${error.message}`);
-        this.setState((prev) => ({
-          stats: { ...prev.stats, errors: prev.stats.errors + 1 },
-        }));
+        const stats = this.getContextState().stats;
+        this.updateContext({
+          stats: { ...stats, errors: stats.errors + 1 },
+        });
       }
     } finally {
       console.log("Read loop ended");
@@ -366,7 +363,7 @@ export class SerialTerminal extends React.Component<
   };
 
   private disconnectPort = async () => {
-    if (!this.state.isConnected) {
+    if (!this.getContextState().isConnected) {
       return;
     }
 
@@ -375,34 +372,35 @@ export class SerialTerminal extends React.Component<
 
       await this.cleanupConnection();
 
-      this.setState({ isConnected: false });
+      this.updateContext({ isConnected: false });
       this.addMessage("INFO", "✓ Disconnected");
     } catch (error) {
       console.error("Disconnect error:", error);
-      this.setState({ isConnected: false });
+      this.updateContext({ isConnected: false });
     }
   };
 
   private getLineEnding = (): string => {
     const endings = { NONE: "", LF: "\n", CR: "\r", CRLF: "\r\n" };
-    return endings[this.state.lineEnding];
+    return endings[this.getContextState().lineEnding] || "";
   };
 
   private sendText = async () => {
-    const text = this.state.inputText.trim();
+    const text = this.getContextState().inputText?.trim() || "";
     if (!text) {
       return;
     }
 
     if (
-      !this.state.isConnected ||
+      !this.getContextState().isConnected ||
       !this.writerRef ||
       !this.state.selectedPort
     ) {
       this.addMessage("ERROR", "Port not connected");
-      this.setState((prev) => ({
-        stats: { ...prev.stats, errors: prev.stats.errors + 1 },
-      }));
+      const stats = this.getContextState().stats;
+      this.updateContext({
+        stats: { ...stats, errors: stats.errors + 1 },
+      });
       return;
     }
 
@@ -410,7 +408,9 @@ export class SerialTerminal extends React.Component<
       const dataToSend = text + this.getLineEnding();
       const encoded = new TextEncoder().encode(dataToSend);
 
-      console.log(`Sending: "${text}" + ending "${this.state.lineEnding}"`);
+      console.log(
+        `Sending: "${text}" + ending "${this.getContextState().lineEnding}"`,
+      );
       console.log(
         "Bytes:",
         Array.from(encoded)
@@ -423,16 +423,18 @@ export class SerialTerminal extends React.Component<
       console.log("✓ Data written to buffer");
 
       this.addMessage("TX", text);
-      this.setState((prev) => ({
-        stats: { ...prev.stats, tx: prev.stats.tx + 1 },
+      const stats = this.getContextState().stats;
+      this.updateContext({
+        stats: { ...stats, tx: stats.tx + 1 },
         inputText: "",
-      }));
+      });
     } catch (error: any) {
       console.error("Send error:", error);
       this.addMessage("ERROR", `Send failed: ${error.message}`);
-      this.setState((prev) => ({
-        stats: { ...prev.stats, errors: prev.stats.errors + 1 },
-      }));
+      const stats = this.getContextState().stats;
+      this.updateContext({
+        stats: { ...stats, errors: stats.errors + 1 },
+      });
 
       if (error.name === "NetworkError" || error.name === "NotFoundError") {
         this.addMessage("ERROR", "Device disconnected");
@@ -442,20 +444,21 @@ export class SerialTerminal extends React.Component<
   };
 
   private sendHex = async () => {
-    const hex = this.state.inputHex.trim();
+    const hex = this.getContextState().inputHex?.trim() || "";
     if (!hex) {
       return;
     }
 
     if (
-      !this.state.isConnected ||
+      !this.getContextState().isConnected ||
       !this.writerRef ||
       !this.state.selectedPort
     ) {
       this.addMessage("ERROR", "Port not connected");
-      this.setState((prev) => ({
-        stats: { ...prev.stats, errors: prev.stats.errors + 1 },
-      }));
+      const stats = this.getContextState().stats;
+      this.updateContext({
+        stats: { ...stats, errors: stats.errors + 1 },
+      });
       return;
     }
 
@@ -473,9 +476,10 @@ export class SerialTerminal extends React.Component<
           "ERROR",
           "Invalid hex format. Use: 01 02 03 or 0x01 0x02 0x03",
         );
-        this.setState((prev) => ({
-          stats: { ...prev.stats, errors: prev.stats.errors + 1 },
-        }));
+        const stats = this.getContextState().stats;
+        this.updateContext({
+          stats: { ...stats, errors: stats.errors + 1 },
+        });
         return;
       }
 
@@ -494,16 +498,18 @@ export class SerialTerminal extends React.Component<
         .map((b) => `0x${b.toString(16).padStart(2, "0")}`)
         .join(" ");
       this.addMessage("TX", `[HEX] ${hexDisplay}`);
-      this.setState((prev) => ({
-        stats: { ...prev.stats, tx: prev.stats.tx + 1 },
+      const stats = this.getContextState().stats;
+      this.updateContext({
+        stats: { ...stats, tx: stats.tx + 1 },
         inputHex: "",
-      }));
+      });
     } catch (error: any) {
       console.error("Hex send error:", error);
       this.addMessage("ERROR", `Hex send failed: ${error.message}`);
-      this.setState((prev) => ({
-        stats: { ...prev.stats, errors: prev.stats.errors + 1 },
-      }));
+      const stats = this.getContextState().stats;
+      this.updateContext({
+        stats: { ...stats, errors: stats.errors + 1 },
+      });
 
       if (error.name === "NetworkError" || error.name === "NotFoundError") {
         this.addMessage("ERROR", "Device disconnected");
@@ -516,27 +522,27 @@ export class SerialTerminal extends React.Component<
     direction: "TX" | "RX" | "INFO" | "ERROR",
     data: string,
   ) => {
-    this.setState((prev) => ({
-      messages: [
-        ...prev.messages,
-        {
-          timestamp: new Date().toLocaleTimeString("en-US", {
-            hour12: false,
-            hour: "2-digit",
-            minute: "2-digit",
-            second: "2-digit",
-            fractionalSecondDigits: 3,
-          }),
-          direction,
-          data,
-          id: `${Date.now()}-${Math.random()}`,
-        },
-      ],
-    }));
+    const newMessage = {
+      timestamp: new Date().toLocaleTimeString("en-US", {
+        hour12: false,
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        fractionalSecondDigits: 3,
+      }),
+      direction,
+      data,
+      id: `${Date.now()}-${Math.random()}`,
+    };
+
+    const currentMessages = this.getContextState().messages || [];
+    this.updateContext({
+      messages: [...currentMessages, newMessage],
+    });
   };
 
   private clearTerminal = () => {
-    this.setState({
+    this.updateContext({
       messages: [],
       stats: { tx: 0, rx: 0, errors: 0 },
       newMessagesCount: 0,
@@ -544,8 +550,9 @@ export class SerialTerminal extends React.Component<
   };
 
   private exportLog = () => {
-    const log = this.state.messages
-      .map((m) => `[${m.timestamp}] ${m.direction}: ${m.data}`)
+    const messages = this.getContextState().messages || [];
+    const log = messages
+      .map((m: Message) => `[${m.timestamp}] ${m.direction}: ${m.data}`)
       .join("\n");
 
     const element = document.createElement("a");
@@ -562,23 +569,23 @@ export class SerialTerminal extends React.Component<
 
   render() {
     const { className } = this.props;
+    const contextState = this.getContextState();
     const {
-      ports,
-      selectedPortName,
-      isConnected,
-      baudRate,
-      messages,
-      inputText,
-      inputHex,
-      inputMode,
-      lineEnding,
-      stats,
-      autoScroll,
-      showScrollIndicator,
-      newMessagesCount,
-      showHex,
-      hexPrefix,
-    } = this.state;
+      selectedPortName = "",
+      isConnected = false,
+      baudRate = 115200,
+      messages = [],
+      inputText = "",
+      inputHex = "",
+      inputMode = "TEXT",
+      lineEnding = "NONE",
+      stats = { tx: 0, rx: 0, errors: 0 },
+      autoScroll = false,
+      showScrollIndicator = false,
+      newMessagesCount = 0,
+      showHex = false,
+      hexPrefix = "0x",
+    } = contextState;
 
     return (
       <div className={className}>
@@ -592,7 +599,7 @@ export class SerialTerminal extends React.Component<
               <select
                 value={selectedPortName}
                 onChange={(e) => {
-                  const index = ports.findIndex(
+                  const index = this.state.ports.findIndex(
                     (p) => this.getPortDisplayName(p) === e.target.value,
                   );
                   this.handlePortSelection(index);
@@ -601,7 +608,7 @@ export class SerialTerminal extends React.Component<
                 style={{ flex: 1 }}
               >
                 <option value="">Select...</option>
-                {ports.map((port, index) => {
+                {this.state.ports.map((port, index) => {
                   const name = this.getPortDisplayName(port);
                   return (
                     <option key={index} value={name}>
@@ -621,7 +628,7 @@ export class SerialTerminal extends React.Component<
             <select
               value={baudRate}
               onChange={(e) =>
-                this.setState({ baudRate: Number(e.target.value) })
+                this.updateContext({ baudRate: Number(e.target.value) })
               }
               disabled={isConnected}
             >
@@ -641,7 +648,7 @@ export class SerialTerminal extends React.Component<
             <select
               value={lineEnding}
               onChange={(e) =>
-                this.setState({ lineEnding: e.target.value as any })
+                this.updateContext({ lineEnding: e.target.value as any })
               }
               disabled={!isConnected}
             >
@@ -657,7 +664,7 @@ export class SerialTerminal extends React.Component<
             <select
               value={inputMode}
               onChange={(e) =>
-                this.setState({ inputMode: e.target.value as any })
+                this.updateContext({ inputMode: e.target.value as any })
               }
               disabled={!isConnected}
             >
@@ -668,7 +675,9 @@ export class SerialTerminal extends React.Component<
               <input
                 type="checkbox"
                 checked={showHex}
-                onChange={(e) => this.setState({ showHex: e.target.checked })}
+                onChange={(e) =>
+                  this.updateContext({ showHex: e.target.checked })
+                }
               />
               Show Hex
             </label>
@@ -678,7 +687,7 @@ export class SerialTerminal extends React.Component<
                 <select
                   value={hexPrefix}
                   onChange={(e) =>
-                    this.setState({ hexPrefix: e.target.value as any })
+                    this.updateContext({ hexPrefix: e.target.value as any })
                   }
                 >
                   <option value="0x">0x</option>
@@ -694,9 +703,7 @@ export class SerialTerminal extends React.Component<
               <input
                 type="checkbox"
                 checked={autoScroll}
-                onChange={(e) =>
-                  this.setState({ autoScroll: e.target.checked })
-                }
+                onChange={(e) => this.toggleAutoScroll(e.target.checked)}
               />
               Auto-scroll
             </label>
@@ -739,7 +746,7 @@ export class SerialTerminal extends React.Component<
             ref={this.terminalRef}
             onScroll={this.handleScroll}
           >
-            {messages.map((msg) => (
+            {messages.map((msg: Message) => (
               <div
                 key={msg.id}
                 className={`message ${msg.direction.toLowerCase()}`}
@@ -769,8 +776,8 @@ export class SerialTerminal extends React.Component<
               value={inputMode === "TEXT" ? inputText : inputHex}
               onChange={(e) =>
                 inputMode === "TEXT"
-                  ? this.setState({ inputText: e.target.value })
-                  : this.setState({ inputHex: e.target.value })
+                  ? this.updateContext({ inputText: e.target.value })
+                  : this.updateContext({ inputHex: e.target.value })
               }
               onKeyPress={(e) =>
                 e.key === "Enter" &&
@@ -795,3 +802,5 @@ export class SerialTerminal extends React.Component<
     );
   }
 }
+
+export const SerialTerminal = withTerminalContext(SerialTerminalBase);
