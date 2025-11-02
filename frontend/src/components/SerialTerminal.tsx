@@ -18,6 +18,8 @@ interface SerialTerminalState {
   selectedPort: SerialPort | null;
 }
 
+// ==================== FSM States & Events ====================
+
 enum ConnectionState {
   DISCONNECTED = "DISCONNECTED",
   CONNECTING = "CONNECTING",
@@ -34,6 +36,8 @@ enum ConnectionEvent {
   DISCONNECTION_COMPLETE = "DISCONNECTION_COMPLETE",
   DEVICE_DISCONNECTED = "DEVICE_DISCONNECTED",
 }
+
+// ==================== Global Serial Connection Singleton ====================
 
 class GlobalSerialConnection {
   private static instance: GlobalSerialConnection;
@@ -59,6 +63,8 @@ class GlobalSerialConnection {
     }
     return GlobalSerialConnection.instance;
   }
+
+  // ==================== FSM State Machine ====================
 
   async handleEvent(event: ConnectionEvent, data?: any): Promise<void> {
     const currentState = this.state;
@@ -461,6 +467,8 @@ class SerialTerminalBase extends React.Component<
     }
   };
 
+  // ==================== Send/Receive ====================
+
   private sendText = async () => {
     const text = this.getContextState().inputText?.trim() || "";
     if (!text) return;
@@ -688,6 +696,13 @@ class SerialTerminalBase extends React.Component<
                 title="Refresh port list"
               >
                 🔄
+              </button>
+              <button
+                onClick={this.requestPort}
+                disabled={isConnected || isConnecting}
+                title="Request new port"
+              >
+                ➕
               </button>
             </div>
           </div>
