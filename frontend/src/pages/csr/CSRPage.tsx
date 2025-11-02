@@ -44,7 +44,7 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
       csrData: "0xDEADBEEF",
       csrOperation: "WRITE",
       messages: [],
-      autoScroll: true,
+      autoScroll: false,
       selectedSection: "all",
 
       sections: [
