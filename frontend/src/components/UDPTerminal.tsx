@@ -233,15 +233,16 @@ export class UDPTerminal extends React.Component<
 
     console.log(`RX from ${source}:`, text);
 
-    let displayText = text;
+    let displayText: string;
     if (this.state.showHex) {
-      const hexStr = Array.from(bytes)
+      displayText = Array.from(bytes)
         .map((b) => {
           const hex = b.toString(16).padStart(2, "0");
           return `${this.state.hexPrefix}${hex}`;
         })
         .join(" ");
-      displayText = `${text} [${hexStr}]`;
+    } else {
+      displayText = text;
     }
 
     this.addMessage("RX", displayText, source);
