@@ -7,11 +7,18 @@ interface Message {
   id: string;
 }
 
+interface PortInfo {
+  usbVendorId?: number;
+  usbProductId?: number;
+}
+
 interface SerialTerminalState {
   ports: SerialPort[];
   selectedPort: SerialPort | null;
   selectedPortName: string;
+  selectedPortInfo: PortInfo | null;
   isConnected: boolean;
+  shouldAutoReconnect: boolean;
   baudRate: number;
   messages: Message[];
   inputText: string;
@@ -28,7 +35,6 @@ interface SerialTerminalState {
 
 interface UDPTerminalState {
   messages: Message[];
-  // Add other UDP terminal state here
 }
 
 interface TerminalContextType {
@@ -44,7 +50,9 @@ const defaultSerialState: SerialTerminalState = {
   ports: [],
   selectedPort: null,
   selectedPortName: "",
+  selectedPortInfo: null,
   isConnected: false,
+  shouldAutoReconnect: false,
   baudRate: 115200,
   messages: [],
   inputText: "",
@@ -81,7 +89,6 @@ export class TerminalProvider extends React.Component<
   constructor(props: TerminalProviderProps) {
     super(props);
 
-    // Try to load saved state from localStorage
     const savedSerial = this.loadFromStorage("serialTerminal");
     const savedUDP = this.loadFromStorage("udpTerminal");
 
@@ -103,7 +110,12 @@ export class TerminalProvider extends React.Component<
 
   private saveToStorage = (key: string, value: any) => {
     try {
-      localStorage.setItem(key, JSON.stringify(value));
+      const serializableData = {
+        ...value,
+        ports: undefined,
+        selectedPort: undefined,
+      };
+      localStorage.setItem(key, JSON.stringify(serializableData));
     } catch (error) {
       console.error(`Error saving ${key} to localStorage:`, error);
     }
@@ -115,10 +127,7 @@ export class TerminalProvider extends React.Component<
         serialTerminal: { ...prevState.serialTerminal, ...updates },
       }),
       () => {
-        // Save to localStorage (excluding non-serializable objects like ports and selectedPort)
-        const { ports, selectedPort, ...serializableState } =
-          this.state.serialTerminal;
-        this.saveToStorage("serialTerminal", serializableState);
+        this.saveToStorage("serialTerminal", this.state.serialTerminal);
       },
     );
   };
@@ -164,7 +173,6 @@ export class TerminalProvider extends React.Component<
   }
 }
 
-// Custom hook for using the context
 export const useTerminalContext = () => {
   const context = useContext(TerminalContext);
   if (!context) {
@@ -175,7 +183,6 @@ export const useTerminalContext = () => {
   return context;
 };
 
-// HOC for class components
 export function withTerminalContext<P extends object>(
   Component: React.ComponentType<P & { terminalContext: TerminalContextType }>,
 ) {
