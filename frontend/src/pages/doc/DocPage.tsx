@@ -24,7 +24,7 @@ class DocPage extends React.Component<WithRouterProps, DocPageState> {
         {
           id: "intro",
           title: "Introduction",
-          content: `# Introduction
+          content: `
 
 Welcome to the documentation!
 
@@ -41,7 +41,7 @@ int main() {
         {
           id: "getting-started",
           title: "Getting Started",
-          content: `# Getting Started
+          content: `
 
 ## Installation
 
@@ -61,7 +61,7 @@ npm start
         {
           id: "region-manual",
           title: "Memory Region Manual",
-          content: `# Memory Region Manual
+          content: `
 
 ## Put Sources Files Under This Directory
 
