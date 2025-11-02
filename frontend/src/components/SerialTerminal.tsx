@@ -92,7 +92,7 @@ class SerialTerminalBase extends React.Component<
     // Don't cleanup connection on unmount if we want to auto-reconnect
     this.shouldStopRef = true;
     this.keepReading = false;
-    this.cleanupConnection();
+    this.disconnectPort();
   }
 
   componentDidUpdate(
@@ -149,8 +149,6 @@ class SerialTerminalBase extends React.Component<
     this.setState({ isReconnecting: true });
 
     try {
-      this.addMessage("INFO", "🔄 Searching for previous port...");
-
       // Get available ports
       const ports = await navigator.serial.getPorts();
       console.log(`Found ${ports.length} ports`);
@@ -171,7 +169,6 @@ class SerialTerminalBase extends React.Component<
           "INFO",
           `✓ Found port (VID: 0x${selectedPortInfo.usbVendorId?.toString(16)}, PID: 0x${selectedPortInfo.usbProductId?.toString(16)})`,
         );
-        this.addMessage("INFO", "⏳ Reconnecting...");
 
         // Set the port in local state BEFORE connecting
         this.setState({
@@ -191,10 +188,9 @@ class SerialTerminalBase extends React.Component<
         // Attempt connection
         await this.connectPort();
       } else {
-        console.log("❌ No matching port found for auto-reconnect");
         this.addMessage(
           "INFO",
-          "⚠️ Previous port not found. Please reconnect manually.",
+          "Previous port not found. Please reconnect manually.",
         );
         this.updateContext({ shouldAutoReconnect: false, isConnected: false });
         this.setState({ isReconnecting: false });
@@ -374,8 +370,6 @@ class SerialTerminalBase extends React.Component<
         "INFO",
         `✓ Connected at ${this.getContextState().baudRate} baud`,
       );
-      this.addMessage("INFO", "💾 Connection saved (will auto-reconnect)");
-
       console.log("✓✓✓ Connection complete, state updated");
 
       // Force re-render to update UI
@@ -526,7 +520,7 @@ class SerialTerminalBase extends React.Component<
       console.error("Disconnect error:", error);
       this.updateContext({
         isConnected: false,
-        shouldAutoReconnect: false,
+        shouldAutoReconnect: true,
       });
     }
   };
