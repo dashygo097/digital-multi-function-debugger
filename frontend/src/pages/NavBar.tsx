@@ -14,13 +14,23 @@ class NavBar extends React.Component<WithRouterProps, NavBarState> {
   constructor(props: WithRouterProps) {
     super(props);
     this.state = {
-      onPage: window.location.pathname.replace("/", "") || "main",
+      onPage: window.location.pathname.replace("/", "") || "welcome",
     };
   }
 
-  handleGoToMainOnClick = () => {
+  handleGoToWelcomeOnClick = () => {
     this.props.navigate("/");
+    this.setState({ onPage: "welcome" });
+  };
+
+  handleGoToMainOnClick = () => {
+    this.props.navigate("/main");
     this.setState({ onPage: "main" });
+  };
+
+  handleGoToCSROnClick = () => {
+    this.props.navigate("/csr");
+    this.setState({ onPage: "csr" });
   };
 
   handleGoToDocOnClick = () => {
@@ -39,13 +49,32 @@ class NavBar extends React.Component<WithRouterProps, NavBarState> {
         <NavHeader title={this.state.onPage} subtitle="dashygo097@" />
         <Link
           to="/"
-          className={`navbar-home ${this.state.onPage === "main" ? "active" : ""}`}
+          className={`navbar-welcome ${this.state.onPage === "welcome" ? "active" : ""}`}
+        >
+          <Button
+            onClick={this.handleGoToWelcomeOnClick}
+            className="navbar-button"
+          >
+            Welcome
+          </Button>
+        </Link>
+        <Link
+          to="/main"
+          className={`navbar-main ${this.state.onPage === "main" ? "active" : ""}`}
         >
           <Button
             onClick={this.handleGoToMainOnClick}
             className="navbar-button"
           >
             Main
+          </Button>
+        </Link>
+        <Link
+          to="/csr"
+          className={`navbar-csr ${this.state.onPage === "csr" ? "active" : ""}`}
+        >
+          <Button onClick={this.handleGoToCSROnClick} className="navbar-button">
+            CSR
           </Button>
         </Link>
         <Link

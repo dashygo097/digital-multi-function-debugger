@@ -1,28 +1,46 @@
-.csr-control-window {
+.csr-page {
   display: flex;
   flex-direction: column;
   height: 100vh;
   padding: 20px;
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  background: transparent;
   color: rgba(255, 255, 255, 0.9);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  overflow: hidden;
 }
 
 .csr-header {
   margin-bottom: 20px;
 }
 
-.csr-header h2 {
+.csr-header h1 {
   margin: 0 0 8px 0;
   color: rgba(255, 255, 255, 0.95);
-  font-size: 24px;
+  font-size: 28px;
+  font-weight: 600;
 }
 
 .csr-header .description {
   margin: 0;
   color: rgba(255, 255, 255, 0.6);
   font-size: 14px;
-  font-family: monospace;
+  font-family: "Courier New", monospace;
+}
+
+.csr-content {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  overflow: hidden;
+}
+
+/* Left Panel */
+.csr-left-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  overflow-y: auto;
 }
 
 .csr-controls {
@@ -31,7 +49,12 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
   padding: 20px;
-  margin-bottom: 20px;
+}
+
+.csr-controls h2 {
+  margin: 0 0 16px 0;
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.95);
 }
 
 .control-group {
@@ -61,6 +84,7 @@
   gap: 8px;
   cursor: pointer;
   font-weight: normal;
+  color: rgba(255, 255, 255, 0.8);
 }
 
 .radio-label input[type="radio"] {
@@ -114,13 +138,28 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
   padding: 20px;
-  margin-bottom: 20px;
+  flex: 1;
+  overflow-y: auto;
 }
 
-.preset-registers h3 {
+.preset-registers h2 {
   margin: 0 0 16px 0;
-  color: rgba(255, 255, 255, 0.9);
-  font-size: 16px;
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.preset-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.preset-section h3 {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.7);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .preset-grid {
@@ -158,6 +197,13 @@
   color: rgba(255, 255, 255, 0.6);
 }
 
+/* Right Panel */
+.csr-right-panel {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 .message-log {
   flex: 1;
   display: flex;
@@ -177,10 +223,10 @@
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.log-header h3 {
+.log-header h2 {
   margin: 0;
-  font-size: 16px;
-  color: rgba(255, 255, 255, 0.9);
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.95);
 }
 
 .log-controls {
@@ -198,7 +244,8 @@
   cursor: pointer;
 }
 
-.btn-clear {
+.btn-clear,
+.btn-export {
   padding: 6px 12px;
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -209,7 +256,8 @@
   transition: all 0.2s;
 }
 
-.btn-clear:hover {
+.btn-clear:hover,
+.btn-export:hover {
   background: rgba(255, 255, 255, 0.15);
 }
 
@@ -220,6 +268,15 @@
   font-family: "Courier New", monospace;
   font-size: 13px;
   line-height: 1.6;
+}
+
+.log-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: rgba(255, 255, 255, 0.5);
+  font-style: italic;
 }
 
 .log-message {
@@ -264,19 +321,34 @@
 }
 
 /* Scrollbar */
+.csr-left-panel::-webkit-scrollbar,
 .log-content::-webkit-scrollbar {
   width: 8px;
 }
 
+.csr-left-panel::-webkit-scrollbar-track,
 .log-content::-webkit-scrollbar-track {
   background: rgba(255, 255, 255, 0.05);
 }
 
+.csr-left-panel::-webkit-scrollbar-thumb,
 .log-content::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.2);
   border-radius: 4px;
 }
 
+.csr-left-panel::-webkit-scrollbar-thumb:hover,
 .log-content::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.3);
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .csr-content {
+    grid-template-columns: 1fr;
+  }
+
+  .csr-left-panel {
+    max-height: 50vh;
+  }
 }

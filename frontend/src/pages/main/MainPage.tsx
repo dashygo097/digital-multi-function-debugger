@@ -18,22 +18,11 @@ class MainPage extends React.Component<WithRouterProps, MainPageState> {
     };
   }
 
-  private openCSRWindow = () => {
-    if (window.electron) {
-      window.electron.ipcRenderer.send("open-csr-window");
-    } else {
-      alert("CSR Control window requires Electron");
-    }
-  };
-
   render() {
     return (
       <div className="main-page">
         <div className="main-header">
           <h1>Control Panel</h1>
-          <button onClick={this.openCSRWindow} className="btn-csr-window">
-            🎛️ Open CSR Control
-          </button>
         </div>
         <SerialTerminal className="main-serialterminal" />
         <UDPTerminal
