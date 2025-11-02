@@ -512,7 +512,7 @@ class SerialTerminalBase extends React.Component<
 
       this.updateContext({
         isConnected: false,
-        shouldAutoReconnect: false,
+        shouldAutoReconnect: true,
       });
 
       this.addMessage("INFO", "✓ Disconnected (auto-reconnect disabled)");
@@ -520,7 +520,7 @@ class SerialTerminalBase extends React.Component<
       console.error("Disconnect error:", error);
       this.updateContext({
         isConnected: false,
-        shouldAutoReconnect: true,
+        shouldAutoReconnect: false,
       });
     }
   };
