@@ -9,17 +9,21 @@ interface DocPageState {
   availableDocs: Array<{ id: string; title: string; content: string }>;
 }
 
+const STORAGE_KEY = "doc-page-last-selected";
+
 class DocPage extends React.Component<WithRouterProps, DocPageState> {
   constructor(props: WithRouterProps) {
     super(props);
 
+    const lastSelected = localStorage.getItem(STORAGE_KEY);
+
     // Initialize with sample documents
     this.state = {
-      selectedDoc: "intro",
+      selectedDoc: lastSelected || "intro",
       availableDocs: [
         {
           id: "intro",
-          title: "Intro",
+          title: "Introduction",
           content: `# Introduction
 
 Welcome to the documentation!
@@ -30,13 +34,13 @@ This is a simple markdown example.
 int main() {
   return 0;
 }
-\`\`\`\
+\`\`\`
 
           `,
         },
         {
           id: "getting-started",
-          title: "Quick Start Guide",
+          title: "Getting Started",
           content: `# Getting Started
 
 ## Installation
@@ -49,9 +53,8 @@ Follow these steps to get started:
 
 \`\`\`bash
 npm install
-npm run start
+npm start
 \`\`\`
-On Windows you probably should use <strong>npm run start --force</strong>
 
           `,
         },
@@ -59,6 +62,8 @@ On Windows you probably should use <strong>npm run start --force</strong>
           id: "region-manual",
           title: "Memory Region Manual",
           content: `# Memory Region Manual
+
+## Put Sources Files Under This Directory
 
 ## List of Sections
 
@@ -90,13 +95,6 @@ On Windows you probably should use <strong>npm run start --force</strong>
 | Name         | Offset      | Func               |
 | ------------ | ----------- | ------------------ |
 | RAM_REGION | 0x00-0x20 | [31:0]: ram_data |
-
-| Name       | Offset   | Func               |
-| ---------- | -------- | ------------------ |
-| SLV_REG0 | 0x0000 | [31:0]: slv_reg0 |
-| SLV_REG1 | 0x1000 | [31:0]: slv_reg1 |
-| SLV_REG2 | 0x2000 | [31:0]: slv_reg2 |
-| SLV_REG3 | 0x3000 | [31:0]: slv_reg3 |
 
 ### Section: acm2108(0x18000 - 0x1C000)
 
@@ -233,7 +231,14 @@ On Windows you probably should use <strong>npm run start --force</strong>
 
   handleDocSelect = (docId: string) => {
     this.setState({ selectedDoc: docId });
+    // 保存选中的文档到 localStorage
+    localStorage.setItem(STORAGE_KEY, docId);
   };
+
+  componentWillUnmount() {
+    // 组件卸载时保存当前选中的文档
+    localStorage.setItem(STORAGE_KEY, this.state.selectedDoc);
+  }
 
   render() {
     const { selectedDoc, availableDocs } = this.state;
