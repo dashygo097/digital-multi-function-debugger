@@ -74,7 +74,7 @@ class SerialTerminalBase extends React.Component<
     const contextState = this.getContextState();
     if (contextState.shouldAutoReconnect && contextState.selectedPortInfo) {
       console.log("🔄 Auto-reconnect enabled, attempting to reconnect...");
-      setTimeout(() => this.attemptAutoReconnect(), 1000);
+      setTimeout(() => this.attemptAutoReconnect(), 3000);
     }
   }
 
@@ -87,10 +87,6 @@ class SerialTerminalBase extends React.Component<
 
     // If connected, save state and disconnect cleanly
     if (this.isActuallyConnected()) {
-      console.log(
-        "💾 Saving connection info and disconnecting before unmount...",
-      );
-
       const port = this.state.selectedPort;
       const portInfo = port?.getInfo();
 
