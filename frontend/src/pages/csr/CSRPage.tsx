@@ -714,12 +714,12 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
     this.setState({ connectionState: state });
   };
 
-  private stringToHex = (str: string): string => {
-    const encoder = new TextEncoder();
-    const bytes = encoder.encode(str);
-    return Array.from(bytes)
-      .map((b) => b.toString(16).padStart(2, "0").toUpperCase())
-      .join(" ");
+  private stringToBytesLatin1 = (str: string): number[] => {
+    const bytes: number[] = [];
+    for (let i = 0; i < str.length; i++) {
+      bytes.push(str.charCodeAt(i) & 0xff);
+    }
+    return bytes;
   };
 
   private formatRxData = (data: string): string => {
@@ -727,25 +727,15 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
       return data;
     }
 
-    const bytes: number[] = [];
-    const ascii: string[] = [];
-
-    for (let i = 0; i < data.length; i++) {
-      const byte = data.charCodeAt(i);
-      bytes.push(byte);
-
-      if (byte >= 32 && byte <= 126) {
-        ascii.push(data.charAt(i));
-      } else {
-        ascii.push(".");
-      }
-    }
+    const bytes = this.stringToBytesLatin1(data);
 
     const hexString = bytes
       .map((b) => b.toString(16).padStart(2, "0").toUpperCase())
       .join(" ");
 
-    const asciiString = ascii.join("");
+    const asciiString = bytes
+      .map((b) => (b >= 32 && b <= 126 ? String.fromCharCode(b) : "."))
+      .join("");
 
     return `[HEX] ${hexString} | ${asciiString}`;
   };
