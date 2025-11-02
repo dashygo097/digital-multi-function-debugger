@@ -92,7 +92,7 @@ class SerialTerminalBase extends React.Component<
     // Don't cleanup connection on unmount if we want to auto-reconnect
     this.shouldStopRef = true;
     this.keepReading = false;
-    this.disconnectPort();
+    this.cleanupConnection();
   }
 
   componentDidUpdate(
