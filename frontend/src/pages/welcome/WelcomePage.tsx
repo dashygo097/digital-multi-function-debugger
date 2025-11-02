@@ -79,55 +79,6 @@ class WelcomePage extends React.Component<WithRouterProps, WelcomePageState> {
             </div>
           </div>
 
-          {/* Stats Cards */}
-          <div className="stats-section slide-up">
-            <div className="stat-card">
-              <div className="stat-icon">⏰</div>
-              <div className="stat-info">
-                <div className="stat-label">Current Time</div>
-                <div className="stat-value">{currentTime}</div>
-              </div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-icon">👤</div>
-              <div className="stat-info">
-                <div className="stat-label">Developer</div>
-                <div className="stat-value">dashygo097</div>
-              </div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-icon">📅</div>
-              <div className="stat-info">
-                <div className="stat-label">Competition Year</div>
-                <div className="stat-value">2025A</div>
-              </div>
-            </div>
-          </div>
-
-          {/* Navigation Cards */}
-          <div className={`nav-grid ${animationComplete ? "show" : ""}`}>
-            <div className="nav-card" onClick={() => this.navigateTo("/main")}>
-              <div className="nav-card-icon">🎛️</div>
-              <h3>Control Panel</h3>
-              <p>Serial & UDP terminal control</p>
-              <div className="nav-card-arrow">→</div>
-            </div>
-
-            <div className="nav-card" onClick={() => this.navigateTo("/csr")}>
-              <div className="nav-card-icon">🔧</div>
-              <h3>CSR Control</h3>
-              <p>Register read/write operations</p>
-              <div className="nav-card-arrow">→</div>
-            </div>
-
-            <div className="nav-card" onClick={() => this.navigateTo("/docs")}>
-              <div className="nav-card-icon">📚</div>
-              <h3>Documentation</h3>
-              <p>Memory map & register reference</p>
-              <div className="nav-card-arrow">→</div>
-            </div>
-          </div>
-
           {/* Footer */}
           <div className="welcome-footer fade-in-delay">
             <div className="footer-info">
@@ -135,7 +86,7 @@ class WelcomePage extends React.Component<WithRouterProps, WelcomePageState> {
                 Upper Computer Software for FPGA Development & Testing
               </p>
               <p className="footer-copyright">
-                © 2025 dashygo097 | Built with ❤️ for Embedded Competition
+                © 2025 dashygo097 | Built for Embedded Competition
               </p>
             </div>
           </div>
