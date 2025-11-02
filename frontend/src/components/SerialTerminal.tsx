@@ -57,7 +57,144 @@ class SerialTerminalBase extends React.Component<
   async componentDidMount() {
     await this.refreshPorts();
     this.startAutoRefresh();
+
+    // NEW: Auto-reconnect if we have saved connection info
+    await this.attemptAutoReconnect();
   }
+
+  private attemptAutoReconnect = async () => {
+    const contextState = this.getContextState();
+
+    // Check if we should auto-reconnect
+    if (!contextState.shouldAutoReconnect || contextState.isConnected) {
+      return;
+    }
+
+    const { selectedPortInfo, baudRate } = contextState;
+
+    if (!selectedPortInfo) {
+      console.log("No port info saved for auto-reconnect");
+      return;
+    }
+
+    try {
+      // Get available ports
+      const ports = await navigator.serial.getPorts();
+
+      // Find the matching port by vendor/product ID
+      const matchingPort = ports.find((port) => {
+        const info = port.getInfo();
+        return (
+          info.usbVendorId === selectedPortInfo.usbVendorId &&
+          info.usbProductId === selectedPortInfo.usbProductId
+        );
+      });
+
+      if (matchingPort) {
+        console.log("Found matching port, attempting to reconnect...");
+        this.addMessage(
+          "INFO",
+          "Attempting to auto-reconnect to saved port...",
+        );
+
+        // Set the port
+        this.setState({ selectedPort: matchingPort });
+        this.updateContext({
+          selectedPortName: this.getPortDisplayName(matchingPort),
+          baudRate: baudRate,
+        });
+
+        // Small delay to ensure state is set
+        await new Promise((r) => setTimeout(r, 500));
+
+        // Attempt connection
+        await this.connectPort();
+
+        this.addMessage("INFO", "✓ Auto-reconnected successfully!");
+      } else {
+        console.log("No matching port found for auto-reconnect");
+        this.addMessage(
+          "INFO",
+          "Previous port not found. Please reconnect manually.",
+        );
+        this.updateContext({ shouldAutoReconnect: false });
+      }
+    } catch (error) {
+      console.error("Auto-reconnect failed:", error);
+      this.addMessage("ERROR", `Auto-reconnect failed: ${error}`);
+      this.updateContext({ shouldAutoReconnect: false });
+    }
+  };
+
+  // UPDATE connectPort to save port info
+  private connectPort = async () => {
+    if (!this.state.selectedPort) {
+      this.addMessage("ERROR", "Please select a port first");
+      const stats = this.getContextState().stats;
+      this.updateContext({
+        stats: { ...stats, errors: stats.errors + 1 },
+      });
+      return;
+    }
+
+    const port = this.state.selectedPort;
+
+    try {
+      this.addMessage(
+        "INFO",
+        `Connecting to ${this.getContextState().selectedPortName} at ${this.getContextState().baudRate} baud...`,
+      );
+
+      // ... existing connection code ...
+
+      // NEW: Save port info and enable auto-reconnect after successful connection
+      const portInfo = port.getInfo();
+      this.updateContext({
+        isConnected: true,
+        selectedPortInfo: portInfo,
+        shouldAutoReconnect: true, // Enable auto-reconnect for future
+      });
+      this.addMessage(
+        "INFO",
+        `✓ Connected at ${this.getContextState().baudRate} baud`,
+      );
+    } catch (error: any) {
+      console.error("Connection failed:", error);
+      this.addMessage("ERROR", `Connection failed: ${error.message || error}`);
+      const stats = this.getContextState().stats;
+      this.updateContext({
+        stats: { ...stats, errors: stats.errors + 1 },
+        shouldAutoReconnect: false, // Disable on failure
+      });
+      await this.cleanupConnection();
+    }
+  };
+
+  // UPDATE disconnectPort to clear auto-reconnect when user manually disconnects
+  private disconnectPort = async () => {
+    if (!this.getContextState().isConnected) {
+      return;
+    }
+
+    try {
+      this.addMessage("INFO", "Disconnecting...");
+
+      await this.cleanupConnection();
+
+      // Clear auto-reconnect when manually disconnecting
+      this.updateContext({
+        isConnected: false,
+        shouldAutoReconnect: false, // User manually disconnected
+      });
+      this.addMessage("INFO", "✓ Disconnected");
+    } catch (error) {
+      console.error("Disconnect error:", error);
+      this.updateContext({
+        isConnected: false,
+        shouldAutoReconnect: false,
+      });
+    }
+  };
 
   componentWillUnmount() {
     if (this.refreshInterval) {
@@ -170,88 +307,6 @@ class SerialTerminalBase extends React.Component<
     }
   };
 
-  private connectPort = async () => {
-    if (!this.state.selectedPort) {
-      this.addMessage("ERROR", "Please select a port first");
-      const stats = this.getContextState().stats;
-      this.updateContext({
-        stats: { ...stats, errors: stats.errors + 1 },
-      });
-      return;
-    }
-
-    const port = this.state.selectedPort;
-
-    try {
-      this.addMessage(
-        "INFO",
-        `Connecting to ${this.getContextState().selectedPortName} at ${this.getContextState().baudRate} baud...`,
-      );
-
-      try {
-        await port.close();
-        console.log("Closed previously open port");
-        await new Promise((r) => setTimeout(r, 500));
-      } catch (e) {
-        // Port wasn't open, that's fine
-      }
-
-      console.log(
-        `Opening port with baudRate: ${this.getContextState().baudRate}...`,
-      );
-      await port.open({
-        baudRate: this.getContextState().baudRate,
-        dataBits: 8,
-        stopBits: 1,
-        parity: "none",
-        flowControl: "none",
-        bufferSize: 4096,
-      });
-      console.log("✓ Port opened");
-
-      try {
-        await port.setSignals({
-          dataTerminalReady: true,
-          requestToSend: true,
-        });
-        console.log("✓ DTR/RTS signals set");
-      } catch (e) {
-        console.log("Could not set signals (may not be supported):", e);
-      }
-
-      this.shouldStopRef = false;
-      this.keepReading = true;
-
-      if (!port.writable) {
-        throw new Error("Port is not writable");
-      }
-      this.writerRef = port.writable.getWriter();
-      console.log("✓ Writer ready");
-
-      if (!port.readable) {
-        throw new Error("Port is not readable");
-      }
-      this.readerRef = port.readable.getReader();
-      console.log("✓ Reader ready");
-
-      this.readLoop();
-
-      this.updateContext({ isConnected: true });
-      this.addMessage(
-        "INFO",
-        `✓ Connected at ${this.getContextState().baudRate} baud`,
-      );
-    } catch (error: any) {
-      console.error("Connection failed:", error);
-      this.addMessage("ERROR", `Connection failed: ${error.message || error}`);
-      const stats = this.getContextState().stats;
-      this.updateContext({
-        stats: { ...stats, errors: stats.errors + 1 },
-      });
-      await this.cleanupConnection();
-    }
-  };
-
   private readLoop = async () => {
     const reader = this.readerRef;
     if (!reader) {
@@ -360,24 +415,6 @@ class SerialTerminalBase extends React.Component<
     await new Promise((r) => setTimeout(r, 300));
 
     console.log("=== Cleanup complete ===");
-  };
-
-  private disconnectPort = async () => {
-    if (!this.getContextState().isConnected) {
-      return;
-    }
-
-    try {
-      this.addMessage("INFO", "Disconnecting...");
-
-      await this.cleanupConnection();
-
-      this.updateContext({ isConnected: false });
-      this.addMessage("INFO", "✓ Disconnected");
-    } catch (error) {
-      console.error("Disconnect error:", error);
-      this.updateContext({ isConnected: false });
-    }
   };
 
   private getLineEnding = (): string => {
