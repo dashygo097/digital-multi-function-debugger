@@ -497,7 +497,7 @@ class SerialTerminalBase extends React.Component<
     this.shouldStopRef = true;
     this.keepReading = false;
 
-    await new Promise((r) => setTimeout(r, 100));
+    await new Promise((r) => setTimeout(r, 1000));
 
     if (this.readerRef) {
       try {
@@ -533,7 +533,7 @@ class SerialTerminalBase extends React.Component<
       }
     }
 
-    await new Promise((r) => setTimeout(r, 300));
+    await new Promise((r) => setTimeout(r, 3000));
 
     console.log("=== Cleanup complete ===");
   };
@@ -550,10 +550,9 @@ class SerialTerminalBase extends React.Component<
 
       await this.cleanupConnection();
 
-      // User manually disconnected - disable auto-reconnect
       this.updateContext({
         isConnected: false,
-        shouldAutoReconnect: false,
+        shouldAutoReconnect: true,
       });
 
       this.addMessage("INFO", "✓ Disconnected");
