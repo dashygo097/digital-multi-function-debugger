@@ -12,12 +12,20 @@ interface PortInfo {
   usbProductId?: number;
 }
 
+// FSM States for tracking connection state
+enum ConnectionState {
+  DISCONNECTED = "DISCONNECTED",
+  CONNECTING = "CONNECTING",
+  CONNECTED = "CONNECTED",
+  DISCONNECTING = "DISCONNECTING",
+  RECONNECTING = "RECONNECTING",
+  ERROR = "ERROR",
+}
+
 interface SerialTerminalState {
-  ports: SerialPort[];
-  selectedPort: SerialPort | null;
   selectedPortName: string;
   selectedPortInfo: PortInfo | null;
-  isConnected: boolean;
+  connectionState: ConnectionState;
   shouldAutoReconnect: boolean;
   baudRate: number;
   messages: Message[];
@@ -47,11 +55,9 @@ interface TerminalContextType {
 }
 
 const defaultSerialState: SerialTerminalState = {
-  ports: [],
-  selectedPort: null,
   selectedPortName: "",
   selectedPortInfo: null,
-  isConnected: false,
+  connectionState: ConnectionState.DISCONNECTED,
   shouldAutoReconnect: false,
   baudRate: 115200,
   messages: [],
@@ -101,7 +107,16 @@ export class TerminalProvider extends React.Component<
   private loadFromStorage = (key: string): any => {
     try {
       const item = localStorage.getItem(key);
-      return item ? JSON.parse(item) : null;
+      if (!item) return null;
+
+      const parsed = JSON.parse(item);
+
+      // Reset connection state on load (can't persist actual connection)
+      if (key === "serialTerminal" && parsed) {
+        parsed.connectionState = ConnectionState.DISCONNECTED;
+      }
+
+      return parsed;
     } catch (error) {
       console.error(`Error loading ${key} from localStorage:`, error);
       return null;
@@ -110,10 +125,11 @@ export class TerminalProvider extends React.Component<
 
   private saveToStorage = (key: string, value: any) => {
     try {
+      // Only save serializable data
       const serializableData = {
         ...value,
-        ports: undefined,
-        selectedPort: undefined,
+        // Don't save connection state - it will be managed by FSM
+        connectionState: ConnectionState.DISCONNECTED,
       };
       localStorage.setItem(key, JSON.stringify(serializableData));
     } catch (error) {
@@ -199,3 +215,6 @@ export function withTerminalContext<P extends object>(
     </TerminalContext.Consumer>
   );
 }
+
+// Export the ConnectionState enum so it can be used in components
+export { ConnectionState };
