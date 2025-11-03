@@ -74,6 +74,11 @@ export interface TerminalContextType {
   udpClose: () => void;
   udpSendText: (text: string) => void;
   udpSendHex: (hex: string) => void;
+  serialRequestPortAndConnect: () => Promise<void>;
+  serialDisconnect: () => Promise<void>;
+  serialSend: (data: string) => void;
+  serialSendHex: (hex: string) => void;
+  serialSendRaw: (data: Uint8Array) => void;
 }
 
 const defaultSerialState: SerialTerminalState = {
@@ -111,7 +116,7 @@ const defaultUDPState: UDPTerminalState = {
   hexPrefix: "0x",
 };
 
-const TerminalContext = createContext<TerminalContextType | undefined>(
+export const TerminalContext = createContext<TerminalContextType | undefined>(
   undefined,
 );
 
@@ -127,6 +132,11 @@ export class TerminalProvider extends React.Component<
     udpTerminal: UDPTerminalState;
   }
 > {
+  private port: SerialPort | null = null;
+  private reader: ReadableStreamDefaultReader<Uint8Array> | null = null;
+  private writer: WritableStreamDefaultWriter<Uint8Array> | null = null;
+  private readLoopPromise: Promise<void> | null = null;
+
   private ws: WebSocket | null = null;
   private reconnectTimer: number | null = null;
   static defaultProps = {
@@ -135,10 +145,8 @@ export class TerminalProvider extends React.Component<
 
   constructor(props: TerminalProviderProps) {
     super(props);
-
     const savedSerial = this.loadFromStorage("serialTerminal");
     const savedUDP = this.loadFromStorage("udpTerminal");
-
     this.state = {
       serialTerminal: savedSerial || defaultSerialState,
       udpTerminal: savedUDP || defaultUDPState,
@@ -147,6 +155,10 @@ export class TerminalProvider extends React.Component<
 
   componentDidMount() {
     this.connectWebSocket();
+    navigator.serial?.addEventListener(
+      "disconnect",
+      this.handleSerialDisconnectEvent,
+    );
   }
 
   componentWillUnmount() {
@@ -154,15 +166,18 @@ export class TerminalProvider extends React.Component<
     if (this.reconnectTimer) {
       window.clearTimeout(this.reconnectTimer);
     }
+    this.serialDisconnect();
+    navigator.serial?.removeEventListener(
+      "disconnect",
+      this.handleSerialDisconnectEvent,
+    );
   }
 
   private loadFromStorage = (key: string): any => {
     try {
       const item = localStorage.getItem(key);
       if (!item) return null;
-
       const parsed = JSON.parse(item);
-
       if (key === "serialTerminal" && parsed) {
         parsed.connectionState = ConnectionState.DISCONNECTED;
       }
@@ -170,7 +185,6 @@ export class TerminalProvider extends React.Component<
         parsed.wsConnected = false;
         parsed.isBound = false;
       }
-
       return parsed;
     } catch (error) {
       return null;
@@ -224,6 +238,32 @@ export class TerminalProvider extends React.Component<
     });
   };
 
+  private addSerialMessage = (
+    direction: "TX" | "RX" | "INFO" | "ERROR",
+    data: string,
+  ) => {
+    const newMessage: Message = {
+      id: `${Date.now()}-${Math.random()}`,
+      timestamp: new Date().toLocaleTimeString("en-US", {
+        hour12: false,
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        fractionalSecondDigits: 3,
+      }),
+      direction,
+      data,
+    };
+    const { messages, stats } = this.state.serialTerminal;
+    const newMessages = [...messages, newMessage];
+    const newStats = { ...stats };
+    if (direction === "TX") newStats.tx++;
+    if (direction === "RX") newStats.rx++;
+    if (direction === "ERROR") newStats.errors++;
+
+    this.updateSerialTerminal({ messages: newMessages, stats: newStats });
+  };
+
   private addUDPMessage = (
     direction: "TX" | "RX" | "INFO" | "ERROR",
     data: string,
@@ -249,31 +289,172 @@ export class TerminalProvider extends React.Component<
     });
   };
 
+  serialRequestPortAndConnect = async () => {
+    if (!navigator.serial) {
+      this.addSerialMessage(
+        "ERROR",
+        "Web Serial API not supported by this browser.",
+      );
+      return;
+    }
+    try {
+      this.updateSerialTerminal({
+        connectionState: ConnectionState.CONNECTING,
+      });
+      this.port = await navigator.serial.requestPort();
+      const portInfo = this.port.getInfo();
+      this.updateSerialTerminal({ selectedPortInfo: portInfo });
+
+      await this.port.open({ baudRate: this.state.serialTerminal.baudRate });
+
+      this.writer = this.port.writable!.getWriter();
+      this.reader = this.port.readable!.getReader();
+
+      this.updateSerialTerminal({ connectionState: ConnectionState.CONNECTED });
+      this.addSerialMessage(
+        "INFO",
+        `Connected to port ${portInfo.usbVendorId}:${portInfo.usbProductId}`,
+      );
+
+      this.readLoopPromise = this.readLoop();
+    } catch (error: any) {
+      this.updateSerialTerminal({ connectionState: ConnectionState.ERROR });
+      this.addSerialMessage("ERROR", `Failed to connect: ${error.message}`);
+    }
+  };
+
+  private readLoop = async () => {
+    try {
+      while (this.port?.readable) {
+        const { value, done } = await this.reader!.read();
+        if (done) {
+          break;
+        }
+        const text = new TextDecoder().decode(value);
+        this.addSerialMessage("RX", text);
+      }
+    } catch (error: any) {
+      this.addSerialMessage("ERROR", `Read error: ${error.message}`);
+    } finally {
+      this.reader?.releaseLock();
+    }
+  };
+
+  private handleSerialDisconnectEvent = (event: Event) => {
+    if (this.port && event.target === this.port) {
+      this.serialDisconnect();
+      this.addSerialMessage("INFO", "Serial port disconnected.");
+    }
+  };
+
+  serialDisconnect = async () => {
+    this.updateSerialTerminal({
+      connectionState: ConnectionState.DISCONNECTING,
+    });
+    if (this.reader) {
+      try {
+        await this.reader.cancel();
+      } catch (error) {}
+    }
+    if (this.writer) {
+      try {
+        await this.writer.close();
+      } catch (error) {}
+    }
+    if (this.port) {
+      try {
+        await this.port.close();
+      } catch (error) {}
+    }
+    this.port = null;
+    this.reader = null;
+    this.writer = null;
+    this.updateSerialTerminal({
+      connectionState: ConnectionState.DISCONNECTED,
+      selectedPortInfo: null,
+    });
+  };
+
+  serialSend = async (data: string) => {
+    if (!this.writer) {
+      this.addSerialMessage("ERROR", "Not connected.");
+      return;
+    }
+    try {
+      const lineEndingMap = {
+        NONE: "",
+        LF: "\n",
+        CR: "\r",
+        CRLF: "\r\n",
+      };
+      const dataWithLineEnding =
+        data + lineEndingMap[this.state.serialTerminal.lineEnding];
+      const encoded = new TextEncoder().encode(dataWithLineEnding);
+      await this.writer.write(encoded);
+      this.addSerialMessage("TX", data);
+    } catch (error: any) {
+      this.addSerialMessage("ERROR", `Send error: ${error.message}`);
+    }
+  };
+
+  serialSendHex = async (hex: string) => {
+    if (!this.writer || !hex) return;
+    try {
+      const hexValues = hex
+        .split(/[\s,]+/)
+        .filter((x) => x)
+        .map((x) => parseInt(x.replace(/^0x/i, "").replace(/^\\x/i, ""), 16));
+      if (hexValues.some(isNaN) || hexValues.some((v) => v < 0 || v > 255)) {
+        this.addSerialMessage("ERROR", "Invalid hex format.");
+        return;
+      }
+      const data = new Uint8Array(hexValues);
+      await this.writer.write(data);
+      const hexDisplay = hexValues
+        .map((b) => `0x${b.toString(16).padStart(2, "0")}`)
+        .join(" ");
+      this.addSerialMessage("TX", `[HEX] ${hexDisplay}`);
+    } catch (error: any) {
+      this.addSerialMessage("ERROR", `Hex send failed: ${error.message}`);
+    }
+  };
+
+  serialSendRaw = async (data: Uint8Array) => {
+    if (!this.writer) {
+      this.addSerialMessage("ERROR", "Not connected.");
+      return;
+    }
+    try {
+      await this.writer.write(data);
+      const hexDisplay = Array.from(data)
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join(" ");
+      this.addSerialMessage("TX", `[RAW] ${hexDisplay}`);
+    } catch (error: any) {
+      this.addSerialMessage("ERROR", `Raw send error: ${error.message}`);
+    }
+  };
+
   private connectWebSocket = () => {
     const { udpBridgeUrl } = this.props;
-
     if (this.ws && this.ws.readyState === WebSocket.OPEN) return;
-
     try {
       this.addUDPMessage(
         "INFO",
         `Connecting to UDP bridge at ${udpBridgeUrl}...`,
       );
       this.ws = new WebSocket(udpBridgeUrl!);
-
       this.ws.onopen = () => {
         this.updateUDPTerminal({ wsConnected: true });
         this.addUDPMessage("INFO", "✓ Connected to UDP bridge");
         this.sendWSMessage({ type: "GET_STATUS", payload: {} });
       };
-
       this.ws.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
           this.handleWSMessage(data);
         } catch (error) {}
       };
-
       this.ws.onerror = () => {
         this.addUDPMessage("ERROR", "WebSocket connection error");
         this.updateUDPTerminal({
@@ -283,11 +464,9 @@ export class TerminalProvider extends React.Component<
           },
         });
       };
-
       this.ws.onclose = () => {
         this.updateUDPTerminal({ wsConnected: false, isBound: false });
         this.addUDPMessage("INFO", "Disconnected from UDP bridge");
-
         if (this.reconnectTimer) window.clearTimeout(this.reconnectTimer);
         this.reconnectTimer = window.setTimeout(this.connectWebSocket, 3000);
       };
@@ -376,11 +555,9 @@ export class TerminalProvider extends React.Component<
     const bytes = new Uint8Array(data);
     const text = new TextDecoder().decode(bytes);
     const source = `${remoteAddress}:${remotePort}`;
-
     const payloadHex = Array.from(bytes)
       .map((b) => b.toString(16).padStart(2, "0"))
       .join(" ");
-
     const displayText = this.state.udpTerminal.showHex
       ? Array.from(bytes)
           .map(
@@ -389,7 +566,6 @@ export class TerminalProvider extends React.Component<
           )
           .join(" ")
       : text;
-
     this.addUDPMessage("RX", displayText, source, payloadHex);
     this.updateUDPTerminal({
       stats: {
@@ -457,7 +633,6 @@ export class TerminalProvider extends React.Component<
           const cleaned = x.replace(/^0x/i, "").replace(/^\\x/i, "");
           return parseInt(cleaned, 16);
         });
-
       if (hexValues.some(isNaN) || hexValues.some((v) => v < 0 || v > 255)) {
         this.addUDPMessage(
           "ERROR",
@@ -465,7 +640,6 @@ export class TerminalProvider extends React.Component<
         );
         return;
       }
-
       this.sendWSMessage({ type: "SEND", payload: { data: hexValues } });
       const hexDisplay = hexValues
         .map((b) => `0x${b.toString(16).padStart(2, "0")}`)
@@ -492,6 +666,11 @@ export class TerminalProvider extends React.Component<
       udpClose: this.udpClose,
       udpSendText: this.udpSendText,
       udpSendHex: this.udpSendHex,
+      serialRequestPortAndConnect: this.serialRequestPortAndConnect,
+      serialDisconnect: this.serialDisconnect,
+      serialSend: this.serialSend,
+      serialSendHex: this.serialSendHex,
+      serialSendRaw: this.serialSendRaw,
     };
 
     return (
@@ -511,22 +690,3 @@ export const useTerminalContext = () => {
   }
   return context;
 };
-
-export function withTerminalContext<P extends object>(
-  Component: React.ComponentType<P & { terminalContext: TerminalContextType }>,
-) {
-  return (props: P) => (
-    <TerminalContext.Consumer>
-      {(context) => {
-        if (!context) {
-          throw new Error(
-            "withTerminalContext must be used within a TerminalProvider",
-          );
-        }
-        return <Component {...props} terminalContext={context} />;
-      }}
-    </TerminalContext.Consumer>
-  );
-}
-
-export { TerminalContext, defaultUDPState, defaultSerialState };
