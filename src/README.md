@@ -165,3 +165,17 @@
 | `STATUS`       | `0x30` | `[0]: busy, [1]: done, [2]: ack_error`                             |
 | `COUNT_STATUS` | `0x34` | `[7:0]: tx_count_remaining, [15:8]: rx_count_remaining`            |
 | `FIFO_STATUS`  | `0x38` | `[0]: tx_fifo_ready, [1]: rx_fifo_valid`                           |
+
+### Section: `dac_engine(0x34000 - 0x38000)`
+
+| Name           | Offset | Function                                                |
+| -------------- | ------ | ------------------------------------------------------- |
+| `CONTROL`      | `0x00` | `[0]: dds_enable, [1]: high_quality_mode`               |
+| `FREQUENCY`    | `0x04` | `[31:0]: frequency_control_word`                        |
+| `AMPLITUDE`    | `0x08` | `[15:0]: amplitude_scale (0x0000-0xFFFF)`               |
+| `PHASE_OFFSET` | `0x0C` | `[15:0]: phase_offset (0x0000-0xFFFF)`                  |
+| `WAVE_ADDR`    | `0x10` | `[8:0]: waveform_memory_address (0-511)`                |
+| `WAVE_DATA`    | `0x14` | `[15:0]: waveform_data_value (signed)`                  |
+| `WAVE_WR_EN`   | `0x18` | `[0]: wave_write_enable (write 1 to push, auto-clears)` |
+| `DAC_OUTPUT`   | `0x1C` | `[15:0]: current_dac_output_value (real-time)`          |
+| `STATUS`       | `0x20` | `[0]: engine_running, [1]: high_quality_active`         |
