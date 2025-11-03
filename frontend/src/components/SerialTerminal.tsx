@@ -2,6 +2,7 @@ import React from "react";
 import {
   useTerminalContext,
   ConnectionState,
+  PortInfo,
 } from "../contexts/TerminalContext";
 
 export const SerialTerminal: React.FC<{ className?: string }> = ({
@@ -12,7 +13,7 @@ export const SerialTerminal: React.FC<{ className?: string }> = ({
     serialTerminal,
     updateSerialTerminal,
     resetSerialTerminal,
-    serialRequestPortAndConnect,
+    serialConnect,
     serialDisconnect,
     serialSend,
     serialSendHex,
@@ -45,11 +46,18 @@ export const SerialTerminal: React.FC<{ className?: string }> = ({
     });
   };
 
+  const getPortIdentifier = (portInfo: PortInfo): string => {
+    if (!portInfo.usbVendorId || !portInfo.usbProductId) {
+      return "Unknown Port";
+    }
+    return `VID_0x${portInfo.usbVendorId.toString(16).padStart(4, "0")}_PID_0x${portInfo.usbProductId.toString(16).padStart(4, "0")}`;
+  };
+
   const isConnected =
     serialTerminal.connectionState === ConnectionState.CONNECTED;
 
   return (
-    <div className={className}>
+    <div className={`terminal-container ${className}`}>
       <div className="control-panel">
         <div className="section">
           <span
@@ -59,10 +67,31 @@ export const SerialTerminal: React.FC<{ className?: string }> = ({
           </span>
           {serialTerminal.selectedPortInfo && isConnected && (
             <span className="port-info">
-              ({serialTerminal.selectedPortInfo.usbVendorId}:
-              {serialTerminal.selectedPortInfo.usbProductId})
+              ({getPortIdentifier(serialTerminal.selectedPortInfo)})
             </span>
           )}
+        </div>
+        <div className="section">
+          <label>Available Ports:</label>
+          <div className="port-selector">
+            <select
+              value={serialTerminal.selectedPortName}
+              onChange={(e) =>
+                updateSerialTerminal({ selectedPortName: e.target.value })
+              }
+              disabled={isConnected}
+            >
+              <option value="">-- Request or Select a Port --</option>
+              {serialTerminal.availablePorts.map((port, index) => {
+                const id = getPortIdentifier(port);
+                return (
+                  <option key={index} value={id}>
+                    {id}
+                  </option>
+                );
+              })}
+            </select>
+          </div>
         </div>
         <div className="section">
           <label>Baud Rate:</label>
@@ -81,7 +110,7 @@ export const SerialTerminal: React.FC<{ className?: string }> = ({
           </select>
         </div>
         <div className="section">
-          <label>Line Ending:</label>
+          <label>Line Ending (for Text mode):</label>
           <select
             value={serialTerminal.lineEnding}
             onChange={(e) =>
@@ -95,18 +124,8 @@ export const SerialTerminal: React.FC<{ className?: string }> = ({
           </select>
         </div>
         <div className="section">
-          <label>Input Mode:</label>
-          <select
-            value={serialTerminal.inputMode}
-            onChange={(e) =>
-              updateSerialTerminal({ inputMode: e.target.value as any })
-            }
-            disabled={!isConnected}
-          >
-            <option value="TEXT">Text</option>
-            <option value="HEX">Hex</option>
-          </select>
-          <label>
+          <label>I/O Settings</label>
+          <label className="checkbox-label">
             <input
               type="checkbox"
               checked={serialTerminal.showHex}
@@ -116,33 +135,43 @@ export const SerialTerminal: React.FC<{ className?: string }> = ({
             />
             Show RX as Hex
           </label>
+          <select
+            value={serialTerminal.inputMode}
+            onChange={(e) =>
+              updateSerialTerminal({ inputMode: e.target.value as any })
+            }
+            disabled={!isConnected}
+          >
+            <option value="TEXT">Input as Text</option>
+            <option value="HEX">Input as Hex</option>
+          </select>
         </div>
         <div className="buttons">
           {!isConnected ? (
-            <button
-              onClick={serialRequestPortAndConnect}
-              className="btn-primary"
-            >
-              Connect
+            <button onClick={serialConnect} className="btn-primary">
+              {serialTerminal.selectedPortName ? "Connect" : "Request Port"}
             </button>
           ) : (
-            <button onClick={serialDisconnect} className="btn-danger">
+            <button
+              onClick={() => serialDisconnect(false)}
+              className="btn-danger"
+            >
               Disconnect
             </button>
           )}
-          <label>
-            <input
-              type="checkbox"
-              checked={serialTerminal.autoScroll}
-              onChange={(e) =>
-                updateSerialTerminal({ autoScroll: e.target.checked })
-              }
-            />
-            Auto-scroll
-          </label>
           <button onClick={clearTerminal}>Clear</button>
           <button onClick={resetSerialTerminal}>Reset</button>
         </div>
+        <label className="checkbox-label">
+          <input
+            type="checkbox"
+            checked={serialTerminal.autoScroll}
+            onChange={(e) =>
+              updateSerialTerminal({ autoScroll: e.target.checked })
+            }
+          />
+          Auto-scroll
+        </label>
         <div className="stats">
           TX: {serialTerminal.stats.tx} | RX: {serialTerminal.stats.rx} |
           Errors: {serialTerminal.stats.errors}

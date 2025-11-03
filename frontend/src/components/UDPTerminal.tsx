@@ -2,7 +2,7 @@ import React from "react";
 import { useTerminalContext } from "../contexts/TerminalContext";
 
 export const UDPTerminal: React.FC<{ className?: string }> = ({
-  className = "fpga-udp-terminal",
+  className = "udp-terminal",
 }) => {
   const context = useTerminalContext();
   const {
@@ -63,7 +63,7 @@ export const UDPTerminal: React.FC<{ className?: string }> = ({
   };
 
   return (
-    <div className={className}>
+    <div className={`terminal-container ${className}`}>
       <div className="control-panel">
         <div className="section">
           <span
@@ -112,7 +112,27 @@ export const UDPTerminal: React.FC<{ className?: string }> = ({
         </div>
 
         <div className="section">
-          <label>Input Mode:</label>
+          <label>I/O Settings</label>
+          <label className="checkbox-label">
+            <input
+              type="checkbox"
+              checked={udpTerminal.showHex}
+              onChange={(e) => updateUDPTerminal({ showHex: e.target.checked })}
+            />
+            Show RX as Hex
+          </label>
+          {udpTerminal.showHex && (
+            <select
+              value={udpTerminal.hexPrefix}
+              onChange={(e) =>
+                updateUDPTerminal({ hexPrefix: e.target.value as any })
+              }
+            >
+              <option value="0x">0x Prefix</option>
+              <option value="\x">\x Prefix</option>
+              <option value="">No Prefix</option>
+            </select>
+          )}
           <select
             value={udpTerminal.inputMode}
             onChange={(e) =>
@@ -120,32 +140,9 @@ export const UDPTerminal: React.FC<{ className?: string }> = ({
             }
             disabled={!udpTerminal.isBound}
           >
-            <option value="TEXT">Text</option>
-            <option value="HEX">Hex</option>
+            <option value="TEXT">Input as Text</option>
+            <option value="HEX">Input as Hex</option>
           </select>
-
-          <label>Hex Display:</label>
-          <input
-            type="checkbox"
-            checked={udpTerminal.showHex}
-            onChange={(e) => updateUDPTerminal({ showHex: e.target.checked })}
-          />
-
-          {udpTerminal.showHex && (
-            <>
-              <label>Prefix:</label>
-              <select
-                value={udpTerminal.hexPrefix}
-                onChange={(e) =>
-                  updateUDPTerminal({ hexPrefix: e.target.value as any })
-                }
-              >
-                <option value="0x">0x</option>
-                <option value="\x">\x</option>
-                <option value="">None</option>
-              </select>
-            </>
-          )}
         </div>
 
         <div className="buttons">
@@ -155,30 +152,27 @@ export const UDPTerminal: React.FC<{ className?: string }> = ({
               className="btn-primary"
               disabled={!udpTerminal.wsConnected}
             >
-              Bind & Connect
+              Bind
             </button>
           ) : (
             <button onClick={udpClose} className="btn-danger">
-              Disconnect
+              Unbind
             </button>
           )}
-
-          <label>
-            <input
-              type="checkbox"
-              checked={udpTerminal.autoScroll}
-              onChange={(e) =>
-                updateUDPTerminal({ autoScroll: e.target.checked })
-              }
-            />
-            Auto-scroll
-          </label>
-
           <button onClick={clearTerminal}>Clear</button>
           <button onClick={exportLog}>Export Log</button>
-          <button onClick={resetUDPTerminal}>Reset Settings</button>
+          <button onClick={resetUDPTerminal}>Reset</button>
         </div>
-
+        <label className="checkbox-label">
+          <input
+            type="checkbox"
+            checked={udpTerminal.autoScroll}
+            onChange={(e) =>
+              updateUDPTerminal({ autoScroll: e.target.checked })
+            }
+          />
+          Auto-scroll
+        </label>
         <div className="stats">
           TX: {udpTerminal.stats.tx} | RX: {udpTerminal.stats.rx} | Errors:{" "}
           {udpTerminal.stats.errors}

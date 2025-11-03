@@ -12,16 +12,7 @@ class AboutPage extends React.Component<WithRouterProps> {
   render() {
     return (
       <div className="about-page">
-        {/* Animated Background */}
-        <div className="background-animation">
-          <div className="gradient-orb orb-1"></div>
-          <div className="gradient-orb orb-2"></div>
-          <div className="gradient-orb orb-3"></div>
-        </div>
-
-        {/* Main Content */}
         <div className="about-content">
-          {/* Header */}
           <div className="about-header">
             <h1>About This Application</h1>
             <p className="description">
