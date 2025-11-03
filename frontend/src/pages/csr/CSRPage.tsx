@@ -1,9 +1,9 @@
 import React from "react";
 import { WithRouter, WithRouterProps } from "@utils";
 import {
-  GlobalSerialConnection,
+  TerminalContext,
   ConnectionState,
-} from "../../components/SerialTerminal";
+} from "../../contexts/TerminalContext";
 import "@styles/csr.css";
 
 interface CSRMessage {
@@ -20,16 +20,14 @@ interface CSRPageState {
   messages: CSRMessage[];
   autoScroll: boolean;
   selectedSection: string;
-  connectionState: ConnectionState;
   showRxAsHex: boolean;
-
+  lastProcessedMessageIndex: number;
   sections: Array<{
     id: string;
     name: string;
     startAddr: string;
     endAddr: string;
   }>;
-
   presets: Array<{
     name: string;
     address: string;
@@ -39,24 +37,24 @@ interface CSRPageState {
 }
 
 class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
+  static contextType = TerminalContext;
+  context!: React.ContextType<typeof TerminalContext>;
+
   private terminalEndRef: React.RefObject<HTMLDivElement>;
-  private connection: GlobalSerialConnection;
 
   constructor(props: WithRouterProps) {
     super(props);
     this.terminalEndRef = React.createRef();
-    this.connection = GlobalSerialConnection.getInstance();
 
     this.state = {
       csrAddress: "0x10000",
       csrData: "0xDEADBEEF",
       csrOperation: "WRITE",
       messages: [],
-      autoScroll: true,
+      autoScroll: false,
       selectedSection: "all",
-      connectionState: this.connection.state,
       showRxAsHex: true,
-
+      lastProcessedMessageIndex: -1,
       sections: [
         {
           id: "slv_regs",
@@ -113,9 +111,7 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
           endAddr: "0x34000",
         },
       ],
-
       presets: [
-        // ========== SLV_REGS Section (0x10000 - 0x14000) ==========
         {
           name: "SLV_REG0",
           address: "0x10000",
@@ -140,16 +136,12 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
           description: "[31:0]: slv_reg3",
           section: "slv_regs",
         },
-
-        // ========== SLV_RAM Section (0x14000 - 0x18000) ==========
         {
           name: "RAM_REGION",
           address: "0x14000",
           description: "[31:0]: ram_data (0x00-0x20)",
           section: "slv_ram",
         },
-
-        // ========== ACM2108 Section (0x18000 - 0x1C000) ==========
         {
           name: "CONTROL",
           address: "0x18000",
@@ -210,8 +202,6 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
           description: "[0]: ddr_init - DDR3 init status",
           section: "acm2108",
         },
-
-        // ========== Signal Measure Section (0x1C000 - 0x20000) ==========
         {
           name: "SIG_CONTROL",
           address: "0x1C000",
@@ -236,9 +226,6 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
           description: "[19:0]: high_time - Measured high time",
           section: "signal_measure",
         },
-
-        // ========== BitSeq Section (0x20000 - 0x24000) ==========
-        // CSR Registers
         {
           name: "BS_CONTROL",
           address: "0x20000",
@@ -287,8 +274,6 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
           description: "[0]: wr_bit - Write data bit",
           section: "bitseq",
         },
-
-        // Length Registers
         {
           name: "LEN_CH0",
           address: "0x20020",
@@ -337,8 +322,6 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
           description: "[31:0]: len - Channel 7 sequence length",
           section: "bitseq",
         },
-
-        // Rate Divider Registers
         {
           name: "RATE_DIV_CH0",
           address: "0x20040",
@@ -387,8 +370,6 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
           description: "[31:0]: rate_div - Channel 7 rate divider",
           section: "bitseq",
         },
-
-        // Phase Offset Registers
         {
           name: "PHASE_OFF_CH0",
           address: "0x20060",
@@ -437,8 +418,6 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
           description: "[31:0]: phase_off - Channel 7 phase offset",
           section: "bitseq",
         },
-
-        // ========== UART Engine Section (0x24000 - 0x28000) ==========
         {
           name: "UART_CONFIG",
           address: "0x24000",
@@ -505,8 +484,6 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
           description: "[0]: tx_fifo_ready, [1]: rx_fifo_valid",
           section: "uart_engine",
         },
-
-        // ========== SPI Engine Section (0x28000 - 0x2C000) ==========
         {
           name: "SPI_CONFIG",
           address: "0x28000",
@@ -574,8 +551,6 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
             "[0]: spi_sck, [1]: spi_mosi, [2]: spi_miso, [3]: spi_cs",
           section: "spi_engine",
         },
-
-        // ========== PWM Engine Section (0x2C000 - 0x30000) ==========
         {
           name: "PWM_CONTROL",
           address: "0x2C000",
@@ -618,8 +593,6 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
           description: "[7:0]: channel_enable - Channel enable status",
           section: "pwm_engine",
         },
-
-        // ========== I2C Engine Section (0x30000 - 0x34000) ==========
         {
           name: "I2C_CONFIG",
           address: "0x30000",
@@ -691,16 +664,6 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
     };
   }
 
-  componentDidMount() {
-    this.connection.subscribeState(this.handleConnectionStateChange);
-    this.connection.subscribeMessages(this.handleReceivedMessage);
-  }
-
-  componentWillUnmount() {
-    this.connection.unsubscribeState(this.handleConnectionStateChange);
-    this.connection.unsubscribeMessages(this.handleReceivedMessage);
-  }
-
   componentDidUpdate(prevProps: WithRouterProps, prevState: CSRPageState) {
     if (
       this.state.autoScroll &&
@@ -708,11 +671,35 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
     ) {
       this.terminalEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
+    this.processNewMessages();
   }
 
-  private handleConnectionStateChange = (state: ConnectionState) => {
-    this.setState({ connectionState: state });
-  };
+  private processNewMessages() {
+    if (!this.context) return;
+    const { serialTerminal } = this.context;
+    const { messages: contextMessages } = serialTerminal;
+
+    if (
+      contextMessages.length === 0 &&
+      this.state.lastProcessedMessageIndex !== -1
+    ) {
+      this.setState({ lastProcessedMessageIndex: -1 });
+      return;
+    }
+
+    const startIndex = this.state.lastProcessedMessageIndex + 1;
+    if (startIndex >= contextMessages.length) return;
+
+    for (let i = startIndex; i < contextMessages.length; i++) {
+      const msg = contextMessages[i];
+      if (msg.direction === "RX") {
+        const displayData = this.formatRxData(msg.data);
+        this.addMessage("RX", displayData);
+      }
+    }
+
+    this.setState({ lastProcessedMessageIndex: contextMessages.length - 1 });
+  }
 
   private stringToBytesLatin1 = (str: string): number[] => {
     const bytes: number[] = [];
@@ -726,58 +713,39 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
     if (!this.state.showRxAsHex) {
       return data;
     }
-
     const bytes = this.stringToBytesLatin1(data);
-
     const hexString = bytes
       .map((b) => b.toString(16).padStart(2, "0").toUpperCase())
       .join(" ");
-
     const asciiString = bytes
       .map((b) => (b >= 32 && b <= 126 ? String.fromCharCode(b) : "."))
       .join("");
-
     return `[HEX] ${hexString} | ${asciiString}`;
-  };
-
-  private handleReceivedMessage = (msg: {
-    direction: string;
-    data: string;
-  }) => {
-    if (msg.direction === "RX") {
-      const displayData = this.formatRxData(msg.data);
-      this.addMessage("RX", displayData);
-    }
   };
 
   private buildCSRCommand = (): Uint8Array | null => {
     try {
       const addrStr = this.state.csrAddress.replace(/^0x/i, "");
       const address = parseInt(addrStr, 16);
-
       if (isNaN(address) || address < 0 || address > 0xffffffff) {
         this.addMessage("ERROR", "Invalid address format. Use hex: 0x10000");
         return null;
       }
-
       let data = 0;
       if (this.state.csrOperation === "WRITE") {
         const dataStr = this.state.csrData.replace(/^0x/i, "");
         data = parseInt(dataStr, 16);
-
         if (isNaN(data) || data < 0 || data > 0xffffffff) {
           this.addMessage("ERROR", "Invalid data format. Use hex: 0xDEADBEEF");
           return null;
         }
       }
-
       const cmd = new Uint8Array(9);
       cmd[0] = this.state.csrOperation === "WRITE" ? 0x00 : 0x01;
       cmd[1] = (address >> 24) & 0xff;
       cmd[2] = (address >> 16) & 0xff;
       cmd[3] = (address >> 8) & 0xff;
       cmd[4] = address & 0xff;
-
       if (this.state.csrOperation === "WRITE") {
         cmd[5] = (data >> 24) & 0xff;
         cmd[6] = (data >> 16) & 0xff;
@@ -786,7 +754,6 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
       } else {
         cmd[5] = cmd[6] = cmd[7] = cmd[8] = 0x00;
       }
-
       return cmd;
     } catch (error: any) {
       this.addMessage("ERROR", `Command build failed: ${error.message}`);
@@ -795,14 +762,15 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
   };
 
   private sendCSRCommand = async () => {
-    if (this.state.connectionState !== ConnectionState.CONNECTED) {
+    if (
+      this.context?.serialTerminal.connectionState !== ConnectionState.CONNECTED
+    ) {
       this.addMessage(
         "ERROR",
         "❌ Serial port not connected! Please connect via Serial Terminal page.",
       );
       return;
     }
-
     const cmd = this.buildCSRCommand();
     if (!cmd) return;
 
@@ -811,26 +779,18 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
       this.state.csrOperation === "WRITE"
         ? parseInt(this.state.csrData.replace(/^0x/i, ""), 16)
         : 0;
-
-    const hexDisplay = Array.from(cmd)
-      .map((b) => b.toString(16).padStart(2, "0").toUpperCase())
-      .join(" ");
-
     const operation =
       this.state.csrOperation === "WRITE"
         ? `WRITE 0x${data.toString(16).padStart(8, "0").toUpperCase()} to 0x${address.toString(16).padStart(8, "0").toUpperCase()}`
         : `READ from 0x${address.toString(16).padStart(8, "0").toUpperCase()}`;
 
     this.addMessage("TX", `[CSR ${operation}]`);
-    this.addMessage("INFO", `Raw bytes: ${hexDisplay}`);
 
     try {
-      await this.connection.send(cmd);
-      this.addMessage("INFO", "✓ Command sent successfully");
-      console.log("CSR Command sent:", hexDisplay);
+      this.context.serialSendRaw(cmd);
+      this.addMessage("INFO", "✓ Command sent via provider");
     } catch (error: any) {
       this.addMessage("ERROR", `❌ Send failed: ${error.message}`);
-      console.error("CSR Command send error:", error);
     }
   };
 
@@ -839,9 +799,7 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
     address: string;
     description: string;
   }) => {
-    this.setState({
-      csrAddress: preset.address,
-    });
+    this.setState({ csrAddress: preset.address });
     this.addMessage(
       "INFO",
       `Loaded: ${preset.name} (${preset.address}) - ${preset.description}`,
@@ -876,7 +834,6 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
     const log = this.state.messages
       .map((m) => `[${m.timestamp}] ${m.type}: ${m.data}`)
       .join("\n");
-
     const element = document.createElement("a");
     element.setAttribute(
       "href",
@@ -899,7 +856,10 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
   };
 
   private getConnectionStatusText = (): string => {
-    switch (this.state.connectionState) {
+    const connectionState =
+      this.context?.serialTerminal.connectionState ||
+      ConnectionState.DISCONNECTED;
+    switch (connectionState) {
       case ConnectionState.CONNECTED:
         return "✓ Connected";
       case ConnectionState.CONNECTING:
@@ -916,7 +876,10 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
   };
 
   private getConnectionStatusClass = (): string => {
-    switch (this.state.connectionState) {
+    const connectionState =
+      this.context?.serialTerminal.connectionState ||
+      ConnectionState.DISCONNECTED;
+    switch (connectionState) {
       case ConnectionState.CONNECTED:
         return "status-connected";
       case ConnectionState.CONNECTING:
@@ -940,12 +903,12 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
       autoScroll,
       selectedSection,
       sections,
-      connectionState,
       showRxAsHex,
     } = this.state;
-
+    const isConnected =
+      this.context?.serialTerminal.connectionState ===
+      ConnectionState.CONNECTED;
     const filteredPresets = this.getFilteredPresets();
-    const isConnected = connectionState === ConnectionState.CONNECTED;
 
     return (
       <div className="csr-page">
@@ -955,12 +918,10 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
             Command Format: 9 bytes - CMD_TYPE(1) + ADDR(4) + DATA(4)
           </p>
         </div>
-
         <div className="csr-content">
           <div className="csr-left-panel">
             <div className="csr-controls">
               <h2>Command Builder</h2>
-
               <div
                 className={`connection-status-banner ${this.getConnectionStatusClass()}`}
               >
@@ -974,7 +935,6 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
                   </span>
                 )}
               </div>
-
               <div className="control-group">
                 <label>Operation:</label>
                 <div className="radio-group">
@@ -998,7 +958,6 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
                   </label>
                 </div>
               </div>
-
               <div className="control-group">
                 <label>Address (4 bytes):</label>
                 <input
@@ -1011,7 +970,6 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
                   className="hex-input"
                 />
               </div>
-
               {csrOperation === "WRITE" && (
                 <div className="control-group">
                   <label>Data (4 bytes):</label>
@@ -1024,7 +982,6 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
                   />
                 </div>
               )}
-
               <div className="control-group">
                 <button
                   onClick={this.sendCSRCommand}
@@ -1040,7 +997,6 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
                 </button>
               </div>
             </div>
-
             <div className="preset-registers">
               <div className="preset-header">
                 <h2>Quick Access Registers</h2>
@@ -1066,7 +1022,6 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
                   })}
                 </select>
               </div>
-
               <div className="preset-list">
                 {filteredPresets.map((preset, index) => (
                   <button
@@ -1083,7 +1038,6 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
               </div>
             </div>
           </div>
-
           <div className="csr-right-panel">
             <div className="message-log">
               <div className="log-header">
