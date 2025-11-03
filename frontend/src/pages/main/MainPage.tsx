@@ -21,13 +21,6 @@ class MainPage extends React.Component<WithRouterProps, MainPageState> {
   render() {
     return (
       <div className="main-page">
-        {/* Animated Background */}
-        <div className="background-animation">
-          <div className="gradient-orb orb-1"></div>
-          <div className="gradient-orb orb-2"></div>
-          <div className="gradient-orb orb-3"></div>
-        </div>
-
         {/* Main Content */}
         <div className="main-content">
           <div className="main-header fade-in">
