@@ -33,6 +33,11 @@ class NavBar extends React.Component<WithRouterProps, NavBarState> {
     this.setState({ onPage: "csr" });
   };
 
+  handleGoToAnalyzerOnClick = () => {
+    this.props.navigate("/analyzer");
+    this.setState({ onPage: "analyzer" });
+  };
+
   handleGoToDocOnClick = () => {
     this.props.navigate("/doc");
     this.setState({ onPage: "docs" });
@@ -75,6 +80,17 @@ class NavBar extends React.Component<WithRouterProps, NavBarState> {
         >
           <Button onClick={this.handleGoToCSROnClick} className="navbar-button">
             CSR
+          </Button>
+        </Link>
+        <Link
+          to="/analyzer"
+          className={`navbar-analyzer ${this.state.onPage === "analyzer" ? "active" : ""}`}
+        >
+          <Button
+            onClick={this.handleGoToAnalyzerOnClick}
+            className="navbar-button"
+          >
+            Analyzer
           </Button>
         </Link>
         <Link

@@ -53,6 +53,7 @@
 .navbar-welcome,
 .navbar-main,
 .navbar-csr,
+.navbar-analyzer,
 .navbar-doc,
 .navbar-about {
   position: relative;
@@ -64,6 +65,7 @@
 .navbar-welcome::before,
 .navbar-main::before,
 .navbar-csr::before,
+.navbar-analyzer::before,
 .navbar-doc::before,
 .navbar-about::before {
   content: "";
@@ -86,6 +88,7 @@
 .navbar-welcome:hover::before,
 .navbar-main:hover::before,
 .navbar-csr:hover::before,
+.navbar-analyzer:hover::before,
 .navbar-doc:hover::before,
 .navbar-about:hover::before {
   opacity: 1;
@@ -94,6 +97,7 @@
 .navbar-welcome.active,
 .navbar-main.active,
 .navbar-csr.active,
+.navbar-analyzer.active,
 .navbar-doc.active,
 .navbar-about.active {
   background: linear-gradient(
@@ -110,6 +114,7 @@
 .navbar-welcome.active::after,
 .navbar-main.active::after,
 .navbar-csr.active::after,
+.navbar-analyzer.active::after,
 .navbar-doc.active::after,
 .navbar-about.active::after {
   content: "";
