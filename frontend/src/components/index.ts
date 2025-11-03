@@ -7,3 +7,4 @@ export * from "./USBDeviceList";
 export * from "./SerialTerminal";
 export * from "./DigitalWaveformChart";
 export * from "./UDPTerminal";
+export * from "./SpectrumChart";

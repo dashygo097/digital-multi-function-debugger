@@ -14,12 +14,11 @@ class AnalyzerPage extends React.Component<WithRouterProps, AnalyzerPageState> {
     super(props);
     this.state = {
       analyzerType: "analog",
-      dataSource: "udp", // Default to UDP
+      dataSource: "udp",
     };
   }
 
   componentDidUpdate(prevProps: WithRouterProps, prevState: AnalyzerPageState) {
-    // If the user switches to 'analog' mode, force the data source to 'udp'.
     if (
       this.state.analyzerType === "analog" &&
       this.state.dataSource !== "udp"
@@ -50,11 +49,6 @@ class AnalyzerPage extends React.Component<WithRouterProps, AnalyzerPageState> {
 
     return (
       <div className="analyzer-page">
-        <div className="background-animation">
-          <div className="gradient-orb orb-1"></div>
-          <div className="gradient-orb orb-2"></div>
-          <div className="gradient-orb orb-3"></div>
-        </div>
         <div className="analyzer-content">
           <div className="analyzer-header fade-in">
             <h1 className="analyzer-title">Signal Analyzer</h1>
