@@ -1,18 +1,15 @@
 import React from "react";
 
-export type DigitalSignalData = number;
+export type DigitalByteData = number; // Represents a byte (0-255)
 
 interface DigitalWaveformChartProps {
-  data: DigitalSignalData[];
+  data: DigitalByteData[];
   className?: string;
   width?: number;
   height?: number;
-  strokeColor?: string;
-  strokeWidth?: number;
   gridColor?: string;
   backgroundColor?: string;
-  showGrid?: boolean;
-  maxValue?: number;
+  textColor?: string;
 }
 
 export class DigitalWaveformChart extends React.Component<DigitalWaveformChartProps> {
@@ -20,14 +17,22 @@ export class DigitalWaveformChart extends React.Component<DigitalWaveformChartPr
 
   static defaultProps = {
     width: 800,
-    height: 100, // Default height is smaller for digital signals
-    strokeColor: "#00ff00",
-    strokeWidth: 2,
-    gridColor: "#333333",
-    backgroundColor: "#1a1a2e",
-    showGrid: true,
-    maxValue: 1,
+    height: 250,
+    gridColor: "#334155",
+    backgroundColor: "#1e293b",
+    textColor: "#94a3b8",
   };
+
+  private readonly bitColors = [
+    "#34d399",
+    "#f87171",
+    "#60a5fa",
+    "#fbbf24",
+    "#a78bfa",
+    "#f472b6",
+    "#2dd4bf",
+    "#facc15",
+  ];
 
   constructor(props: DigitalWaveformChartProps) {
     super(props);
@@ -37,7 +42,6 @@ export class DigitalWaveformChart extends React.Component<DigitalWaveformChartPr
   componentDidMount() {
     this.drawWaveform();
   }
-
   componentDidUpdate() {
     this.drawWaveform();
   }
@@ -45,126 +49,92 @@ export class DigitalWaveformChart extends React.Component<DigitalWaveformChartPr
   private drawWaveform() {
     const canvas = this.canvasRef.current;
     if (!canvas) return;
-
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const {
-      width = 800,
-      height = 100,
-      strokeColor = "#00ff00",
-      strokeWidth = 2,
-      gridColor = "#333333",
-      backgroundColor = "#1a1a2e",
-      showGrid = true,
-      maxValue = 1,
-    } = this.props;
+    const { width, height, backgroundColor, gridColor, textColor, data } = {
+      ...DigitalWaveformChart.defaultProps,
+      ...this.props,
+    };
+
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+    canvas.style.width = `${width}px`;
+    canvas.style.height = `${height}px`;
+    ctx.scale(dpr, dpr);
+
+    // Layout constants
+    const labelWidth = 50;
+    const chartWidth = width - labelWidth;
+    const bitRowHeight = 22;
+    const hexRowHeight = 26;
 
     // Clear canvas
     ctx.fillStyle = backgroundColor;
     ctx.fillRect(0, 0, width, height);
 
-    if (showGrid) {
-      this.drawGrid(ctx, width, height, gridColor);
-    }
+    // Draw labels and grid
+    ctx.font = "12px monospace";
+    ctx.fillStyle = textColor;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
 
-    if (this.props.data.length > 0) {
-      this.drawDigitalSignal(
-        ctx,
-        width,
-        height,
-        strokeColor,
-        strokeWidth,
-        maxValue,
-      );
-    }
-  }
-
-  private drawGrid(
-    ctx: CanvasRenderingContext2D,
-    width: number,
-    height: number,
-    gridColor: string,
-  ) {
-    ctx.strokeStyle = gridColor;
-    ctx.lineWidth = 0.5;
-    ctx.setLineDash([2, 4]);
-
-    // Horizontal lines (one in the middle)
-    ctx.beginPath();
-    ctx.moveTo(0, height / 2);
-    ctx.lineTo(width, height / 2);
-    ctx.stroke();
-
-    // Vertical lines
-    const verticalLines = 20;
-    for (let i = 1; i < verticalLines; i++) {
-      const x = (width / verticalLines) * i;
+    for (let i = 0; i < 8; i++) {
+      const y = i * bitRowHeight + bitRowHeight / 2;
+      ctx.fillText(`B${7 - i}`, labelWidth / 2, y);
+      ctx.strokeStyle = gridColor;
+      ctx.lineWidth = 0.5;
       ctx.beginPath();
-      ctx.moveTo(x, 0);
-      ctx.lineTo(x, height);
+      ctx.moveTo(labelWidth, i * bitRowHeight);
+      ctx.lineTo(width, i * bitRowHeight);
       ctx.stroke();
     }
-    ctx.setLineDash([]);
-  }
+    ctx.fillText("Hex", labelWidth / 2, 8 * bitRowHeight + hexRowHeight / 2);
 
-  private drawDigitalSignal(
-    ctx: CanvasRenderingContext2D,
-    width: number,
-    height: number,
-    strokeColor: string,
-    strokeWidth: number,
-    maxValue: number,
-  ) {
-    const { data } = this.props;
     if (data.length === 0) return;
 
-    const stepX = width / Math.max(1, data.length - 1);
-    const yHigh = height * 0.2; // 20% from top
-    const yLow = height * 0.8; // 80% from top
+    // Drawing logic
+    const stepX = chartWidth / data.length;
+    ctx.lineWidth = 2;
+    ctx.font = "10px monospace";
 
-    const getYPosition = (value: number) => (value > 0 ? yHigh : yLow);
+    for (let i = 0; i < data.length; i++) {
+      const byte = data[i];
+      const prevByte = i > 0 ? data[i - 1] : byte;
+      const x = labelWidth + i * stepX;
+      const centerX = x + stepX / 2;
 
-    ctx.strokeStyle = strokeColor;
-    ctx.lineWidth = strokeWidth;
-    ctx.lineCap = "butt";
-    ctx.lineJoin = "miter";
-    ctx.beginPath();
+      // Draw 8 bit waveforms
+      for (let bit = 0; bit < 8; bit++) {
+        const yOffset = (7 - bit) * bitRowHeight;
+        const yHigh = yOffset + bitRowHeight * 0.25;
+        const yLow = yOffset + bitRowHeight * 0.75;
 
-    // Start from the first point
-    ctx.moveTo(0, getYPosition(data[0]));
+        const currentBitValue = (byte >> bit) & 1;
+        const prevBitValue = (prevByte >> bit) & 1;
 
-    for (let i = 1; i < data.length; i++) {
-      const prevValue = data[i - 1];
-      const currentValue = data[i];
-      const prevX = (i - 1) * stepX;
-      const currentX = i * stepX;
+        const y1 = prevBitValue ? yHigh : yLow;
+        const y2 = currentBitValue ? yHigh : yLow;
 
-      const y1 = getYPosition(prevValue);
-      const y2 = getYPosition(currentValue);
-
-      // Draw horizontal line for the previous segment
-      ctx.lineTo(currentX, y1);
-
-      // If value changes, draw vertical line
-      if (y1 !== y2) {
-        ctx.lineTo(currentX, y2);
+        ctx.strokeStyle = this.bitColors[bit];
+        ctx.beginPath();
+        ctx.moveTo(x, y1);
+        if (y1 !== y2) {
+          ctx.lineTo(x, y2); // Vertical transition
+        }
+        ctx.lineTo(x + stepX, y2); // Horizontal line
+        ctx.stroke();
       }
+
+      // Draw Hex value
+      ctx.fillStyle = "#e2e8f0";
+      const hexString = byte.toString(16).padStart(2, "0").toUpperCase();
+      ctx.fillText(hexString, centerX, 8 * bitRowHeight + hexRowHeight / 2);
     }
-    ctx.stroke();
   }
 
   render() {
-    const { className, width = 800, height = 100 } = this.props;
-    return (
-      <div className={className}>
-        <canvas
-          ref={this.canvasRef}
-          width={width}
-          height={height}
-          style={{ display: "block", width: "100%", height: "auto" }}
-        />
-      </div>
-    );
+    return <canvas ref={this.canvasRef} className={this.props.className} />;
   }
 }
