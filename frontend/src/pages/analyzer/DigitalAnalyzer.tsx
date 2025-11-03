@@ -1,8 +1,8 @@
 import React from "react";
-import { DigitalWaveformChart, DigitalSignalData } from "@components";
-import { TerminalContext } from "../../contexts/TerminalContext";
+import { DigitalWaveformChart, DigitalByteData } from "@components";
+import { TerminalContext, Message } from "../../contexts/TerminalContext";
 
-const MAX_SAMPLES = 1024;
+const MAX_SAMPLES = 256; // Keep the last 256 bytes
 
 interface DigitalAnalyzerProps {
   className?: string;
@@ -10,8 +10,7 @@ interface DigitalAnalyzerProps {
 }
 
 interface DigitalAnalyzerState {
-  channelData: DigitalSignalData[][];
-  activeChannels: boolean[];
+  byteData: DigitalByteData[];
   isRunning: boolean;
   processedMessageIds: Set<string>;
 }
@@ -23,25 +22,10 @@ export class DigitalAnalyzer extends React.Component<
   static contextType = TerminalContext;
   context!: React.ContextType<typeof TerminalContext>;
 
-  private readonly defaultColors = [
-    "#34d399",
-    "#f87171",
-    "#60a5fa",
-    "#fbbf24",
-    "#a78bfa",
-    "#f472b6",
-    "#2dd4bf",
-    "#facc15",
-  ];
-
   constructor(props: DigitalAnalyzerProps) {
     super(props);
-    const channelCount = 8;
     this.state = {
-      channelData: Array(channelCount)
-        .fill(null)
-        .map(() => []),
-      activeChannels: Array(channelCount).fill(true),
+      byteData: [],
       isRunning: false,
       processedMessageIds: new Set<string>(),
     };
@@ -80,13 +64,8 @@ export class DigitalAnalyzer extends React.Component<
     }
   };
 
-  startCapture = () => {
-    this.setState({ isRunning: true }, this.processContextMessages);
-  };
-
-  stopCapture = () => {
-    this.setState({ isRunning: false });
-  };
+  startCapture = () => this.setState({ isRunning: true });
+  stopCapture = () => this.setState({ isRunning: false });
 
   clearData = () => {
     const { dataSource = "udp" } = this.props;
@@ -99,51 +78,28 @@ export class DigitalAnalyzer extends React.Component<
 
     if (messages) {
       for (const msg of messages) {
-        if (msg.id) {
-          currentMessageIds.add(msg.id);
-        }
+        if (msg.id) currentMessageIds.add(msg.id);
       }
     }
 
     this.setState({
-      channelData: this.state.channelData.map(() => []),
+      byteData: [],
       processedMessageIds: currentMessageIds,
     });
   };
 
-  toggleChannel = (channelIdx: number) => {
-    this.setState((prev) => {
-      const newActiveChannels = [...prev.activeChannels];
-      newActiveChannels[channelIdx] = !newActiveChannels[channelIdx];
-      return { activeChannels: newActiveChannels };
-    });
-  };
-
-  getChannelColor = (idx: number): string => {
-    return this.defaultColors[idx % this.defaultColors.length];
-  };
-
   public addHexPacket = (hexString: string) => {
     if (!hexString || !hexString.trim()) return;
-
     try {
-      const bytes = hexString.split(/\s+/).map((hp) => parseInt(hp, 16));
+      const bytes = hexString
+        .split(/\s+/)
+        .map((hp) => parseInt(hp, 16))
+        .filter((n) => !isNaN(n));
+      if (bytes.length === 0) return;
 
-      this.setState((prev) => {
-        const newChannelData = [...prev.channelData.map((ch) => [...ch])];
-
-        for (const byte of bytes) {
-          if (isNaN(byte)) continue;
-          for (let i = 0; i < 8; i++) {
-            const bit = (byte >> i) & 1;
-            newChannelData[i].push(bit);
-            if (newChannelData[i].length > MAX_SAMPLES) {
-              newChannelData[i].shift();
-            }
-          }
-        }
-        return { channelData: newChannelData };
-      });
+      this.setState((prev) => ({
+        byteData: [...prev.byteData, ...bytes].slice(-MAX_SAMPLES),
+      }));
     } catch (e) {
       console.warn("Failed to parse hex packet for digital analyzer:", e);
     }
@@ -151,7 +107,7 @@ export class DigitalAnalyzer extends React.Component<
 
   render() {
     const { className } = this.props;
-    const { isRunning, activeChannels, channelData } = this.state;
+    const { isRunning, byteData } = this.state;
 
     return (
       <div className={`analog-analyzer ${className || ""}`}>
@@ -167,37 +123,12 @@ export class DigitalAnalyzer extends React.Component<
               Clear Data
             </button>
           </div>
-          <div className="channel-toggles">
-            {activeChannels.map((isActive, idx) => (
-              <label key={idx} className="channel-toggle">
-                <input
-                  type="checkbox"
-                  checked={isActive}
-                  onChange={() => this.toggleChannel(idx)}
-                />
-                <span
-                  className="channel-indicator"
-                  style={{ backgroundColor: this.getChannelColor(idx) }}
-                >
-                  Bit {idx}
-                </span>
-              </label>
-            ))}
-          </div>
         </div>
 
         <div className="waveform-container">
-          {channelData.map((data, idx) =>
-            activeChannels[idx] ? (
-              <div key={idx} className="waveform-channel">
-                <h3 className="channel-title">Bit {idx}</h3>
-                <DigitalWaveformChart
-                  data={data}
-                  color={this.getChannelColor(idx)}
-                />
-              </div>
-            ) : null,
-          )}
+          <div className="waveform-channel">
+            <DigitalWaveformChart data={byteData} />
+          </div>
         </div>
       </div>
     );
