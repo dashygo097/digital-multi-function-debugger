@@ -1,19 +1,19 @@
 import React, { createContext, useContext, ReactNode } from "react";
 
-interface Message {
+export interface Message {
   timestamp: string;
   direction: "TX" | "RX" | "INFO" | "ERROR";
   data: string;
   id: string;
+  source?: string;
 }
 
-interface PortInfo {
+export interface PortInfo {
   usbVendorId?: number;
   usbProductId?: number;
 }
 
-// FSM States for tracking connection state
-enum ConnectionState {
+export enum ConnectionState {
   DISCONNECTED = "DISCONNECTED",
   CONNECTING = "CONNECTING",
   CONNECTED = "CONNECTED",
@@ -22,7 +22,7 @@ enum ConnectionState {
   ERROR = "ERROR",
 }
 
-interface SerialTerminalState {
+export interface SerialTerminalState {
   selectedPortName: string;
   selectedPortInfo: PortInfo | null;
   connectionState: ConnectionState;
@@ -41,11 +41,35 @@ interface SerialTerminalState {
   hexPrefix: "0x" | "\\x" | "";
 }
 
-interface UDPTerminalState {
+export interface UDPTerminalState {
+  // Connection
+  wsConnected: boolean;
+  localPort: number;
+  fpgaHost: string;
+  fpgaPort: number;
+  isBound: boolean;
+
+  // Messages
   messages: Message[];
+  inputText: string;
+  inputHex: string;
+  inputMode: "TEXT" | "HEX";
+
+  // Stats
+  stats: {
+    tx: number;
+    rx: number;
+    errors: number;
+    lastRxTime?: string;
+  };
+
+  // Settings
+  autoScroll: boolean;
+  showHex: boolean;
+  hexPrefix: "0x" | "\\x" | "";
 }
 
-interface TerminalContextType {
+export interface TerminalContextType {
   serialTerminal: SerialTerminalState;
   udpTerminal: UDPTerminalState;
   updateSerialTerminal: (updates: Partial<SerialTerminalState>) => void;
@@ -74,7 +98,19 @@ const defaultSerialState: SerialTerminalState = {
 };
 
 const defaultUDPState: UDPTerminalState = {
+  wsConnected: false,
+  localPort: 8888,
+  fpgaHost: "127.0.0.1",
+  fpgaPort: 9999,
+  isBound: false,
   messages: [],
+  inputText: "",
+  inputHex: "",
+  inputMode: "TEXT",
+  stats: { tx: 0, rx: 0, errors: 0 },
+  autoScroll: false,
+  showHex: false,
+  hexPrefix: "0x",
 };
 
 const TerminalContext = createContext<TerminalContextType | undefined>(
@@ -111,13 +147,19 @@ export class TerminalProvider extends React.Component<
 
       const parsed = JSON.parse(item);
 
-      // Reset connection state on load (can't persist actual connection)
+      // Reset connection-related runtime fields (can't persist sockets)
       if (key === "serialTerminal" && parsed) {
         parsed.connectionState = ConnectionState.DISCONNECTED;
+      }
+      if (key === "udpTerminal" && parsed) {
+        parsed.wsConnected = false;
+        parsed.isBound = false;
       }
 
       return parsed;
     } catch (error) {
+      // keep defaults on parse error
+      // eslint-disable-next-line no-console
       console.error(`Error loading ${key} from localStorage:`, error);
       return null;
     }
@@ -125,14 +167,17 @@ export class TerminalProvider extends React.Component<
 
   private saveToStorage = (key: string, value: any) => {
     try {
-      // Only save serializable data
+      // Only save serializable/settings data and avoid persisting live connection state
       const serializableData = {
         ...value,
-        // Don't save connection state - it will be managed by FSM
-        connectionState: ConnectionState.DISCONNECTED,
+        connectionState:
+          key === "serialTerminal" ? ConnectionState.DISCONNECTED : undefined,
+        wsConnected: key === "udpTerminal" ? false : undefined,
+        isBound: key === "udpTerminal" ? false : undefined,
       };
       localStorage.setItem(key, JSON.stringify(serializableData));
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.error(`Error saving ${key} to localStorage:`, error);
     }
   };
@@ -216,5 +261,4 @@ export function withTerminalContext<P extends object>(
   );
 }
 
-// Export the ConnectionState enum so it can be used in components
-export { ConnectionState };
+export { TerminalContext, defaultUDPState, defaultSerialState };

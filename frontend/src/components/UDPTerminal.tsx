@@ -1,4 +1,9 @@
 import React from "react";
+import {
+  TerminalContext,
+  TerminalContextType,
+  defaultUDPState,
+} from "../contexts/TerminalContext";
 
 interface Message {
   timestamp: string;
@@ -41,10 +46,29 @@ interface UDPTerminalState {
   hexPrefix: "0x" | "\\x" | "";
 }
 
+/**
+ * NOTE:
+ * - This class-based UDPTerminal implementation is intentionally left mostly unchanged.
+ * - Added light integration with TerminalContext so UDP settings and messages are mirrored
+ *   into the shared context for persistence and access by other components.
+ *
+ * Integration details:
+ * - Uses TerminalContext via static contextType so `this.context` is available inside class.
+ * - On mount: if context has udpTerminal data, merge it into component state (but do NOT override runtime-only flags like wsConnected/isBound).
+ * - Whenever messages or persistent settings change, update the context via this.context.updateUDPTerminal.
+ * - When resetting, uses updateUDPTerminal to clear context, and falls back to local defaults.
+ *
+ * Important runtime behavior (unchanged):
+ * - WebSocket instance, reconnect timer, and runtime-connected flags remain strictly local to this component and are NOT persisted by context.
+ */
+
 export class UDPTerminal extends React.Component<
   UDPTerminalProps,
   UDPTerminalState
 > {
+  static contextType = TerminalContext;
+  context!: TerminalContextType | undefined;
+
   private ws: WebSocket | null = null;
   private terminalEndRef: React.RefObject<HTMLDivElement>;
   private reconnectTimer: NodeJS.Timeout | null = null;
@@ -57,6 +81,8 @@ export class UDPTerminal extends React.Component<
   constructor(props: UDPTerminalProps) {
     super(props);
     this.terminalEndRef = React.createRef();
+
+    // Start with defaults, then we'll merge any persisted context in componentDidMount
     this.state = {
       wsConnected: false,
       localPort: 8888,
@@ -75,6 +101,33 @@ export class UDPTerminal extends React.Component<
   }
 
   componentDidMount() {
+    // Merge persisted UDP settings/messages from context if available
+    try {
+      if (this.context && this.context.udpTerminal) {
+        const persisted = this.context.udpTerminal;
+        // Merge persisted fields but never override runtime-only flags (wsConnected/isBound)
+        this.setState((prev) => ({
+          ...prev,
+          // keep runtime wsConnected/isBound values (remain false until runtime sets them)
+          localPort: persisted.localPort ?? prev.localPort,
+          fpgaHost: persisted.fpgaHost ?? prev.fpgaHost,
+          fpgaPort: persisted.fpgaPort ?? prev.fpgaPort,
+          messages: persisted.messages ?? prev.messages,
+          inputText: persisted.inputText ?? prev.inputText,
+          inputHex: persisted.inputHex ?? prev.inputHex,
+          inputMode: persisted.inputMode ?? prev.inputMode,
+          stats: persisted.stats ?? prev.stats,
+          autoScroll: persisted.autoScroll ?? prev.autoScroll,
+          showHex: persisted.showHex ?? prev.showHex,
+          hexPrefix: persisted.hexPrefix ?? prev.hexPrefix,
+        }));
+      }
+    } catch (e) {
+      // swallow context read errors, fall back to defaults
+      // eslint-disable-next-line no-console
+      console.warn("Failed to hydrate UDPTerminal from context:", e);
+    }
+
     this.connectWebSocket();
   }
 
@@ -91,6 +144,46 @@ export class UDPTerminal extends React.Component<
       prevState.messages.length !== this.state.messages.length
     ) {
       this.terminalEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+
+    // Persist selected persistent parts into context (do not persist runtime-only flags)
+    if (this.context && this.context.updateUDPTerminal) {
+      const shouldPersist =
+        prevState.messages !== this.state.messages ||
+        prevState.localPort !== this.state.localPort ||
+        prevState.fpgaHost !== this.state.fpgaHost ||
+        prevState.fpgaPort !== this.state.fpgaPort ||
+        prevState.inputText !== this.state.inputText ||
+        prevState.inputHex !== this.state.inputHex ||
+        prevState.inputMode !== this.state.inputMode ||
+        prevState.stats !== this.state.stats ||
+        prevState.autoScroll !== this.state.autoScroll ||
+        prevState.showHex !== this.state.showHex ||
+        prevState.hexPrefix !== this.state.hexPrefix;
+
+      if (shouldPersist) {
+        try {
+          this.context.updateUDPTerminal({
+            // persist settings and messages; ensure runtime flags are saved as false
+            wsConnected: false,
+            isBound: false,
+            localPort: this.state.localPort,
+            fpgaHost: this.state.fpgaHost,
+            fpgaPort: this.state.fpgaPort,
+            messages: this.state.messages,
+            inputText: this.state.inputText,
+            inputHex: this.state.inputHex,
+            inputMode: this.state.inputMode,
+            stats: this.state.stats,
+            autoScroll: this.state.autoScroll,
+            showHex: this.state.showHex,
+            hexPrefix: this.state.hexPrefix,
+          });
+        } catch (e) {
+          // eslint-disable-next-line no-console
+          console.warn("Failed to persist UDPTerminal state to context:", e);
+        }
+      }
     }
   }
 
@@ -310,7 +403,31 @@ export class UDPTerminal extends React.Component<
       text,
       `${this.state.fpgaHost}:${this.state.fpgaPort}`,
     );
-    this.setState({ inputText: "" });
+    this.setState({ inputText: "" }, () => {
+      // persist change to context (input cleared and messages appended)
+      if (this.context && this.context.updateUDPTerminal) {
+        try {
+          this.context.updateUDPTerminal({
+            inputText: "",
+            messages: this.state.messages,
+            wsConnected: false,
+            isBound: false,
+            localPort: this.state.localPort,
+            fpgaHost: this.state.fpgaHost,
+            fpgaPort: this.state.fpgaPort,
+            inputHex: this.state.inputHex,
+            inputMode: this.state.inputMode,
+            stats: this.state.stats,
+            autoScroll: this.state.autoScroll,
+            showHex: this.state.showHex,
+            hexPrefix: this.state.hexPrefix,
+          });
+        } catch (e) {
+          // eslint-disable-next-line no-console
+          console.warn("Failed to persist UDPTerminal after sendText:", e);
+        }
+      }
+    });
   };
 
   private sendHex = () => {
@@ -358,7 +475,30 @@ export class UDPTerminal extends React.Component<
         `[HEX] ${hexDisplay}`,
         `${this.state.fpgaHost}:${this.state.fpgaPort}`,
       );
-      this.setState({ inputHex: "" });
+      this.setState({ inputHex: "" }, () => {
+        if (this.context && this.context.updateUDPTerminal) {
+          try {
+            this.context.updateUDPTerminal({
+              inputHex: "",
+              messages: this.state.messages,
+              wsConnected: false,
+              isBound: false,
+              localPort: this.state.localPort,
+              fpgaHost: this.state.fpgaHost,
+              fpgaPort: this.state.fpgaPort,
+              inputText: this.state.inputText,
+              inputMode: this.state.inputMode,
+              stats: this.state.stats,
+              autoScroll: this.state.autoScroll,
+              showHex: this.state.showHex,
+              hexPrefix: this.state.hexPrefix,
+            });
+          } catch (e) {
+            // eslint-disable-next-line no-console
+            console.warn("Failed to persist UDPTerminal after sendHex:", e);
+          }
+        }
+      });
     } catch (error: any) {
       this.addMessage("ERROR", `Hex send failed: ${error.message}`);
     }
@@ -370,31 +510,79 @@ export class UDPTerminal extends React.Component<
     data: string,
     source?: string,
   ) => {
-    this.setState((prev) => ({
-      messages: [
-        ...prev.messages,
-        {
-          timestamp: new Date().toLocaleTimeString("en-US", {
-            hour12: false,
-            hour: "2-digit",
-            minute: "2-digit",
-            second: "2-digit",
-            fractionalSecondDigits: 3,
-          }),
-          direction,
-          data,
-          source,
-          id: `${Date.now()}-${Math.random()}`,
-        },
-      ],
-    }));
+    this.setState(
+      (prev) => {
+        const nextMessages = [
+          ...prev.messages,
+          {
+            timestamp: new Date().toLocaleTimeString("en-US", {
+              hour12: false,
+              hour: "2-digit",
+              minute: "2-digit",
+              second: "2-digit",
+              fractionalSecondDigits: 3,
+            }),
+            direction,
+            data,
+            source,
+            id: `${Date.now()}-${Math.random()}`,
+          },
+        ];
+        return { ...prev, messages: nextMessages };
+      },
+      () => {
+        // Persist messages to context after adding (do not persist live flags)
+        if (this.context && this.context.updateUDPTerminal) {
+          try {
+            this.context.updateUDPTerminal({
+              messages: this.state.messages,
+              wsConnected: false,
+              isBound: false,
+              localPort: this.state.localPort,
+              fpgaHost: this.state.fpgaHost,
+              fpgaPort: this.state.fpgaPort,
+              inputText: this.state.inputText,
+              inputHex: this.state.inputHex,
+              inputMode: this.state.inputMode,
+              stats: this.state.stats,
+              autoScroll: this.state.autoScroll,
+              showHex: this.state.showHex,
+              hexPrefix: this.state.hexPrefix,
+            });
+          } catch (e) {
+            // eslint-disable-next-line no-console
+            console.warn(
+              "Failed to persist UDPTerminal messages to context:",
+              e,
+            );
+          }
+        }
+      },
+    );
   };
 
   private clearTerminal = () => {
-    this.setState({
-      messages: [],
-      stats: { tx: 0, rx: 0, errors: 0 },
-    });
+    this.setState(
+      {
+        messages: [],
+        stats: { tx: 0, rx: 0, errors: 0 },
+      },
+      () => {
+        if (this.context && this.context.updateUDPTerminal) {
+          try {
+            this.context.updateUDPTerminal({
+              messages: [],
+              stats: { tx: 0, rx: 0, errors: 0 },
+              wsConnected: false,
+              isBound: false,
+            });
+          } catch (e) {
+            // eslint-disable-next-line no-console
+            console.warn("Failed to persist UDPTerminal clear to context:", e);
+          }
+        }
+      },
+    );
   };
 
   private exportLog = () => {
@@ -455,7 +643,19 @@ export class UDPTerminal extends React.Component<
               type="number"
               value={localPort}
               onChange={(e) =>
-                this.setState({ localPort: Number(e.target.value) })
+                this.setState(
+                  { localPort: Number(e.target.value) },
+                  // persist localPort change
+                  () => {
+                    if (this.context && this.context.updateUDPTerminal) {
+                      this.context.updateUDPTerminal({
+                        localPort: this.state.localPort,
+                        wsConnected: false,
+                        isBound: false,
+                      });
+                    }
+                  },
+                )
               }
               disabled={isBound}
               min={1}
@@ -468,7 +668,17 @@ export class UDPTerminal extends React.Component<
             <input
               type="text"
               value={fpgaHost}
-              onChange={(e) => this.setState({ fpgaHost: e.target.value })}
+              onChange={(e) =>
+                this.setState({ fpgaHost: e.target.value }, () => {
+                  if (this.context && this.context.updateUDPTerminal) {
+                    this.context.updateUDPTerminal({
+                      fpgaHost: this.state.fpgaHost,
+                      wsConnected: false,
+                      isBound: false,
+                    });
+                  }
+                })
+              }
               disabled={isBound}
               placeholder="192.168.1.100"
             />
@@ -477,7 +687,15 @@ export class UDPTerminal extends React.Component<
               type="number"
               value={fpgaPort}
               onChange={(e) =>
-                this.setState({ fpgaPort: Number(e.target.value) })
+                this.setState({ fpgaPort: Number(e.target.value) }, () => {
+                  if (this.context && this.context.updateUDPTerminal) {
+                    this.context.updateUDPTerminal({
+                      fpgaPort: this.state.fpgaPort,
+                      wsConnected: false,
+                      isBound: false,
+                    });
+                  }
+                })
               }
               disabled={isBound}
               min={1}
@@ -490,7 +708,13 @@ export class UDPTerminal extends React.Component<
             <select
               value={inputMode}
               onChange={(e) =>
-                this.setState({ inputMode: e.target.value as any })
+                this.setState({ inputMode: e.target.value as any }, () => {
+                  if (this.context && this.context.updateUDPTerminal) {
+                    this.context.updateUDPTerminal({
+                      inputMode: this.state.inputMode,
+                    });
+                  }
+                })
               }
               disabled={!isBound}
             >
@@ -502,7 +726,17 @@ export class UDPTerminal extends React.Component<
             <input
               type="checkbox"
               checked={showHex}
-              onChange={(e) => this.setState({ showHex: e.target.checked })}
+              onChange={(e) =>
+                this.setState(
+                  { showHex: e.target.checked },
+                  () =>
+                    this.context &&
+                    this.context.updateUDPTerminal &&
+                    this.context.updateUDPTerminal({
+                      showHex: this.state.showHex,
+                    }),
+                )
+              }
             />
 
             {showHex && (
@@ -511,7 +745,15 @@ export class UDPTerminal extends React.Component<
                 <select
                   value={hexPrefix}
                   onChange={(e) =>
-                    this.setState({ hexPrefix: e.target.value as any })
+                    this.setState(
+                      { hexPrefix: e.target.value as any },
+                      () =>
+                        this.context &&
+                        this.context.updateUDPTerminal &&
+                        this.context.updateUDPTerminal({
+                          hexPrefix: this.state.hexPrefix,
+                        }),
+                    )
                   }
                 >
                   <option value="0x">0x</option>
@@ -542,7 +784,15 @@ export class UDPTerminal extends React.Component<
                 type="checkbox"
                 checked={autoScroll}
                 onChange={(e) =>
-                  this.setState({ autoScroll: e.target.checked })
+                  this.setState(
+                    { autoScroll: e.target.checked },
+                    () =>
+                      this.context &&
+                      this.context.updateUDPTerminal &&
+                      this.context.updateUDPTerminal({
+                        autoScroll: this.state.autoScroll,
+                      }),
+                  )
                 }
               />
               Auto-scroll
@@ -550,6 +800,18 @@ export class UDPTerminal extends React.Component<
 
             <button onClick={this.clearTerminal}>Clear</button>
             <button onClick={this.exportLog}>Export Log</button>
+            <button
+              onClick={() => {
+                // Reset both local state and persisted context
+                this.setState({ ...defaultUDPState }, () => {
+                  if (this.context && this.context.resetUDPTerminal) {
+                    this.context.resetUDPTerminal();
+                  }
+                });
+              }}
+            >
+              Reset Settings
+            </button>
           </div>
 
           <div className="stats">
