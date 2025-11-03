@@ -1,11 +1,8 @@
 import React from "react";
 
-export type DigitalSignalData = {
-  time: number;
-  value: number;
-};
+export type DigitalSignalData = number;
 
-class DigitalWaveformChartProps {
+interface DigitalWaveformChartProps {
   data: DigitalSignalData[];
   className?: string;
   width?: number;
@@ -15,7 +12,6 @@ class DigitalWaveformChartProps {
   gridColor?: string;
   backgroundColor?: string;
   showGrid?: boolean;
-  valueLabelsColor?: string;
   maxValue?: number;
 }
 
@@ -24,14 +20,13 @@ export class DigitalWaveformChart extends React.Component<DigitalWaveformChartPr
 
   static defaultProps = {
     width: 800,
-    height: 300,
+    height: 100, // Default height is smaller for digital signals
     strokeColor: "#00ff00",
     strokeWidth: 2,
     gridColor: "#333333",
-    backgroundColor: "#000000",
+    backgroundColor: "#1a1a2e",
     showGrid: true,
-    showValueLabels: true,
-    valueLabelsColor: "#ffffff",
+    maxValue: 1,
   };
 
   constructor(props: DigitalWaveformChartProps) {
@@ -49,22 +44,23 @@ export class DigitalWaveformChart extends React.Component<DigitalWaveformChartPr
 
   private drawWaveform() {
     const canvas = this.canvasRef.current;
-    if (!canvas || !this.props.data.length) return;
+    if (!canvas) return;
 
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
     const {
       width = 800,
-      height = 300,
+      height = 100,
       strokeColor = "#00ff00",
       strokeWidth = 2,
       gridColor = "#333333",
-      backgroundColor = "#000000",
+      backgroundColor = "#1a1a2e",
       showGrid = true,
-      maxValue,
+      maxValue = 1,
     } = this.props;
 
+    // Clear canvas
     ctx.fillStyle = backgroundColor;
     ctx.fillRect(0, 0, width, height);
 
@@ -72,14 +68,16 @@ export class DigitalWaveformChart extends React.Component<DigitalWaveformChartPr
       this.drawGrid(ctx, width, height, gridColor);
     }
 
-    this.drawDigitalSignal(
-      ctx,
-      width,
-      height,
-      strokeColor,
-      strokeWidth,
-      maxValue,
-    );
+    if (this.props.data.length > 0) {
+      this.drawDigitalSignal(
+        ctx,
+        width,
+        height,
+        strokeColor,
+        strokeWidth,
+        maxValue,
+      );
+    }
   }
 
   private drawGrid(
@@ -89,19 +87,17 @@ export class DigitalWaveformChart extends React.Component<DigitalWaveformChartPr
     gridColor: string,
   ) {
     ctx.strokeStyle = gridColor;
-    ctx.lineWidth = 1;
-    ctx.setLineDash([5, 5]);
+    ctx.lineWidth = 0.5;
+    ctx.setLineDash([2, 4]);
 
-    const horizontalLines = 8;
-    for (let i = 1; i < horizontalLines; i++) {
-      const y = (height / horizontalLines) * i;
-      ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.lineTo(width, y);
-      ctx.stroke();
-    }
+    // Horizontal lines (one in the middle)
+    ctx.beginPath();
+    ctx.moveTo(0, height / 2);
+    ctx.lineTo(width, height / 2);
+    ctx.stroke();
 
-    const verticalLines = 12;
+    // Vertical lines
+    const verticalLines = 20;
     for (let i = 1; i < verticalLines; i++) {
       const x = (width / verticalLines) * i;
       ctx.beginPath();
@@ -109,7 +105,6 @@ export class DigitalWaveformChart extends React.Component<DigitalWaveformChartPr
       ctx.lineTo(x, height);
       ctx.stroke();
     }
-
     ctx.setLineDash([]);
   }
 
@@ -119,80 +114,55 @@ export class DigitalWaveformChart extends React.Component<DigitalWaveformChartPr
     height: number,
     strokeColor: string,
     strokeWidth: number,
-    maxValue?: number,
+    maxValue: number,
   ) {
     const { data } = this.props;
-    if (data.length < 2) return;
+    if (data.length === 0) return;
 
-    const minValue = 0;
-    const actualMaxValue =
-      maxValue || Math.max(...data.map((point) => point.value));
-    const valueRange = actualMaxValue - minValue;
+    const stepX = width / Math.max(1, data.length - 1);
+    const yHigh = height * 0.2; // 20% from top
+    const yLow = height * 0.8; // 80% from top
 
-    const minTime = Math.min(...data.map((point) => point.time));
-    const maxTime = Math.max(...data.map((point) => point.time));
-    const timeRange = maxTime - minTime;
-
-    const getYPosition = (value: number) => {
-      const normalizedValue = (value - minValue) / valueRange;
-      return height - (normalizedValue * height * 0.9 + height * 0.05); // 5% padding top and bottom
-    };
-
-    const getXPosition = (time: number) => {
-      return ((time - minTime) / timeRange) * width;
-    };
+    const getYPosition = (value: number) => (value > 0 ? yHigh : yLow);
 
     ctx.strokeStyle = strokeColor;
     ctx.lineWidth = strokeWidth;
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
+    ctx.lineCap = "butt";
+    ctx.lineJoin = "miter";
+    ctx.beginPath();
 
-    for (let i = 0; i < data.length - 1; i++) {
-      const currentPoint = data[i];
-      const nextPoint = data[i + 1];
+    // Start from the first point
+    ctx.moveTo(0, getYPosition(data[0]));
 
-      const x1 = getXPosition(currentPoint.time);
-      const x2 = getXPosition(nextPoint.time);
-      const y1 = getYPosition(currentPoint.value);
-      const y2 = getYPosition(nextPoint.value);
+    for (let i = 1; i < data.length; i++) {
+      const prevValue = data[i - 1];
+      const currentValue = data[i];
+      const prevX = (i - 1) * stepX;
+      const currentX = i * stepX;
 
-      ctx.beginPath();
-      ctx.moveTo(x1, y1);
-      ctx.lineTo(x2, y1);
-      ctx.stroke();
+      const y1 = getYPosition(prevValue);
+      const y2 = getYPosition(currentValue);
 
-      if (currentPoint.value !== nextPoint.value) {
-        ctx.beginPath();
-        ctx.moveTo(x2, y1);
-        ctx.lineTo(x2, y2);
-        ctx.stroke();
+      // Draw horizontal line for the previous segment
+      ctx.lineTo(currentX, y1);
+
+      // If value changes, draw vertical line
+      if (y1 !== y2) {
+        ctx.lineTo(currentX, y2);
       }
     }
-
-    const lastPoint = data[data.length - 1];
-    const lastX = getXPosition(lastPoint.time);
-    const lastY = getYPosition(lastPoint.value);
-
-    ctx.beginPath();
-    ctx.moveTo(lastX, lastY);
-    ctx.lineTo(width, lastY);
     ctx.stroke();
   }
 
   render() {
-    const { className, width = 800, height = 300 } = this.props;
-
+    const { className, width = 800, height = 100 } = this.props;
     return (
       <div className={className}>
         <canvas
           ref={this.canvasRef}
           width={width}
           height={height}
-          style={{
-            display: "block",
-            border: "1px solid #444",
-            borderRadius: "4px",
-          }}
+          style={{ display: "block", width: "100%", height: "auto" }}
         />
       </div>
     );
