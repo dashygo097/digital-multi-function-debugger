@@ -87,7 +87,7 @@ const defaultSerialState: SerialTerminalState = {
   inputMode: "TEXT",
   lineEnding: "NONE",
   stats: { tx: 0, rx: 0, errors: 0 },
-  autoScroll: true,
+  autoScroll: false,
   showHex: false,
   hexPrefix: "0x",
 };
@@ -101,7 +101,7 @@ const defaultUDPState: UDPTerminalState = {
   messages: [],
   inputMode: "TEXT",
   stats: { tx: 0, rx: 0, errors: 0 },
-  autoScroll: true,
+  autoScroll: false,
   showHex: false,
   hexPrefix: "0x",
 };
