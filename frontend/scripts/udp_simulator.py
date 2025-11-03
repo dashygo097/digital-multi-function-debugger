@@ -39,11 +39,6 @@ class UDPSimulator:
             print(f"  - FPGA Port: {self.port}")
             print("\nWaiting for connections...\n")
 
-            status_thread = threading.Thread(
-                target=self.status_broadcaster, daemon=True
-            )
-            status_thread.start()
-
             self.receive_loop()
 
         except KeyboardInterrupt:
@@ -184,17 +179,6 @@ class UDPSimulator:
 
             traceback.print_exc()
 
-    def status_broadcaster(self):
-        while self.running:
-            time.sleep(10)
-
-            if self.client_address:
-                self.registers["TEMP"] += (time.time() % 1) - 0.5
-                self.registers["CURRENT"] = 0.5 + 0.1 * (time.time() % 1)
-
-                status_msg = f"[AUTO] TEMP={self.registers['TEMP']:.1f}°C | V={self.registers['VOLTAGE']:.2f}V | I={self.registers['CURRENT']:.3f}A"
-                self.send_response(status_msg, self.client_address)
-
     def stop(self):
         self.running = False
         if self.sock:
@@ -207,7 +191,7 @@ class UDPSimulator:
 
 if __name__ == "__main__":
     host = "localhost"
-    port = 9999
+    port = 9998
 
     if len(sys.argv) > 1:
         port = int(sys.argv[1])
