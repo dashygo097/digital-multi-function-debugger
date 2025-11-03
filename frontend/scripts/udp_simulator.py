@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import socket
 import sys
-import threading
 import time
 from datetime import datetime
 
@@ -191,7 +190,7 @@ class UDPSimulator:
 
 if __name__ == "__main__":
     host = "localhost"
-    port = 9998
+    port = 9999
 
     if len(sys.argv) > 1:
         port = int(sys.argv[1])

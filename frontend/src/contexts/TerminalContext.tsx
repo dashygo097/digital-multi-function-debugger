@@ -87,7 +87,7 @@ const defaultSerialState: SerialTerminalState = {
   inputMode: "TEXT",
   lineEnding: "NONE",
   stats: { tx: 0, rx: 0, errors: 0 },
-  autoScroll: false,
+  autoScroll: true,
   showHex: false,
   hexPrefix: "0x",
 };
@@ -101,7 +101,7 @@ const defaultUDPState: UDPTerminalState = {
   messages: [],
   inputMode: "TEXT",
   stats: { tx: 0, rx: 0, errors: 0 },
-  autoScroll: false,
+  autoScroll: true,
   showHex: false,
   hexPrefix: "0x",
 };
@@ -580,7 +580,11 @@ export class TerminalProvider extends React.Component<
         });
         break;
       case "BIND_SUCCESS":
-        this.updateUDPTerminal({ isBound: true });
+        this.updateUDPTerminal({
+          isBound: true,
+          messages: [], // Clear messages on new bind
+          stats: { tx: 0, rx: 0, errors: 0 }, // Reset stats
+        });
         this.addUDPMessage("INFO", `✓ Bound to port ${payload.localPort}`);
         break;
       case "REMOTE_SET":
@@ -601,7 +605,11 @@ export class TerminalProvider extends React.Component<
         this.handleUDPReceive(payload);
         break;
       case "CLOSE_SUCCESS":
-        this.updateUDPTerminal({ isBound: false });
+        this.updateUDPTerminal({
+          isBound: false,
+          messages: [], // Clear messages on close
+          stats: { tx: 0, rx: 0, errors: 0 }, // Reset stats
+        });
         this.addUDPMessage("INFO", "✓ UDP socket closed");
         break;
       case "BROADCAST_SET":
