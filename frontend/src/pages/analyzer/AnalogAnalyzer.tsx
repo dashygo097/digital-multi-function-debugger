@@ -2,7 +2,7 @@ import React from "react";
 import { AnalogWaveformChart, AnalogSignalData } from "@components";
 import { TerminalContext, Message } from "../../contexts/TerminalContext";
 
-const MAX_SAMPLES = 2048; // Keep the last 2048 data points
+const MAX_SAMPLES = 2048;
 
 interface AnalogAnalyzerProps {
   className?: string;
@@ -47,10 +47,7 @@ export class AnalogAnalyzer extends React.Component<
     };
   }
 
-  componentDidUpdate(
-    prevProps: AnalogAnalyzerProps,
-    prevState: AnalogAnalyzerState,
-  ) {
+  componentDidUpdate() {
     if (this.state.isRunning) {
       this.processContextMessages();
     }
@@ -92,9 +89,18 @@ export class AnalogAnalyzer extends React.Component<
   };
 
   clearData = () => {
+    const ctx = this.context;
+    const currentMessageIds = new Set<string>();
+    if (ctx?.udpTerminal?.messages) {
+      for (const msg of ctx.udpTerminal.messages) {
+        if (msg.id) {
+          currentMessageIds.add(msg.id);
+        }
+      }
+    }
     this.setState({
       channelData: this.state.channelData.map(() => []),
-      processedMessageIds: new Set<string>(),
+      processedMessageIds: currentMessageIds,
     });
   };
 
