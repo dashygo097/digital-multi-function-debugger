@@ -1,6 +1,6 @@
 import React from "react";
 import { AnalogWaveformChart, SpectrumChart } from "@components";
-import { useAnalyzer, useUDPContext } from "../../contexts";
+import { useAnalyzer, useUDPContext } from "@contexts";
 
 const FFT_SIZE = 128;
 const defaultColors = ["#00ff00", "#ff00ff", "#00ffff", "#ffff00"];

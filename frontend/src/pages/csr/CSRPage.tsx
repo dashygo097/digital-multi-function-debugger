@@ -1,6 +1,6 @@
 import React from "react";
 import { WithRouter, WithRouterProps } from "@utils";
-import { ProtocolContext, ConnectionState } from "../../contexts";
+import { ProtocolContext, ConnectionState } from "@contexts";
 import "@styles/csr.css";
 
 interface CSRMessage {

@@ -1,5 +1,5 @@
 import React, { Component, RefObject } from "react";
-import { ProtocolContext, ConnectionState, PortInfo } from "../contexts";
+import { ProtocolContext, ConnectionState, PortInfo } from "@contexts";
 
 interface SerialTerminalProps {
   className?: string;

@@ -1,6 +1,6 @@
 import React from "react";
 import { DigitalWaveformChart } from "@components";
-import { useAnalyzer, useUDPContext, useSerialContext } from "../../contexts";
+import { useAnalyzer, useUDPContext, useSerialContext } from "@contexts";
 
 interface DigitalAnalyzerProps {
   className?: string;
