@@ -112,10 +112,11 @@ const reducer = (state: AnalyzerState, action: Action): AnalyzerState => {
 
     case "ADD_ANALOG_SAMPLES": {
       const { samples, messageId } = action.payload;
+      const samplesCopy = samples.slice();
       for (let i = 0; i < samples.length; i++) {
-        samples[i] = (samples[i] - 128) * 10.0;
+        samplesCopy[i] = (samples[i] - 127.5) / 25.5;
       }
-      const ch1Samples = samples.filter((_, index) => index % 2 === 0);
+      const ch1Samples = samplesCopy.filter((_, index) => index % 2 === 0);
       const combinedData = [...state.analog.channelData[0], ...ch1Samples];
       const truncatedData = combinedData.slice(-MAX_SAMPLES_ANALOG);
       const newSpectrumData = state.analog.showSpectrum

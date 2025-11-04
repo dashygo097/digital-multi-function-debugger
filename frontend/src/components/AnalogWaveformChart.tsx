@@ -55,7 +55,11 @@ export class AnalogWaveformChart extends React.Component<AnalogWaveformChartProp
             type="number"
             domain={["dataMin", "dataMax"]}
           />
-          <YAxis type="number" domain={[yMin, yMax]} />
+          <YAxis
+            type="number"
+            domain={[yMin, yMax]}
+            tickFormatter={(tick) => tick.toFixed(2)}
+          />
           <Tooltip content={<CustomTooltip />} />
           <Line
             type="monotone"
