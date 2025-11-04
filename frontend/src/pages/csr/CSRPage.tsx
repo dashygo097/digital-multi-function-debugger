@@ -825,7 +825,7 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
     }
   };
 
-  private waitForResponse = (timeout = 2000): Promise<string | null> => {
+  private waitForResponse = (timeout = 20): Promise<string | null> => {
     return new Promise((resolve) => {
       this.setState({ responseResolver: resolve });
       setTimeout(() => {
@@ -911,7 +911,7 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
     if (responseHex) {
       const hexParts = responseHex.split(" ");
       const status = parseInt(hexParts[0], 16);
-      if (status === 0x01) {
+      if (status === 0x00) {
         const valueHex = hexParts.slice(1, 5).join("");
         finalValue = `0x${valueHex.toUpperCase()}`;
       }
