@@ -56,6 +56,7 @@ export interface SerialContextType {
   serialSend: (data: string) => void;
   serialSendHex: (hex: string) => void;
   serialSendRaw: (data: Uint8Array) => void;
+  serialCmd: (cmd: string) => Promise<Uint8Array | null>;
 }
 
 export const SerialContext = createContext<SerialContextType | undefined>(
@@ -77,6 +78,7 @@ export class SerialProvider extends React.Component<
   private readLoopPromise: Promise<void> | null = null;
   private portRefreshInterval: number | null = null;
   private reconnectTimer: number | null = null;
+  private cmdResolver: ((value: Uint8Array | null) => void) | null = null;
 
   constructor(props: SerialProviderProps) {
     super(props);
@@ -283,23 +285,59 @@ export class SerialProvider extends React.Component<
   };
 
   private readLoop = async () => {
+    let receivedData = new Uint8Array(0);
     try {
       while (this.port?.readable) {
         const { value, done } = await this.reader!.read();
         if (done) break;
-        const payloadHex = Array.from(value)
-          .map((b) => b.toString(16).padStart(2, "0"))
-          .join(" ");
-        const { showHex, hexPrefix } = this.state.serialTerminal;
-        const displayData = showHex
-          ? Array.from(value)
-              .map((b) => `${hexPrefix}${b.toString(16).padStart(2, "0")}`)
-              .join(" ")
-          : new TextDecoder().decode(value);
-        this.addSerialMessage("RX", displayData, payloadHex);
+
+        if (this.cmdResolver) {
+          const combined = new Uint8Array(receivedData.length + value.length);
+          combined.set(receivedData);
+          combined.set(value, receivedData.length);
+          receivedData = combined;
+
+          if (receivedData.length >= 5) {
+            this.cmdResolver(receivedData.slice(0, 5));
+            this.cmdResolver = null;
+            receivedData = receivedData.slice(5);
+          }
+        }
+
+        if (receivedData.length > 0 && !this.cmdResolver) {
+          const valueToProcess = receivedData;
+          receivedData = new Uint8Array(0);
+          const payloadHex = Array.from(valueToProcess)
+            .map((b) => b.toString(16).padStart(2, "0"))
+            .join(" ");
+          const { showHex, hexPrefix } = this.state.serialTerminal;
+          const displayData = showHex
+            ? Array.from(valueToProcess)
+                .map((b) => `${hexPrefix}${b.toString(16).padStart(2, "0")}`)
+                .join(" ")
+            : new TextDecoder().decode(valueToProcess);
+          this.addSerialMessage("RX", displayData, payloadHex);
+        }
+
+        if (value && !this.cmdResolver) {
+          const payloadHex = Array.from(value)
+            .map((b) => b.toString(16).padStart(2, "0"))
+            .join(" ");
+          const { showHex, hexPrefix } = this.state.serialTerminal;
+          const displayData = showHex
+            ? Array.from(value)
+                .map((b) => `${hexPrefix}${b.toString(16).padStart(2, "0")}`)
+                .join(" ")
+            : new TextDecoder().decode(value);
+          this.addSerialMessage("RX", displayData, payloadHex);
+        }
       }
     } catch (error: any) {
       this.addSerialMessage("ERROR", `Read error: ${error.message}`);
+      if (this.cmdResolver) {
+        this.cmdResolver(null);
+        this.cmdResolver = null;
+      }
     } finally {
       this.reader?.releaseLock();
     }
@@ -399,6 +437,26 @@ export class SerialProvider extends React.Component<
     }
   };
 
+  serialCmd = async (cmd: string): Promise<Uint8Array | null> => {
+    if (this.cmdResolver) {
+      this.addSerialMessage("ERROR", "Another command is already in progress.");
+      return null;
+    }
+
+    return new Promise(async (resolve) => {
+      this.cmdResolver = resolve;
+      await this.serialSend(cmd);
+
+      setTimeout(() => {
+        if (this.cmdResolver) {
+          this.addSerialMessage("ERROR", `Command timed out: ${cmd}`);
+          this.cmdResolver(null);
+          this.cmdResolver = null;
+        }
+      }, 1000);
+    });
+  };
+
   render() {
     const contextValue: SerialContextType = {
       serialTerminal: this.state.serialTerminal,
@@ -409,6 +467,7 @@ export class SerialProvider extends React.Component<
       serialSend: this.serialSend,
       serialSendHex: this.serialSendHex,
       serialSendRaw: this.serialSendRaw,
+      serialCmd: this.serialCmd,
     };
     return (
       <SerialContext.Provider value={contextValue}>
