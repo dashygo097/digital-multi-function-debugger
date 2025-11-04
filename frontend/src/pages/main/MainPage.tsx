@@ -6,15 +6,13 @@ import {
   SerialTerminal,
   UDPTerminal,
   DrawingPanel,
+  CollapsiblePanel,
 } from "@components";
 import "@styles/main.css";
 
 interface MainPageState {
   data: AnalogSignalData[];
   inputValue: string;
-  isSerialTerminalCollapsed: boolean;
-  isUdpTerminalCollapsed: boolean;
-  isDrawingPanelCollapsed: boolean;
 }
 
 class MainPage extends React.Component<WithRouterProps, MainPageState> {
@@ -23,36 +21,10 @@ class MainPage extends React.Component<WithRouterProps, MainPageState> {
     this.state = {
       data: [],
       inputValue: "",
-      isSerialTerminalCollapsed: false,
-      isUdpTerminalCollapsed: false,
-      isDrawingPanelCollapsed: false,
     };
   }
 
-  toggleSerialTerminal = () => {
-    this.setState((prevState) => ({
-      isSerialTerminalCollapsed: !prevState.isSerialTerminalCollapsed,
-    }));
-  };
-
-  toggleUdpTerminal = () => {
-    this.setState((prevState) => ({
-      isUdpTerminalCollapsed: !prevState.isUdpTerminalCollapsed,
-    }));
-  };
-
-  toggleDrawingPanel = () => {
-    this.setState((prevState) => ({
-      isDrawingPanelCollapsed: !prevState.isDrawingPanelCollapsed,
-    }));
-  };
-
   render() {
-    const {
-      isSerialTerminalCollapsed,
-      isUdpTerminalCollapsed,
-      isDrawingPanelCollapsed,
-    } = this.state;
     return (
       <div className="main-page">
         {/* Main Content */}
@@ -63,61 +35,25 @@ class MainPage extends React.Component<WithRouterProps, MainPageState> {
           </div>
 
           <div className="terminals-wrapper slide-up">
-            <div className="terminal-wrapper">
-              <div
-                className="terminal-header"
-                onClick={this.toggleSerialTerminal}
-              >
-                <h2 className="terminal-heading">Serial Terminal</h2>
-                <button className="terminal-toggle-btn">
-                  {isSerialTerminalCollapsed ? "+" : "-"}
-                </button>
-              </div>
-              <div
-                className={`terminal-content ${isSerialTerminalCollapsed ? "collapsed" : ""}`}
-              >
-                <SerialTerminal className="main-serialterminal" />
-              </div>
-            </div>
+            <CollapsiblePanel title="Serial Terminal">
+              <SerialTerminal className="main-serialterminal" />
+            </CollapsiblePanel>
 
-            <div className="terminal-wrapper">
-              <div className="terminal-header" onClick={this.toggleUdpTerminal}>
-                <h2 className="terminal-heading">UDP Terminal</h2>
-                <button className="terminal-toggle-btn">
-                  {isUdpTerminalCollapsed ? "+" : "-"}
-                </button>
-              </div>
-              <div
-                className={`terminal-content ${isUdpTerminalCollapsed ? "collapsed" : ""}`}
-              >
-                <UDPTerminal
-                  className="main-udpterminal"
-                  bridgeUrl="ws://localhost:8080"
-                />
-              </div>
+            <CollapsiblePanel title="UDP Terminal">
+              <UDPTerminal
+                className="main-udpterminal"
+                bridgeUrl="ws://localhost:8080"
+              />
+            </CollapsiblePanel>
 
-              <div className="drawing-panel-wrapper">
-                <div
-                  className="terminal-header"
-                  onClick={this.toggleDrawingPanel}
-                >
-                  <h2 className="terminal-heading">Custom Waveform Drawer</h2>
-                  <button className="terminal-toggle-btn">
-                    {isDrawingPanelCollapsed ? "+" : "-"}
-                  </button>
-                </div>
-                <div
-                  className={`terminal-content ${this.state.isDrawingPanelCollapsed ? "collapsed" : ""}`}
-                >
-                  <DrawingPanel
-                    className="main-drawingpanel"
-                    onWaveformReady={(waveform) => {
-                      console.log("Waveform ready:", waveform);
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
+            <CollapsiblePanel title="Custom Waveform Drawer">
+              <DrawingPanel
+                className="main-drawingpanel"
+                onWaveformReady={(waveform) => {
+                  console.log("Waveform ready:", waveform);
+                }}
+              />
+            </CollapsiblePanel>
           </div>
         </div>
       </div>
