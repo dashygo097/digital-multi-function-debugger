@@ -1,48 +1,73 @@
-import React from "react";
-import { useProtocolContext } from "../contexts";
+import React, { Component, RefObject } from "react";
+import { ProtocolContext } from "../contexts";
 
-export const UDPTerminal: React.FC<{ className?: string }> = ({
-  className = "udp-terminal",
-}) => {
-  const context = useProtocolContext();
-  const {
-    udpTerminal,
-    updateUDPTerminal,
-    resetUDPTerminal,
-    udpBind,
-    udpClose,
-    udpSendText,
-    udpSendHex,
-  } = context;
-  const terminalEndRef = React.useRef<HTMLDivElement>(null);
+interface UDPTerminalProps {
+  className?: string;
+}
 
-  const [inputText, setInputText] = React.useState("");
-  const [inputHex, setInputHex] = React.useState("");
+interface UDPTerminalComponentState {
+  inputText: string;
+  inputHex: string;
+}
 
-  React.useEffect(() => {
-    if (udpTerminal.autoScroll) {
-      terminalEndRef.current?.scrollIntoView({ behavior: "smooth" });
+export class UDPTerminal extends Component<
+  UDPTerminalProps,
+  UDPTerminalComponentState
+> {
+  static contextType = ProtocolContext;
+  context!: React.ContextType<typeof ProtocolContext>;
+
+  private terminalEndRef: RefObject<HTMLDivElement>;
+
+  constructor(props: UDPTerminalProps) {
+    super(props);
+    this.state = {
+      inputText: "",
+      inputHex: "",
+    };
+    this.terminalEndRef = React.createRef<HTMLDivElement>();
+  }
+
+  componentDidUpdate(
+    prevProps: UDPTerminalProps,
+    prevState: UDPTerminalComponentState,
+  ) {
+    const { udpTerminal } = this.context;
+    const prevMessages = this.context.udpTerminal?.messages || [];
+    if (
+      udpTerminal.autoScroll &&
+      udpTerminal.messages.length !== prevMessages.length
+    ) {
+      this.terminalEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
-  }, [udpTerminal.messages, udpTerminal.autoScroll]);
+  }
 
-  const handleSend = () => {
+  handleSend = () => {
+    const { udpTerminal, udpSendText, udpSendHex } = this.context;
     if (udpTerminal.inputMode === "TEXT") {
-      udpSendText(inputText);
-      setInputText("");
+      udpSendText(this.state.inputText);
+      this.setState({ inputText: "" });
     } else {
-      udpSendHex(inputHex);
-      setInputHex("");
+      udpSendHex(this.state.inputHex);
+      this.setState({ inputHex: "" });
     }
   };
 
-  const clearTerminal = () => {
-    updateUDPTerminal({
+  handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      this.handleSend();
+    }
+  };
+
+  clearTerminal = () => {
+    this.context.updateUDPTerminal({
       messages: [],
       stats: { tx: 0, rx: 0, errors: 0, lastRxTime: undefined },
     });
   };
 
-  const exportLog = () => {
+  exportLog = () => {
+    const { udpTerminal } = this.context;
     const log = udpTerminal.messages
       .map((m) => {
         const source = m.source ? ` [${m.source}]` : "";
@@ -62,167 +87,181 @@ export const UDPTerminal: React.FC<{ className?: string }> = ({
     document.body.removeChild(element);
   };
 
-  return (
-    <div className={`terminal-container ${className}`}>
-      <div className="control-panel">
-        <div className="section">
-          <span
-            className={`status-indicator ${udpTerminal.wsConnected ? "connected" : "disconnected"}`}
-          >
-            {udpTerminal.wsConnected
-              ? "● Bridge Connected"
-              : "○ Bridge Disconnected"}
-          </span>
-        </div>
+  render() {
+    const { className } = this.props;
+    const { inputText, inputHex } = this.state;
+    const {
+      udpTerminal,
+      updateUDPTerminal,
+      resetUDPTerminal,
+      udpBind,
+      udpClose,
+    } = this.context;
 
-        <div className="section">
-          <label>Local Port:</label>
-          <input
-            type="number"
-            value={udpTerminal.localPort}
-            onChange={(e) =>
-              updateUDPTerminal({ localPort: Number(e.target.value) })
-            }
-            disabled={udpTerminal.isBound}
-            min={1}
-            max={65535}
-          />
-        </div>
+    return (
+      <div className={`terminal-container ${className || "udp-terminal"}`}>
+        <div className="control-panel">
+          <div className="section">
+            <span
+              className={`status-indicator ${udpTerminal.wsConnected ? "connected" : "disconnected"}`}
+            >
+              {udpTerminal.wsConnected
+                ? "● Bridge Connected"
+                : "○ Bridge Disconnected"}
+            </span>
+          </div>
 
-        <div className="section">
-          <label>FPGA IP:</label>
-          <input
-            type="text"
-            value={udpTerminal.fpgaHost}
-            onChange={(e) => updateUDPTerminal({ fpgaHost: e.target.value })}
-            disabled={udpTerminal.isBound}
-            placeholder="192.168.1.100"
-          />
-          <label>FPGA Port:</label>
-          <input
-            type="number"
-            value={udpTerminal.fpgaPort}
-            onChange={(e) =>
-              updateUDPTerminal({ fpgaPort: Number(e.target.value) })
-            }
-            disabled={udpTerminal.isBound}
-            min={1}
-            max={65535}
-          />
-        </div>
+          <div className="section">
+            <label>Local Port:</label>
+            <input
+              type="number"
+              value={udpTerminal.localPort}
+              onChange={(e) =>
+                updateUDPTerminal({ localPort: Number(e.target.value) })
+              }
+              disabled={udpTerminal.isBound}
+              min={1}
+              max={65535}
+            />
+          </div>
 
-        <div className="section">
-          <label>I/O Settings</label>
+          <div className="section">
+            <label>FPGA IP:</label>
+            <input
+              type="text"
+              value={udpTerminal.fpgaHost}
+              onChange={(e) => updateUDPTerminal({ fpgaHost: e.target.value })}
+              disabled={udpTerminal.isBound}
+              placeholder="192.168.1.100"
+            />
+            <label>FPGA Port:</label>
+            <input
+              type="number"
+              value={udpTerminal.fpgaPort}
+              onChange={(e) =>
+                updateUDPTerminal({ fpgaPort: Number(e.target.value) })
+              }
+              disabled={udpTerminal.isBound}
+              min={1}
+              max={65535}
+            />
+          </div>
+
+          <div className="section">
+            <label>I/O Settings</label>
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                checked={udpTerminal.showHex}
+                onChange={(e) =>
+                  updateUDPTerminal({ showHex: e.target.checked })
+                }
+              />
+              Show RX as Hex
+            </label>
+            {udpTerminal.showHex && (
+              <select
+                value={udpTerminal.hexPrefix}
+                onChange={(e) =>
+                  updateUDPTerminal({ hexPrefix: e.target.value as any })
+                }
+              >
+                <option value="0x">0x Prefix</option>
+                <option value="\x">\x Prefix</option>
+                <option value="">No Prefix</option>
+              </select>
+            )}
+            <select
+              value={udpTerminal.inputMode}
+              onChange={(e) =>
+                updateUDPTerminal({ inputMode: e.target.value as any })
+              }
+              disabled={!udpTerminal.isBound}
+            >
+              <option value="TEXT">Input as Text</option>
+              <option value="HEX">Input as Hex</option>
+            </select>
+          </div>
+
+          <div className="buttons">
+            {!udpTerminal.isBound ? (
+              <button
+                onClick={udpBind}
+                className="btn-primary"
+                disabled={!udpTerminal.wsConnected}
+              >
+                Bind
+              </button>
+            ) : (
+              <button onClick={udpClose} className="btn-danger">
+                Unbind
+              </button>
+            )}
+            <button onClick={this.clearTerminal}>Clear</button>
+            <button onClick={this.exportLog}>Export Log</button>
+            <button onClick={resetUDPTerminal}>Reset</button>
+          </div>
           <label className="checkbox-label">
             <input
               type="checkbox"
-              checked={udpTerminal.showHex}
-              onChange={(e) => updateUDPTerminal({ showHex: e.target.checked })}
-            />
-            Show RX as Hex
-          </label>
-          {udpTerminal.showHex && (
-            <select
-              value={udpTerminal.hexPrefix}
+              checked={udpTerminal.autoScroll}
               onChange={(e) =>
-                updateUDPTerminal({ hexPrefix: e.target.value as any })
+                updateUDPTerminal({ autoScroll: e.target.checked })
               }
-            >
-              <option value="0x">0x Prefix</option>
-              <option value="\x">\x Prefix</option>
-              <option value="">No Prefix</option>
-            </select>
-          )}
-          <select
-            value={udpTerminal.inputMode}
-            onChange={(e) =>
-              updateUDPTerminal({ inputMode: e.target.value as any })
-            }
-            disabled={!udpTerminal.isBound}
-          >
-            <option value="TEXT">Input as Text</option>
-            <option value="HEX">Input as Hex</option>
-          </select>
-        </div>
-
-        <div className="buttons">
-          {!udpTerminal.isBound ? (
-            <button
-              onClick={udpBind}
-              className="btn-primary"
-              disabled={!udpTerminal.wsConnected}
-            >
-              Bind
-            </button>
-          ) : (
-            <button onClick={udpClose} className="btn-danger">
-              Unbind
-            </button>
-          )}
-          <button onClick={clearTerminal}>Clear</button>
-          <button onClick={exportLog}>Export Log</button>
-          <button onClick={resetUDPTerminal}>Reset</button>
-        </div>
-        <label className="checkbox-label">
-          <input
-            type="checkbox"
-            checked={udpTerminal.autoScroll}
-            onChange={(e) =>
-              updateUDPTerminal({ autoScroll: e.target.checked })
-            }
-          />
-          Auto-scroll
-        </label>
-        <div className="stats">
-          TX: {udpTerminal.stats.tx} | RX: {udpTerminal.stats.rx} | Errors:{" "}
-          {udpTerminal.stats.errors}
-          {udpTerminal.stats.lastRxTime &&
-            ` | Last RX: ${udpTerminal.stats.lastRxTime}`}
-        </div>
-      </div>
-
-      <div className="terminal">
-        {udpTerminal.messages.map((msg) => (
-          <div
-            key={msg.id}
-            className={`message ${msg.direction.toLowerCase()}`}
-          >
-            <span className="timestamp">[{msg.timestamp}]</span>
-            <span className="direction">{msg.direction}:</span>
-            {msg.source && <span className="source">[{msg.source}]</span>}
-            <span className="data">{msg.data}</span>
+            />
+            Auto-scroll
+          </label>
+          <div className="stats">
+            TX: {udpTerminal.stats.tx} | RX: {udpTerminal.stats.rx} | Errors:{" "}
+            {udpTerminal.stats.errors}
+            {udpTerminal.stats.lastRxTime &&
+              ` | Last RX: ${udpTerminal.stats.lastRxTime}`}
           </div>
-        ))}
-        <div ref={terminalEndRef} />
-      </div>
+        </div>
 
-      <div className="input-section">
-        <div className="text-input">
-          <input
-            type="text"
-            value={udpTerminal.inputMode === "TEXT" ? inputText : inputHex}
-            onChange={(e) => {
-              if (udpTerminal.inputMode === "TEXT")
-                setInputText(e.target.value);
-              else setInputHex(e.target.value);
-            }}
-            onKeyPress={(e) => e.key === "Enter" && handleSend()}
-            placeholder={
-              udpTerminal.inputMode === "TEXT"
-                ? "Type message to send..."
-                : "Hex: 01 02 03 or 0x01 0x02 0x03"
-            }
-            disabled={!udpTerminal.isBound}
-          />
-          <button
-            onClick={handleSend}
-            disabled={!udpTerminal.isBound}
-            className="btn-send"
-          >
-            Send
-          </button>
+        <div className="terminal">
+          {udpTerminal.messages.map((msg) => (
+            <div
+              key={msg.id}
+              className={`message ${msg.direction.toLowerCase()}`}
+            >
+              <span className="timestamp">[{msg.timestamp}]</span>
+              <span className="direction">{msg.direction}:</span>
+              {msg.source && <span className="source">[{msg.source}]</span>}
+              <span className="data">{msg.data}</span>
+            </div>
+          ))}
+          <div ref={this.terminalEndRef} />
+        </div>
+
+        <div className="input-section">
+          <div className="text-input">
+            <input
+              type="text"
+              value={udpTerminal.inputMode === "TEXT" ? inputText : inputHex}
+              onChange={(e) => {
+                if (udpTerminal.inputMode === "TEXT")
+                  this.setState({ inputText: e.target.value });
+                else this.setState({ inputHex: e.target.value });
+              }}
+              onKeyPress={this.handleKeyPress}
+              placeholder={
+                udpTerminal.inputMode === "TEXT"
+                  ? "Type message to send..."
+                  : "Hex: 01 02 03 or 0x01 0x02 0x03"
+              }
+              disabled={!udpTerminal.isBound}
+            />
+            <button
+              onClick={this.handleSend}
+              disabled={!udpTerminal.isBound}
+              className="btn-send"
+            >
+              Send
+            </button>
+          </div>
         </div>
       </div>
-    </div>
-  );
-};
+    );
+  }
+}
