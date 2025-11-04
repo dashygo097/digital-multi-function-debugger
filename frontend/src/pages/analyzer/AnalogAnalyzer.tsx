@@ -2,7 +2,7 @@ import React from "react";
 import { AnalogWaveformChart, SpectrumChart } from "@components";
 import { useAnalyzer, useUDPContext } from "../../contexts";
 
-const FFT_SIZE = 128; // Should match the value in AnalyzerContext
+const FFT_SIZE = 128;
 const defaultColors = ["#00ff00", "#ff00ff", "#00ffff", "#ffff00"];
 
 interface AnalogAnalyzerProps {
@@ -17,7 +17,6 @@ export const AnalogAnalyzer: React.FC<AnalogAnalyzerProps> = ({
   const { analog, toggleAnalogCapture, clearAnalogData, toggleSpectrum } =
     useAnalyzer();
   const { udpTerminal } = useUDPContext();
-
   const {
     isRunning,
     channelData,
@@ -26,6 +25,9 @@ export const AnalogAnalyzer: React.FC<AnalogAnalyzerProps> = ({
     sampleRate,
     activeChannels,
   } = analog;
+
+  // *** FIX: Determine if the spectrum toggle should be disabled ***
+  const isSpectrumDisabled = channelData[0].length < FFT_SIZE;
 
   const handleClearData = () => {
     const currentMessageIds = new Set<string>(
@@ -42,7 +44,6 @@ export const AnalogAnalyzer: React.FC<AnalogAnalyzerProps> = ({
         return header + rows;
       })
       .join("\n\n");
-
     const blob = new Blob([csvContent], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -70,11 +71,19 @@ export const AnalogAnalyzer: React.FC<AnalogAnalyzerProps> = ({
         <button className="control-button" onClick={handleExportData}>
           Export CSV
         </button>
-        <label className="channel-toggle">
+        <label
+          className={`channel-toggle ${isSpectrumDisabled ? "disabled" : ""}`}
+          title={
+            isSpectrumDisabled
+              ? `Requires at least ${FFT_SIZE} samples`
+              : "Toggle Spectrum Display"
+          }
+        >
           <input
             type="checkbox"
             checked={showSpectrum}
             onChange={toggleSpectrum}
+            disabled={isSpectrumDisabled} // *** FIX: Add disabled attribute ***
           />
           <span
             className="channel-indicator"
@@ -95,7 +104,8 @@ export const AnalogAnalyzer: React.FC<AnalogAnalyzerProps> = ({
               </div>
             ),
         )}
-        {showSpectrum && (
+        {/* Only show spectrum if it's toggled AND not disabled */}
+        {showSpectrum && !isSpectrumDisabled && (
           <div className="waveform-channel">
             <SpectrumChart
               data={spectrumData}

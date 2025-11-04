@@ -1,11 +1,11 @@
-import React, {
+import {
   createContext,
   useReducer,
   useContext,
   ReactNode,
   useEffect,
 } from "react";
-import { FFT } from "@utils"; // Assuming these types exist in @utils
+import { FFT } from "@utils";
 import { AnalogSignalData } from "@components";
 import { useUDPContext } from "./UDPContext";
 
@@ -94,8 +94,6 @@ const initialState: AnalyzerState = {
 
 const fft = new FFT(FFT_SIZE);
 
-// --- REDUCER FUNCTION ---
-
 const reducer = (state: AnalyzerState, action: Action): AnalyzerState => {
   switch (action.type) {
     case "SET_ANALYZER_TYPE":
@@ -144,9 +142,13 @@ const reducer = (state: AnalyzerState, action: Action): AnalyzerState => {
 
     case "TOGGLE_SPECTRUM": {
       const willShow = !state.analog.showSpectrum;
-      const newSpectrumData = willShow
-        ? fft.calculate(state.analog.channelData[0].slice(-FFT_SIZE))
-        : [];
+      let newSpectrumData: number[] = [];
+
+      if (willShow && state.analog.channelData[0].length >= FFT_SIZE) {
+        const signalSlice = state.analog.channelData[0].slice(-FFT_SIZE);
+        newSpectrumData = fft.calculate(signalSlice);
+      }
+
       return {
         ...state,
         analog: {
