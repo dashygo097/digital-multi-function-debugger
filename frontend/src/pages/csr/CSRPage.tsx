@@ -1,9 +1,6 @@
 import React from "react";
 import { WithRouter, WithRouterProps } from "@utils";
-import {
-  TerminalContext,
-  ConnectionState,
-} from "../../contexts/TerminalContext";
+import { AppContext, ConnectionState } from "../../contexts";
 import "@styles/csr.css";
 
 interface CSRMessage {
@@ -37,8 +34,8 @@ interface CSRPageState {
 }
 
 class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
-  static contextType = TerminalContext;
-  context!: React.ContextType<typeof TerminalContext>;
+  static contextType = AppContext;
+  context!: React.ContextType<typeof AppContext>;
 
   private terminalEndRef: React.RefObject<HTMLDivElement>;
 

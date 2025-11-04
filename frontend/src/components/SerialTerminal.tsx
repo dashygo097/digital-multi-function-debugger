@@ -1,14 +1,10 @@
 import React from "react";
-import {
-  useTerminalContext,
-  ConnectionState,
-  PortInfo,
-} from "../contexts/TerminalContext";
+import { useSerialContext, ConnectionState, PortInfo } from "../contexts";
 
 export const SerialTerminal: React.FC<{ className?: string }> = ({
   className = "serial-terminal",
 }) => {
-  const context = useTerminalContext();
+  const context = useSerialContext();
   const {
     serialTerminal,
     updateSerialTerminal,

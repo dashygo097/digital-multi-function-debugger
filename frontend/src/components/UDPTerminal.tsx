@@ -1,10 +1,10 @@
 import React from "react";
-import { useTerminalContext } from "../contexts/TerminalContext";
+import { useUDPContext } from "../contexts";
 
 export const UDPTerminal: React.FC<{ className?: string }> = ({
   className = "udp-terminal",
 }) => {
-  const context = useTerminalContext();
+  const context = useUDPContext();
   const {
     udpTerminal,
     updateUDPTerminal,
