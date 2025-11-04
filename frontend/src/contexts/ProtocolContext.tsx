@@ -6,11 +6,15 @@ import {
 } from "./SerialContext";
 import { UDPProvider, UDPContext, UDPContextType } from "./UDPContext";
 
-export interface AppContextType extends SerialContextType, UDPContextType {}
+export interface ProtocolContextType
+  extends SerialContextType,
+    UDPContextType {}
 
-export const AppContext = React.createContext<AppContextType | null>(null);
+export const ProtocolContext = React.createContext<ProtocolContextType | null>(
+  null,
+);
 
-const AppContextProvider: React.FC<{ children: ReactNode }> = ({
+const ProtocolContextProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
   const serialContext = useContext(SerialContext);
@@ -20,36 +24,38 @@ const AppContextProvider: React.FC<{ children: ReactNode }> = ({
     return null;
   }
 
-  const combinedValue: AppContextType = {
+  const combinedValue: ProtocolContextType = {
     ...serialContext,
     ...udpContext,
   };
 
   return (
-    <AppContext.Provider value={combinedValue}>{children}</AppContext.Provider>
+    <ProtocolContext.Provider value={combinedValue}>
+      {children}
+    </ProtocolContext.Provider>
   );
 };
 
-interface AppProviderProps {
+interface ProtocolProviderProps {
   children: ReactNode;
   udpBridgeUrl?: string;
 }
 
-export const AppProvider: React.FC<AppProviderProps> = ({
+export const ProtocolProvider: React.FC<ProtocolProviderProps> = ({
   children,
   udpBridgeUrl,
 }) => {
   return (
     <SerialProvider>
       <UDPProvider udpBridgeUrl={udpBridgeUrl}>
-        <AppContextProvider>{children}</AppContextProvider>
+        <ProtocolContextProvider>{children}</ProtocolContextProvider>
       </UDPProvider>
     </SerialProvider>
   );
 };
 
-export const useTerminalContext = () => {
-  const context = useContext(AppContext);
+export const useProtocolContext = () => {
+  const context = useContext(ProtocolContext);
   if (!context) {
     throw new Error(
       "useTerminalContext must be used within a TerminalProvider",

@@ -4,7 +4,7 @@ import {
   AnalogSignalData,
   SpectrumChart,
 } from "@components";
-import { UDPContext } from "../../contexts";
+import { ProtocolContext } from "../../contexts";
 import { FFT, Message } from "@utils";
 
 const MAX_SAMPLES = 2048;
@@ -29,8 +29,8 @@ export class AnalogAnalyzer extends React.Component<
   AnalogAnalyzerProps,
   AnalogAnalyzerState
 > {
-  static contextType = UDPContext;
-  context!: React.ContextType<typeof UDPContext>;
+  static contextType = ProtocolContext;
+  context!: React.ContextType<typeof ProtocolContext>;
 
   private fft: FFT;
   private readonly defaultColors = ["#00ff00", "#ff00ff", "#00ffff", "#ffff00"];
