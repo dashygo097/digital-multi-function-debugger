@@ -82,7 +82,7 @@ export const AnalogAnalyzer: React.FC<AnalogAnalyzerProps> = ({
             type="checkbox"
             checked={showSpectrum}
             onChange={toggleSpectrum}
-            disabled={isSpectrumDisabled} // *** FIX: Add disabled attribute ***
+            disabled={isSpectrumDisabled}
           />
           <span
             className="channel-indicator"

@@ -928,21 +928,6 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
     });
   };
 
-  private readAllRegisters = async () => {
-    this.setState({ isLoadingRegisters: true });
-    for (let i = 0; i < this.state.presets.length; i++) {
-      if (
-        this.context?.serialTerminal.connectionState !==
-        ConnectionState.CONNECTED
-      ) {
-        this.addMessage("ERROR", "Connection lost. Aborting read all.");
-        break;
-      }
-      await this.readRegisterValue(this.state.presets[i], i);
-    }
-    this.setState({ isLoadingRegisters: false });
-  };
-
   private loadPreset = (preset: Preset) => {
     this.setState({ csrAddress: preset.address });
     this.addMessage(
@@ -1069,13 +1054,6 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
         <div className="sidebar-content">
           <div className="sidebar-header">
             <h2>Register Map</h2>
-            <button
-              onClick={this.readAllRegisters}
-              disabled={!isConnected || isLoadingRegisters}
-              className="btn-read-all"
-            >
-              {isLoadingRegisters ? "Reading..." : "Read All"}
-            </button>
           </div>
           <div className="sidebar-registers">
             {sections.map((section) => (
@@ -1165,9 +1143,6 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
                 <div
                   className={`connection-status-banner ${this.getConnectionStatusClass()}`}
                 >
-                  <span className="status-icon">
-                    {isConnected ? "🔌" : "🔴"}
-                  </span>
                   <span className="status-text">
                     {this.getConnectionStatusText()}
                   </span>

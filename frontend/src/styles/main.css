@@ -139,3 +139,89 @@
     /* Prevent flex items from overflowing */
   }
 }
+
+/* Existing styles for .main-page, .main-content, etc. should remain */
+
+/* Styles for Collapsible Terminals */
+.terminal-wrapper {
+  background-color: #1e1e1e;
+  border-radius: 8px;
+  border: 1px solid #333;
+  overflow: hidden;
+  /* Important for containing the content */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  margin-bottom: 2rem;
+  transition: all 0.3s ease;
+}
+
+.terminal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+  cursor: pointer;
+  background-color: #252526;
+  border-bottom: 1px solid #333;
+  user-select: none;
+}
+
+.terminal-header:hover {
+  background-color: #2d2d2d;
+}
+
+.terminal-heading {
+  margin: 0;
+  font-size: 1.3rem;
+  color: #d4d4d4;
+  font-weight: 500;
+}
+
+.terminal-toggle-btn {
+  background: #3c3c3c;
+  border: 1px solid #555;
+  color: #ccc;
+  font-size: 1.2rem;
+  font-weight: bold;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  padding-bottom: 2px;
+  /* Center the +/- symbol visually */
+  transition:
+    background-color 0.2s,
+    transform 0.3s ease;
+}
+
+.terminal-header:hover .terminal-toggle-btn {
+  background-color: #4a4a4a;
+}
+
+.terminal-content {
+  max-height: 1000px;
+  /* A large enough value to show content */
+  overflow: hidden;
+  transition:
+    max-height 0.5s cubic-bezier(0.25, 0.1, 0.25, 1),
+    padding 0.4s ease-out;
+  padding: 20px;
+  background-color: #1e1e1e;
+}
+
+.terminal-content.collapsed {
+  max-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  border-top: none;
+}
+
+/* Adjustments for the components inside the collapsible content */
+.main-serialterminal,
+.main-udpterminal {
+  /* You may need to adjust or remove fixed heights if they exist on these components */
+  width: 100%;
+}
