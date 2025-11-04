@@ -3,7 +3,7 @@ import { createRoot } from "react-dom/client";
 import "./styles/index.css";
 
 import PageRouter from "./pages/PageRouter";
-import { ProtocolProvider } from "./contexts";
+import { AppProvider } from "./contexts";
 
 interface AppProps {
   placeholder?: string;
@@ -16,11 +16,11 @@ class App extends React.Component<AppProps> {
 
   render() {
     return (
-      <ProtocolProvider>
+      <AppProvider>
         <div className="App">
           <PageRouter />
         </div>
-      </ProtocolProvider>
+      </AppProvider>
     );
   }
 }
