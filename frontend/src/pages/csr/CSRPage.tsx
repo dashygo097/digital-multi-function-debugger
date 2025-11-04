@@ -825,7 +825,7 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
     }
   };
 
-  private waitForResponse = (timeout = 20): Promise<string | null> => {
+  private waitForResponse = (timeout = 100): Promise<string | null> => {
     return new Promise((resolve) => {
       this.setState({ responseResolver: resolve });
       setTimeout(() => {
