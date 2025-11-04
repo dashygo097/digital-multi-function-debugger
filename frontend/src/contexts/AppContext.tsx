@@ -4,8 +4,13 @@ import {
   ProtocolContext,
   ProtocolContextType,
 } from "./ProtocolContext";
+import {
+  AnalyzerProvider,
+  AnalyzerContext,
+  AnalyzerContextType,
+} from "./AnalyzerContext";
 
-export type AppContextType = ProtocolContextType;
+export type AppContextType = ProtocolContextType & AnalyzerContextType;
 
 export const AppContext = React.createContext<AppContextType | null>(null);
 
@@ -13,13 +18,15 @@ const AppContextProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
   const protocolContext = useContext(ProtocolContext);
+  const analyzerContext = useContext(AnalyzerContext);
 
-  if (!protocolContext) {
+  if (!protocolContext || !analyzerContext) {
     return null;
   }
 
   const combinedValue: AppContextType = {
     ...protocolContext,
+    ...analyzerContext,
   };
 
   return (
@@ -35,7 +42,9 @@ interface AppProviderProps {
 export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   return (
     <ProtocolProvider>
-      <AppContextProvider>{children}</AppContextProvider>
+      <AnalyzerProvider>
+        <AppContextProvider>{children}</AppContextProvider>
+      </AnalyzerProvider>
     </ProtocolProvider>
   );
 };
