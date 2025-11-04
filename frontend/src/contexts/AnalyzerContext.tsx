@@ -8,15 +8,12 @@ import {
 import { FFT } from "@utils";
 import { AnalogSignalData } from "@components";
 import { useUDPContext } from "./UDPContext";
+import { useSerialContext } from "./SerialContext";
 
-// --- CONSTANTS ---
 const MAX_SAMPLES_ANALOG = 2048;
 const MAX_SAMPLES_DIGITAL = 256;
 const FFT_SIZE = 128;
 
-// --- TYPE DEFINITIONS ---
-
-// State for the Analog Analyzer
 interface AnalogState {
   channelData: AnalogSignalData[][];
   spectrumData: number[];
@@ -27,14 +24,12 @@ interface AnalogState {
   sampleRate: number;
 }
 
-// State for the Digital Analyzer
 interface DigitalState {
   byteData: number[];
   isRunning: boolean;
   processedMessageIds: Set<string>;
 }
 
-// Combined state for the entire context
 interface AnalyzerState {
   analyzerType: "analog" | "digital";
   dataSource: "serial" | "udp";
@@ -46,14 +41,16 @@ interface AnalyzerState {
 type Action =
   | { type: "SET_ANALYZER_TYPE"; payload: "analog" | "digital" }
   | { type: "SET_DATA_SOURCE"; payload: "serial" | "udp" }
-  | { type: "TOGGLE_ANALOG_CAPTURE" }
+  | { type: "START_ANALOG_CAPTURE"; payload: Set<string> }
+  | { type: "STOP_ANALOG_CAPTURE" }
   | {
       type: "ADD_ANALOG_SAMPLES";
       payload: { samples: number[]; messageId: string };
     }
   | { type: "CLEAR_ANALOG_DATA"; payload: Set<string> }
   | { type: "TOGGLE_SPECTRUM" }
-  | { type: "TOGGLE_DIGITAL_CAPTURE" }
+  | { type: "START_DIGITAL_CAPTURE"; payload: Set<string> }
+  | { type: "STOP_DIGITAL_CAPTURE" }
   | {
       type: "ADD_DIGITAL_BYTES";
       payload: { bytes: number[]; messageId: string };
@@ -101,12 +98,17 @@ const reducer = (state: AnalyzerState, action: Action): AnalyzerState => {
     case "SET_DATA_SOURCE":
       return { ...state, dataSource: action.payload };
 
-    // Analog Actions
-    case "TOGGLE_ANALOG_CAPTURE":
+    case "START_ANALOG_CAPTURE":
       return {
         ...state,
-        analog: { ...state.analog, isRunning: !state.analog.isRunning },
+        analog: {
+          ...state.analog,
+          isRunning: true,
+          processedMessageIds: action.payload,
+        },
       };
+    case "STOP_ANALOG_CAPTURE":
+      return { ...state, analog: { ...state.analog, isRunning: false } };
 
     case "ADD_ANALOG_SAMPLES": {
       const { samples, messageId } = action.payload;
@@ -159,12 +161,17 @@ const reducer = (state: AnalyzerState, action: Action): AnalyzerState => {
       };
     }
 
-    // Digital Actions
-    case "TOGGLE_DIGITAL_CAPTURE":
+    case "START_DIGITAL_CAPTURE":
       return {
         ...state,
-        digital: { ...state.digital, isRunning: !state.digital.isRunning },
+        digital: {
+          ...state.digital,
+          isRunning: true,
+          processedMessageIds: action.payload,
+        },
       };
+    case "STOP_DIGITAL_CAPTURE":
+      return { ...state, digital: { ...state.digital, isRunning: false } };
 
     case "ADD_DIGITAL_BYTES": {
       const { bytes, messageId } = action.payload;
@@ -198,8 +205,6 @@ const reducer = (state: AnalyzerState, action: Action): AnalyzerState => {
   }
 };
 
-// --- CONTEXT & PROVIDER COMPONENT ---
-
 export const AnalyzerContext = createContext<AnalyzerContextType | undefined>(
   undefined,
 );
@@ -207,16 +212,35 @@ export const AnalyzerContext = createContext<AnalyzerContextType | undefined>(
 export const AnalyzerProvider = ({ children }: { children: ReactNode }) => {
   const [state, dispatch] = useReducer(reducer, initialState);
 
-  // Consume message-providing contexts
   const { udpTerminal } = useUDPContext();
-  // const { serialTerminal } = useSerialContext(); // Example for when serial is added
+  const { serialTerminal } = useSerialContext();
 
   const addAnalogSamples = (samples: number[], messageId: string) =>
     dispatch({ type: "ADD_ANALOG_SAMPLES", payload: { samples, messageId } });
   const addDigitalBytes = (bytes: number[], messageId: string) =>
     dispatch({ type: "ADD_DIGITAL_BYTES", payload: { bytes, messageId } });
+  const toggleAnalogCapture = () => {
+    if (!state.analog.isRunning) {
+      const currentMessageIds = new Set<string>(
+        udpTerminal.messages.map((m) => m.id).filter(Boolean) as string[],
+      );
+      dispatch({ type: "START_ANALOG_CAPTURE", payload: currentMessageIds });
+    } else {
+      dispatch({ type: "STOP_ANALOG_CAPTURE" });
+    }
+  };
+  const toggleDigitalCapture = () => {
+    if (!state.digital.isRunning) {
+      const messages = state.dataSource === "udp" ? udpTerminal.messages : []; // Or serialTerminal.messages
+      const currentMessageIds = new Set<string>(
+        messages.map((m) => m.id).filter(Boolean) as string[],
+      );
+      dispatch({ type: "START_DIGITAL_CAPTURE", payload: currentMessageIds });
+    } else {
+      dispatch({ type: "STOP_DIGITAL_CAPTURE" });
+    }
+  };
 
-  // Effect to process UDP messages for the Analog Analyzer
   useEffect(() => {
     if (
       state.analyzerType !== "analog" ||
@@ -248,11 +272,15 @@ export const AnalyzerProvider = ({ children }: { children: ReactNode }) => {
     state.analog.processedMessageIds,
   ]);
 
-  // Effect to process messages for the Digital Analyzer
   useEffect(() => {
     if (state.analyzerType !== "digital" || !state.digital.isRunning) return;
 
-    const messages = state.dataSource === "udp" ? udpTerminal.messages : []; // Add serialTerminal.messages here later
+    const messages =
+      state.dataSource === "udp"
+        ? udpTerminal.messages
+        : state.dataSource === "serial"
+          ? serialTerminal.messages
+          : [];
     for (const msg of messages) {
       if (!msg?.id || state.digital.processedMessageIds.has(msg.id)) continue;
 
@@ -280,11 +308,11 @@ export const AnalyzerProvider = ({ children }: { children: ReactNode }) => {
       dispatch({ type: "SET_ANALYZER_TYPE", payload: type }),
     setDataSource: (source) =>
       dispatch({ type: "SET_DATA_SOURCE", payload: source }),
-    toggleAnalogCapture: () => dispatch({ type: "TOGGLE_ANALOG_CAPTURE" }),
+    toggleAnalogCapture,
     clearAnalogData: (ids) =>
       dispatch({ type: "CLEAR_ANALOG_DATA", payload: ids }),
     toggleSpectrum: () => dispatch({ type: "TOGGLE_SPECTRUM" }),
-    toggleDigitalCapture: () => dispatch({ type: "TOGGLE_DIGITAL_CAPTURE" }),
+    toggleDigitalCapture,
     clearDigitalData: (ids) =>
       dispatch({ type: "CLEAR_DIGITAL_DATA", payload: ids }),
   };

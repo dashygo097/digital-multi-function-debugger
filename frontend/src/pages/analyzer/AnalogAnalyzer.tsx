@@ -26,7 +26,6 @@ export const AnalogAnalyzer: React.FC<AnalogAnalyzerProps> = ({
     activeChannels,
   } = analog;
 
-  // *** FIX: Determine if the spectrum toggle should be disabled ***
   const isSpectrumDisabled = channelData[0].length < FFT_SIZE;
 
   const handleClearData = () => {
