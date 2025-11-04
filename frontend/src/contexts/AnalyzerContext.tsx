@@ -112,7 +112,7 @@ const reducer = (state: AnalyzerState, action: Action): AnalyzerState => {
 
     case "ADD_ANALOG_SAMPLES": {
       const { samples, messageId } = action.payload;
-      for (let i = 0; i < samples.length / 2; i++) {
+      for (let i = 0; i < samples.length; i++) {
         samples[i] = ((samples[i] - 128) / 255) * 10.0;
       }
       const ch1Samples = samples.filter((_, index) => index % 2 === 0);
