@@ -856,7 +856,7 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
       if (responseHex) {
         const hexParts = responseHex.split(" ");
         const status = parseInt(hexParts[0], 16);
-        if (status === 0x01) {
+        if (status === 0x00) {
           // Success status for read
           const valueHex = hexParts.slice(1, 5).join("");
           const value = parseInt(valueHex, 16);
