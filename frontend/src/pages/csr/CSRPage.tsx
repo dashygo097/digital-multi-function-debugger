@@ -10,6 +10,15 @@ interface CSRMessage {
   id: string;
 }
 
+interface Preset {
+  name: string;
+  address: string;
+  description: string;
+  section: string;
+  value?: string;
+  loading?: boolean;
+}
+
 interface CSRPageState {
   csrAddress: string;
   csrData: string;
@@ -25,12 +34,9 @@ interface CSRPageState {
     startAddr: string;
     endAddr: string;
   }>;
-  presets: Array<{
-    name: string;
-    address: string;
-    description: string;
-    section: string;
-  }>;
+  presets: Preset[];
+  isRegisterSidebarOpen: boolean;
+  isLoadingRegisters: boolean;
 }
 
 class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
@@ -52,6 +58,8 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
       selectedSection: "all",
       showRxAsHex: true,
       lastProcessedMessageIndex: -1,
+      isRegisterSidebarOpen: true,
+      isLoadingRegisters: false,
       sections: [
         {
           id: "slv_regs",
@@ -729,34 +737,6 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
     ) {
       this.terminalEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
-    this.processNewMessages();
-  }
-
-  private processNewMessages() {
-    if (!this.context) return;
-    const { serialTerminal } = this.context;
-    const { messages: contextMessages } = serialTerminal;
-
-    if (
-      contextMessages.length === 0 &&
-      this.state.lastProcessedMessageIndex !== -1
-    ) {
-      this.setState({ lastProcessedMessageIndex: -1 });
-      return;
-    }
-
-    const startIndex = this.state.lastProcessedMessageIndex + 1;
-    if (startIndex >= contextMessages.length) return;
-
-    for (let i = startIndex; i < contextMessages.length; i++) {
-      const msg = contextMessages[i];
-      if (msg.direction === "RX") {
-        const displayData = this.formatRxData(msg.data);
-        this.addMessage("RX", displayData);
-      }
-    }
-
-    this.setState({ lastProcessedMessageIndex: contextMessages.length - 1 });
   }
 
   private stringToBytesLatin1 = (str: string): number[] => {
@@ -781,37 +761,39 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
     return `[HEX] ${hexString} | ${asciiString}`;
   };
 
-  private buildCSRCommand = (): Uint8Array | null => {
+  private buildCSRCommand = (
+    operation: "READ" | "WRITE",
+    addressStr: string,
+    dataStr?: string,
+  ): Uint8Array | null => {
     try {
-      const addrStr = this.state.csrAddress.replace(/^0x/i, "");
-      const address = parseInt(addrStr, 16);
-      if (isNaN(address) || address < 0 || address > 0xffffffff) {
+      const addr = parseInt(addressStr.replace(/^0x/i, ""), 16);
+      if (isNaN(addr) || addr < 0 || addr > 0xffffffff) {
         this.addMessage("ERROR", "Invalid address format. Use hex: 0x10000");
         return null;
       }
+
       let data = 0;
-      if (this.state.csrOperation === "WRITE") {
-        const dataStr = this.state.csrData.replace(/^0x/i, "");
-        data = parseInt(dataStr, 16);
+      if (operation === "WRITE") {
+        data = parseInt((dataStr || "0x0").replace(/^0x/i, ""), 16);
         if (isNaN(data) || data < 0 || data > 0xffffffff) {
           this.addMessage("ERROR", "Invalid data format. Use hex: 0xDEADBEEF");
           return null;
         }
       }
+
       const cmd = new Uint8Array(9);
-      cmd[0] = this.state.csrOperation === "WRITE" ? 0x00 : 0x01;
-      cmd[1] = (address >> 24) & 0xff;
-      cmd[2] = (address >> 16) & 0xff;
-      cmd[3] = (address >> 8) & 0xff;
-      cmd[4] = address & 0xff;
-      if (this.state.csrOperation === "WRITE") {
-        cmd[5] = (data >> 24) & 0xff;
-        cmd[6] = (data >> 16) & 0xff;
-        cmd[7] = (data >> 8) & 0xff;
-        cmd[8] = data & 0xff;
-      } else {
-        cmd[5] = cmd[6] = cmd[7] = cmd[8] = 0x00;
+      cmd[0] = operation === "WRITE" ? 0x00 : 0x01;
+      const addressBytes = new DataView(new ArrayBuffer(4));
+      addressBytes.setUint32(0, addr, false);
+      cmd.set(new Uint8Array(addressBytes.buffer), 1);
+
+      if (operation === "WRITE") {
+        const dataBytes = new DataView(new ArrayBuffer(4));
+        dataBytes.setUint32(0, data, false);
+        cmd.set(new Uint8Array(dataBytes.buffer), 5);
       }
+
       return cmd;
     } catch (error: any) {
       this.addMessage("ERROR", `Command build failed: ${error.message}`);
@@ -829,34 +811,124 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
       );
       return;
     }
-    const cmd = this.buildCSRCommand();
+    const { csrOperation, csrAddress, csrData } = this.state;
+    const cmd = this.buildCSRCommand(csrOperation, csrAddress, csrData);
     if (!cmd) return;
 
-    const address = parseInt(this.state.csrAddress.replace(/^0x/i, ""), 16);
-    const data =
-      this.state.csrOperation === "WRITE"
-        ? parseInt(this.state.csrData.replace(/^0x/i, ""), 16)
-        : 0;
-    const operation =
-      this.state.csrOperation === "WRITE"
-        ? `WRITE 0x${data.toString(16).padStart(8, "0").toUpperCase()} to 0x${address.toString(16).padStart(8, "0").toUpperCase()}`
+    const address = parseInt(csrAddress.replace(/^0x/i, ""), 16);
+    const dataVal =
+      csrOperation === "WRITE" ? parseInt(csrData.replace(/^0x/i, ""), 16) : 0;
+    const operationStr =
+      csrOperation === "WRITE"
+        ? `WRITE 0x${dataVal.toString(16).padStart(8, "0").toUpperCase()} to 0x${address.toString(16).padStart(8, "0").toUpperCase()}`
         : `READ from 0x${address.toString(16).padStart(8, "0").toUpperCase()}`;
 
-    this.addMessage("TX", `[CSR ${operation}]`);
+    this.addMessage("TX", `[CSR ${operationStr}]`);
 
     try {
-      this.context.serialSendRaw(cmd);
-      this.addMessage("INFO", "✓ Command sent via provider");
+      const response = await this.context.serialCmd(cmd);
+      if (response && csrOperation === "READ") {
+        const dataView = new DataView(response.buffer);
+        const readValue = dataView.getUint32(1, false);
+        const hexValue = `0x${readValue.toString(16).padStart(8, "0").toUpperCase()}`;
+        this.addMessage(
+          "RX",
+          `[CSR READ from 0x${address.toString(16).padStart(8, "0").toUpperCase()}] -> ${hexValue}`,
+        );
+      } else if (!response) {
+        this.addMessage("ERROR", "No response or timeout for CSR command.");
+      }
     } catch (error: any) {
       this.addMessage("ERROR", `❌ Send failed: ${error.message}`);
     }
   };
 
-  private loadPreset = (preset: {
-    name: string;
-    address: string;
-    description: string;
-  }) => {
+  private readRegisterValue = async (
+    preset: Preset,
+    index: number,
+  ): Promise<void> => {
+    if (
+      this.context?.serialTerminal.connectionState !== ConnectionState.CONNECTED
+    ) {
+      this.addMessage("ERROR", "Serial port not connected.");
+      return;
+    }
+
+    this.setState((prevState) => {
+      const newPresets = [...prevState.presets];
+      newPresets[index] = { ...newPresets[index], loading: true };
+      return { presets: newPresets };
+    });
+
+    const cmd = this.buildCSRCommand("READ", preset.address);
+    if (!cmd) {
+      this.setState((prevState) => {
+        const newPresets = [...prevState.presets];
+        newPresets[index] = { ...newPresets[index], loading: false };
+        return { presets: newPresets };
+      });
+      return;
+    }
+
+    try {
+      this.addMessage("TX", `[CSR READ from ${preset.address}]`);
+      const response = await this.context.serialCmd(cmd);
+      let hexValue = "Error";
+      if (response) {
+        const dataView = new DataView(response.buffer);
+        const status = dataView.getUint8(0);
+        if (status === 0x01) {
+          const value = dataView.getUint32(1, false);
+          hexValue = `0x${value.toString(16).padStart(8, "0").toUpperCase()}`;
+          this.addMessage(
+            "RX",
+            `[CSR READ from ${preset.address}] -> ${hexValue}`,
+          );
+        } else {
+          this.addMessage(
+            "ERROR",
+            `Read failed for ${preset.address}. Status: 0x${status.toString(16)}`,
+          );
+        }
+      } else {
+        this.addMessage("ERROR", `No response for ${preset.address}`);
+      }
+
+      this.setState((prevState) => {
+        const newPresets = [...prevState.presets];
+        newPresets[index] = {
+          ...newPresets[index],
+          value: hexValue,
+          loading: false,
+        };
+        return { presets: newPresets };
+      });
+    } catch (e: any) {
+      this.addMessage(
+        "ERROR",
+        `Read failed for ${preset.address}: ${e.message}`,
+      );
+      this.setState((prevState) => {
+        const newPresets = [...prevState.presets];
+        newPresets[index] = {
+          ...newPresets[index],
+          value: "Error",
+          loading: false,
+        };
+        return { presets: newPresets };
+      });
+    }
+  };
+
+  private readAllRegisters = async () => {
+    this.setState({ isLoadingRegisters: true });
+    for (let i = 0; i < this.state.presets.length; i++) {
+      await this.readRegisterValue(this.state.presets[i], i);
+    }
+    this.setState({ isLoadingRegisters: false });
+  };
+
+  private loadPreset = (preset: Preset) => {
     this.setState({ csrAddress: preset.address });
     this.addMessage(
       "INFO",
@@ -952,6 +1024,83 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
     }
   };
 
+  private renderRegisterSidebar = () => {
+    const { isRegisterSidebarOpen, sections, presets, isLoadingRegisters } =
+      this.state;
+    const isConnected =
+      this.context?.serialTerminal.connectionState ===
+      ConnectionState.CONNECTED;
+
+    return (
+      <div
+        className={`register-sidebar ${isRegisterSidebarOpen ? "open" : ""}`}
+      >
+        <button
+          className="sidebar-toggle"
+          onClick={() =>
+            this.setState({ isRegisterSidebarOpen: !isRegisterSidebarOpen })
+          }
+        >
+          {isRegisterSidebarOpen ? "◀" : "▶"}
+        </button>
+        <div className="sidebar-content">
+          <div className="sidebar-header">
+            <h2>Register Map</h2>
+            <button
+              onClick={this.readAllRegisters}
+              disabled={!isConnected || isLoadingRegisters}
+              className="btn-read-all"
+            >
+              {isLoadingRegisters ? "Reading..." : "Read All"}
+            </button>
+          </div>
+          <div className="sidebar-registers">
+            {sections.map((section) => (
+              <div key={section.id} className="register-section">
+                <h3>{section.name}</h3>
+                {presets
+                  .filter((p) => p.section === section.id)
+                  .map((preset, index) => {
+                    const presetIndex = this.state.presets.findIndex(
+                      (p) => p.address === preset.address,
+                    );
+                    return (
+                      <div
+                        key={preset.address}
+                        className="register-item"
+                        title={preset.description}
+                      >
+                        <div className="register-info">
+                          <span className="register-name">{preset.name}</span>
+                          <span className="register-address">
+                            {preset.address}
+                          </span>
+                        </div>
+                        <div className="register-value-action">
+                          <span className="register-value">
+                            {preset.loading ? "..." : preset.value || "N/A"}
+                          </span>
+                          <button
+                            onClick={() =>
+                              this.readRegisterValue(preset, presetIndex)
+                            }
+                            disabled={!isConnected || preset.loading}
+                            className="btn-read-single"
+                          >
+                            Read
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   render() {
     const {
       csrAddress,
@@ -962,6 +1111,7 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
       selectedSection,
       sections,
       showRxAsHex,
+      isRegisterSidebarOpen,
     } = this.state;
     const isConnected =
       this.context?.serialTerminal.connectionState ===
@@ -969,185 +1119,196 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
     const filteredPresets = this.getFilteredPresets();
 
     return (
-      <div className="csr-page">
-        <div className="csr-header">
-          <h1>CSR Control Panel</h1>
-          <p className="description">
-            Command Format: 9 bytes - CMD_TYPE(1) + ADDR(4) + DATA(4)
-          </p>
-        </div>
-        <div className="csr-content">
-          <div className="csr-left-panel">
-            <div className="csr-controls">
-              <h2>Command Builder</h2>
-              <div
-                className={`connection-status-banner ${this.getConnectionStatusClass()}`}
-              >
-                <span className="status-icon">{isConnected ? "🔌" : "🔴"}</span>
-                <span className="status-text">
-                  {this.getConnectionStatusText()}
-                </span>
-                {!isConnected && (
-                  <span className="status-hint">
-                    → Go to Serial Terminal page to connect
+      <div className="csr-page-container">
+        {this.renderRegisterSidebar()}
+        <div
+          className={`csr-page ${isRegisterSidebarOpen ? "sidebar-open" : ""}`}
+        >
+          <div className="csr-header">
+            <h1>CSR Control Panel</h1>
+            <p className="description">
+              Command Format: 9 bytes - CMD_TYPE(1) + ADDR(4) + DATA(4)
+            </p>
+          </div>
+          <div className="csr-content">
+            <div className="csr-left-panel">
+              <div className="csr-controls">
+                <h2>Command Builder</h2>
+                <div
+                  className={`connection-status-banner ${this.getConnectionStatusClass()}`}
+                >
+                  <span className="status-icon">
+                    {isConnected ? "🔌" : "🔴"}
                   </span>
-                )}
-              </div>
-              <div className="control-group">
-                <label>Operation:</label>
-                <div className="radio-group">
-                  <label className="radio-label">
-                    <input
-                      type="radio"
-                      value="WRITE"
-                      checked={csrOperation === "WRITE"}
-                      onChange={() => this.setState({ csrOperation: "WRITE" })}
-                    />
-                    Write (0x00)
-                  </label>
-                  <label className="radio-label">
-                    <input
-                      type="radio"
-                      value="READ"
-                      checked={csrOperation === "READ"}
-                      onChange={() => this.setState({ csrOperation: "READ" })}
-                    />
-                    Read (0x01)
-                  </label>
+                  <span className="status-text">
+                    {this.getConnectionStatusText()}
+                  </span>
+                  {!isConnected && (
+                    <span className="status-hint">
+                      → Go to Serial Terminal page to connect
+                    </span>
+                  )}
                 </div>
-              </div>
-              <div className="control-group">
-                <label>Address (4 bytes):</label>
-                <input
-                  type="text"
-                  value={csrAddress}
-                  onChange={(e) =>
-                    this.setState({ csrAddress: e.target.value })
-                  }
-                  placeholder="0x10000"
-                  className="hex-input"
-                />
-              </div>
-              {csrOperation === "WRITE" && (
                 <div className="control-group">
-                  <label>Data (4 bytes):</label>
+                  <label>Operation:</label>
+                  <div className="radio-group">
+                    <label className="radio-label">
+                      <input
+                        type="radio"
+                        value="WRITE"
+                        checked={csrOperation === "WRITE"}
+                        onChange={() =>
+                          this.setState({ csrOperation: "WRITE" })
+                        }
+                      />
+                      Write (0x00)
+                    </label>
+                    <label className="radio-label">
+                      <input
+                        type="radio"
+                        value="READ"
+                        checked={csrOperation === "READ"}
+                        onChange={() => this.setState({ csrOperation: "READ" })}
+                      />
+                      Read (0x01)
+                    </label>
+                  </div>
+                </div>
+                <div className="control-group">
+                  <label>Address (4 bytes):</label>
                   <input
                     type="text"
-                    value={csrData}
-                    onChange={(e) => this.setState({ csrData: e.target.value })}
-                    placeholder="0xDEADBEEF"
+                    value={csrAddress}
+                    onChange={(e) =>
+                      this.setState({ csrAddress: e.target.value })
+                    }
+                    placeholder="0x10000"
                     className="hex-input"
                   />
                 </div>
-              )}
-              <div className="control-group">
-                <button
-                  onClick={this.sendCSRCommand}
-                  className="btn-send"
-                  disabled={!isConnected}
-                  title={
-                    !isConnected
-                      ? "Connect serial port first"
-                      : "Send CSR command via serial port"
-                  }
-                >
-                  📤 Send CSR Command
-                </button>
-              </div>
-            </div>
-            <div className="preset-registers">
-              <div className="preset-header">
-                <h2>Quick Access Registers</h2>
-                <select
-                  className="section-selector"
-                  value={selectedSection}
-                  onChange={(e) =>
-                    this.setState({ selectedSection: e.target.value })
-                  }
-                >
-                  <option value="all">
-                    All Sections ({this.state.presets.length})
-                  </option>
-                  {sections.map((section) => {
-                    const count = this.state.presets.filter(
-                      (p) => p.section === section.id,
-                    ).length;
-                    return (
-                      <option key={section.id} value={section.id}>
-                        {section.name} ({count})
-                      </option>
-                    );
-                  })}
-                </select>
-              </div>
-              <div className="preset-list">
-                {filteredPresets.map((preset, index) => (
+                {csrOperation === "WRITE" && (
+                  <div className="control-group">
+                    <label>Data (4 bytes):</label>
+                    <input
+                      type="text"
+                      value={csrData}
+                      onChange={(e) =>
+                        this.setState({ csrData: e.target.value })
+                      }
+                      placeholder="0xDEADBEEF"
+                      className="hex-input"
+                    />
+                  </div>
+                )}
+                <div className="control-group">
                   <button
-                    key={index}
-                    className="preset-button"
-                    onClick={() => this.loadPreset(preset)}
-                    title={preset.description}
+                    onClick={this.sendCSRCommand}
+                    className="btn-send"
+                    disabled={!isConnected}
+                    title={
+                      !isConnected
+                        ? "Connect serial port first"
+                        : "Send CSR command via serial port"
+                    }
                   >
-                    <div className="preset-name">{preset.name}</div>
-                    <div className="preset-addr">{preset.address}</div>
-                    <div className="preset-desc">{preset.description}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-          <div className="csr-right-panel">
-            <div className="message-log">
-              <div className="log-header">
-                <h2>CSR Command Log</h2>
-                <div className="log-controls">
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={showRxAsHex}
-                      onChange={(e) =>
-                        this.setState({ showRxAsHex: e.target.checked })
-                      }
-                    />
-                    Show RX as Hex
-                  </label>
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={autoScroll}
-                      onChange={(e) =>
-                        this.setState({ autoScroll: e.target.checked })
-                      }
-                    />
-                    Auto-scroll
-                  </label>
-                  <button onClick={this.clearMessages} className="btn-clear">
-                    Clear
-                  </button>
-                  <button onClick={this.exportLog} className="btn-export">
-                    Export
+                    📤 Send CSR Command
                   </button>
                 </div>
               </div>
-              <div className="log-content">
-                {messages.length === 0 && (
-                  <div className="log-empty">
-                    {isConnected
-                      ? "No messages yet. Send a CSR command to get started."
-                      : "Connect to serial port via Serial Terminal page to begin."}
-                  </div>
-                )}
-                {messages.map((msg) => (
-                  <div
-                    key={msg.id}
-                    className={`log-message ${msg.type.toLowerCase()}`}
+              <div className="preset-registers">
+                <div className="preset-header">
+                  <h2>Quick Access Registers</h2>
+                  <select
+                    className="section-selector"
+                    value={selectedSection}
+                    onChange={(e) =>
+                      this.setState({ selectedSection: e.target.value })
+                    }
                   >
-                    <span className="log-timestamp">[{msg.timestamp}]</span>
-                    <span className="log-type">{msg.type}:</span>
-                    <span className="log-data">{msg.data}</span>
+                    <option value="all">
+                      All Sections ({this.state.presets.length})
+                    </option>
+                    {sections.map((section) => {
+                      const count = this.state.presets.filter(
+                        (p) => p.section === section.id,
+                      ).length;
+                      return (
+                        <option key={section.id} value={section.id}>
+                          {section.name} ({count})
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+                <div className="preset-list">
+                  {filteredPresets.map((preset, index) => (
+                    <button
+                      key={index}
+                      className="preset-button"
+                      onClick={() => this.loadPreset(preset)}
+                      title={preset.description}
+                    >
+                      <div className="preset-name">{preset.name}</div>
+                      <div className="preset-addr">{preset.address}</div>
+                      <div className="preset-desc">{preset.description}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="csr-right-panel">
+              <div className="message-log">
+                <div className="log-header">
+                  <h2>CSR Command Log</h2>
+                  <div className="log-controls">
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={showRxAsHex}
+                        onChange={(e) =>
+                          this.setState({ showRxAsHex: e.target.checked })
+                        }
+                      />
+                      Show RX as Hex
+                    </label>
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={autoScroll}
+                        onChange={(e) =>
+                          this.setState({ autoScroll: e.target.checked })
+                        }
+                      />
+                      Auto-scroll
+                    </label>
+                    <button onClick={this.clearMessages} className="btn-clear">
+                      Clear
+                    </button>
+                    <button onClick={this.exportLog} className="btn-export">
+                      Export
+                    </button>
                   </div>
-                ))}
-                <div ref={this.terminalEndRef} />
+                </div>
+                <div className="log-content">
+                  {messages.length === 0 && (
+                    <div className="log-empty">
+                      {isConnected
+                        ? "No messages yet. Send a CSR command to get started."
+                        : "Connect to serial port via Serial Terminal page to begin."}
+                    </div>
+                  )}
+                  {messages.map((msg) => (
+                    <div
+                      key={msg.id}
+                      className={`log-message ${msg.type.toLowerCase()}`}
+                    >
+                      <span className="log-timestamp">[{msg.timestamp}]</span>
+                      <span className="log-type">{msg.type}:</span>
+                      <span className="log-data">{msg.data}</span>
+                    </div>
+                  ))}
+                  <div ref={this.terminalEndRef} />
+                </div>
               </div>
             </div>
           </div>
