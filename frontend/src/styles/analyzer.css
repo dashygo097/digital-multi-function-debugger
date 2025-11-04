@@ -355,7 +355,7 @@
 
 .analyzer-controls {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: 1.5rem;
   margin-bottom: 2rem;
   padding-bottom: 1.5rem;
