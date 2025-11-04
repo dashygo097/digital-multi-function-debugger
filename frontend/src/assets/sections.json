@@ -1,0 +1,62 @@
+[
+  {
+    "id": "slv_regs",
+    "name": "SLV Registers",
+    "startAddr": "0x10000",
+    "endAddr": "0x14000"
+  },
+  {
+    "id": "slv_ram",
+    "name": "SLV RAM",
+    "startAddr": "0x14000",
+    "endAddr": "0x18000"
+  },
+  {
+    "id": "acm2108",
+    "name": "ACM2108",
+    "startAddr": "0x18000",
+    "endAddr": "0x1C000"
+  },
+  {
+    "id": "signal_measure",
+    "name": "Signal Measure",
+    "startAddr": "0x1C000",
+    "endAddr": "0x20000"
+  },
+  {
+    "id": "bitseq",
+    "name": "Bit Sequence",
+    "startAddr": "0x20000",
+    "endAddr": "0x24000"
+  },
+  {
+    "id": "uart_engine",
+    "name": "UART Engine",
+    "startAddr": "0x24000",
+    "endAddr": "0x28000"
+  },
+  {
+    "id": "spi_engine",
+    "name": "SPI Engine",
+    "startAddr": "0x28000",
+    "endAddr": "0x2C000"
+  },
+  {
+    "id": "pwm_engine",
+    "name": "PWM Engine",
+    "startAddr": "0x2C000",
+    "endAddr": "0x30000"
+  },
+  {
+    "id": "i2c_engine",
+    "name": "I2C Engine",
+    "startAddr": "0x30000",
+    "endAddr": "0x34000"
+  },
+  {
+    "id": "dac_engine",
+    "name": "DAC Engine",
+    "startAddr": "0x34000",
+    "endAddr": "0x38000"
+  }
+]
