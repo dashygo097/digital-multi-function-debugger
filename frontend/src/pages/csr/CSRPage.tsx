@@ -1033,8 +1033,7 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
   };
 
   private renderRegisterSidebar = () => {
-    const { isRegisterSidebarOpen, sections, presets, isLoadingRegisters } =
-      this.state;
+    const { isRegisterSidebarOpen, sections, presets } = this.state;
     const isConnected =
       this.context?.serialTerminal.connectionState ===
       ConnectionState.CONNECTED;
