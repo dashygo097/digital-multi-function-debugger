@@ -8,6 +8,8 @@ export default defineConfig({
       "@components": resolve(__dirname, "./src/components"),
       "@utils": resolve(__dirname, "./src/utils"),
       "@styles": resolve(__dirname, "./src/styles"),
+      "@contexts": resolve(__dirname, "./src/contexts"),
+      "@assets": resolve(__dirname, "./src/assets"),
     },
   },
 });

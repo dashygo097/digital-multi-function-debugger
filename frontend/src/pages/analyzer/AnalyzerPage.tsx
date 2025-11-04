@@ -2,7 +2,7 @@ import React from "react";
 import { WithRouter } from "@utils";
 import { AnalogAnalyzer } from "./AnalogAnalyzer";
 import { DigitalAnalyzer } from "./DigitalAnalyzer";
-import { useAnalyzer } from "../../contexts";
+import { useAnalyzer } from "@contexts";
 import "@styles/analyzer.css";
 
 const AnalyzerPage: React.FC = () => {

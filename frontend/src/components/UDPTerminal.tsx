@@ -1,5 +1,5 @@
 import React, { Component, RefObject } from "react";
-import { ProtocolContext } from "../contexts";
+import { ProtocolContext } from "@contexts";
 
 interface UDPTerminalProps {
   className?: string;
