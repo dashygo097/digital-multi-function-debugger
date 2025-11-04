@@ -56,7 +56,6 @@ export interface SerialContextType {
   serialSend: (data: string) => void;
   serialSendHex: (hex: string) => void;
   serialSendRaw: (data: Uint8Array) => void;
-  serialCmd: (cmd: string) => Promise<Uint8Array | null>;
 }
 
 export const SerialContext = createContext<SerialContextType | undefined>(
@@ -437,26 +436,6 @@ export class SerialProvider extends React.Component<
     }
   };
 
-  serialCmd = async (cmd: string): Promise<Uint8Array | null> => {
-    if (this.cmdResolver) {
-      this.addSerialMessage("ERROR", "Another command is already in progress.");
-      return null;
-    }
-
-    return new Promise(async (resolve) => {
-      this.cmdResolver = resolve;
-      await this.serialSend(cmd);
-
-      setTimeout(() => {
-        if (this.cmdResolver) {
-          this.addSerialMessage("ERROR", `Command timed out: ${cmd}`);
-          this.cmdResolver(null);
-          this.cmdResolver = null;
-        }
-      }, 20);
-    });
-  };
-
   render() {
     const contextValue: SerialContextType = {
       serialTerminal: this.state.serialTerminal,
@@ -467,7 +446,6 @@ export class SerialProvider extends React.Component<
       serialSend: this.serialSend,
       serialSendHex: this.serialSendHex,
       serialSendRaw: this.serialSendRaw,
-      serialCmd: this.serialCmd,
     };
     return (
       <SerialContext.Provider value={contextValue}>
