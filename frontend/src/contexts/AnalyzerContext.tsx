@@ -113,7 +113,7 @@ const reducer = (state: AnalyzerState, action: Action): AnalyzerState => {
     case "ADD_ANALOG_SAMPLES": {
       const { samples, messageId } = action.payload;
       for (let i = 0; i < samples.length / 2; i++) {
-        samples[i] = ((samples[2 * i] - 128) / 255) * 10.0;
+        samples[i] = ((samples[i] - 128) / 255) * 10.0;
       }
       const ch1Samples = samples.filter((_, index) => index % 2 === 0);
       const combinedData = [...state.analog.channelData[0], ...ch1Samples];
