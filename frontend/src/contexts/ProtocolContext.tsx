@@ -58,7 +58,7 @@ export const useProtocolContext = () => {
   const context = useContext(ProtocolContext);
   if (!context) {
     throw new Error(
-      "useTerminalContext must be used within a TerminalProvider",
+      "useProtocolContext must be used within a ProtocolProvider",
     );
   }
   return context;
