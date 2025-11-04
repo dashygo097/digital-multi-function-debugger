@@ -453,7 +453,7 @@ export class SerialProvider extends React.Component<
           this.cmdResolver(null);
           this.cmdResolver = null;
         }
-      }, 1000);
+      }, 20);
     });
   };
 
