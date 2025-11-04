@@ -539,3 +539,74 @@
     padding: 1rem;
   }
 }
+
+/* --- Existing styles remain the same --- */
+
+/* --- Update the .analyzer-stats grid layout to a more specific class --- */
+.analyzer-stats-left {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.5rem;
+  flex: 3;
+  /* Give more space to the left side */
+}
+
+/* --- Add styles for the new footer and right-side stats --- */
+.analyzer-footer {
+  display: flex;
+  gap: 2rem;
+  margin-top: 2rem;
+  align-items: flex-start;
+}
+
+.analyzer-stats-right {
+  flex: 1;
+  /* Give less space to the right side */
+}
+
+.analyzer-stats-right .channel-stats {
+  /* Ensure it doesn't try to grid-layout a single item */
+  display: block;
+}
+
+.channel-stats {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 10px;
+  padding: 1.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.channel-stats h4 {
+  margin-bottom: 1rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #fff;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.channel-stats p {
+  margin: 0.5rem 0;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.9rem;
+  display: flex;
+  justify-content: space-between;
+}
+
+.channel-stats strong {
+  font-weight: 600;
+  color: #58a6ff;
+}
+
+/* --- Responsive adjustments for the new footer --- */
+@media (max-width: 1024px) {
+  .analyzer-footer {
+    flex-direction: column;
+  }
+
+  .analyzer-stats-left,
+  .analyzer-stats-right {
+    width: 100%;
+    flex: none;
+  }
+}

@@ -1,7 +1,12 @@
 import React from "react";
 
 import { WithRouter, WithRouterProps } from "@utils";
-import { AnalogSignalData, SerialTerminal, UDPTerminal } from "@components";
+import {
+  AnalogSignalData,
+  SerialTerminal,
+  UDPTerminal,
+  DrawingPanel,
+} from "@components";
 import "@styles/main.css";
 
 interface MainPageState {
@@ -9,6 +14,7 @@ interface MainPageState {
   inputValue: string;
   isSerialTerminalCollapsed: boolean;
   isUdpTerminalCollapsed: boolean;
+  isDrawingPanelCollapsed: boolean;
 }
 
 class MainPage extends React.Component<WithRouterProps, MainPageState> {
@@ -19,6 +25,7 @@ class MainPage extends React.Component<WithRouterProps, MainPageState> {
       inputValue: "",
       isSerialTerminalCollapsed: false,
       isUdpTerminalCollapsed: false,
+      isDrawingPanelCollapsed: false,
     };
   }
 
@@ -34,8 +41,18 @@ class MainPage extends React.Component<WithRouterProps, MainPageState> {
     }));
   };
 
+  toggleDrawingPanel = () => {
+    this.setState((prevState) => ({
+      isDrawingPanelCollapsed: !prevState.isDrawingPanelCollapsed,
+    }));
+  };
+
   render() {
-    const { isSerialTerminalCollapsed, isUdpTerminalCollapsed } = this.state;
+    const {
+      isSerialTerminalCollapsed,
+      isUdpTerminalCollapsed,
+      isDrawingPanelCollapsed,
+    } = this.state;
     return (
       <div className="main-page">
         {/* Main Content */}
@@ -77,6 +94,28 @@ class MainPage extends React.Component<WithRouterProps, MainPageState> {
                   className="main-udpterminal"
                   bridgeUrl="ws://localhost:8080"
                 />
+              </div>
+
+              <div className="drawing-panel-wrapper">
+                <div
+                  className="terminal-header"
+                  onClick={this.toggleDrawingPanel}
+                >
+                  <h2 className="terminal-heading">Custom Waveform Drawer</h2>
+                  <button className="terminal-toggle-btn">
+                    {isDrawingPanelCollapsed ? "+" : "-"}
+                  </button>
+                </div>
+                <div
+                  className={`terminal-content ${this.state.isDrawingPanelCollapsed ? "collapsed" : ""}`}
+                >
+                  <DrawingPanel
+                    className="main-drawingpanel"
+                    onWaveformReady={(waveform) => {
+                      console.log("Waveform ready:", waveform);
+                    }}
+                  />
+                </div>
               </div>
             </div>
           </div>

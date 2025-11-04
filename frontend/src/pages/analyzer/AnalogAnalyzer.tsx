@@ -55,6 +55,11 @@ export const AnalogAnalyzer: React.FC<AnalogAnalyzerProps> = ({
   const getChannelColor = (idx: number): string =>
     colors?.[idx] || defaultColors[idx % defaultColors.length];
 
+  const totalSamples = channelData.reduce(
+    (sum, channel, idx) => (activeChannels[idx] ? sum + channel.length : sum),
+    0,
+  );
+
   return (
     <div className={`analog-analyzer ${className || ""}`}>
       <div className="analyzer-controls">
@@ -103,7 +108,6 @@ export const AnalogAnalyzer: React.FC<AnalogAnalyzerProps> = ({
               </div>
             ),
         )}
-        {/* Only show spectrum if it's toggled AND not disabled */}
         {showSpectrum && !isSpectrumDisabled && (
           <div className="waveform-channel">
             <SpectrumChart
@@ -115,31 +119,58 @@ export const AnalogAnalyzer: React.FC<AnalogAnalyzerProps> = ({
         )}
       </div>
 
-      <div className="analyzer-stats">
-        {channelData.map(
-          (data, idx) =>
-            activeChannels[idx] &&
-            data.length > 0 && (
-              <div key={idx} className="channel-stats">
-                <h4>CH{idx + 1} Stats</h4>
-                <p>
-                  Samples: <strong>{data.length}</strong>
-                </p>
-                <p>
-                  Min: <strong>{Math.min(...data).toFixed(3)}</strong>
-                </p>
-                <p>
-                  Max: <strong>{Math.max(...data).toFixed(3)}</strong>
-                </p>
-                <p>
-                  Avg:{" "}
-                  <strong>
-                    {(data.reduce((a, b) => a + b, 0) / data.length).toFixed(3)}
-                  </strong>
-                </p>
-              </div>
-            ),
-        )}
+      <div className="analyzer-footer">
+        <div className="analyzer-stats-left">
+          {channelData.map(
+            (data, idx) =>
+              activeChannels[idx] &&
+              data.length > 0 && (
+                <div key={idx} className="channel-stats">
+                  <h4>CH{idx + 1} Stats</h4>
+                  <p>
+                    Samples: <strong>{data.length}</strong>
+                  </p>
+                  <p>
+                    Min: <strong>{Math.min(...data).toFixed(3)}</strong>
+                  </p>
+                  <p>
+                    Max: <strong>{Math.max(...data).toFixed(3)}</strong>
+                  </p>
+                  <p>
+                    Avg:{" "}
+                    <strong>
+                      {(data.reduce((a, b) => a + b, 0) / data.length).toFixed(
+                        3,
+                      )}
+                    </strong>
+                  </p>
+                </div>
+              ),
+          )}
+        </div>
+        <div className="analyzer-stats-right">
+          <div className="channel-stats">
+            <h4>Global Stats</h4>
+            <p>
+              Capture Status:{" "}
+              <strong style={{ color: isRunning ? "#50fa7b" : "#f5576c" }}>
+                {isRunning ? "Running" : "Stopped"}
+              </strong>
+            </p>
+            <p>
+              Total Samples: <strong>{totalSamples}</strong>
+            </p>
+            <p>
+              Sample Rate: <strong>{sampleRate} Hz</strong>
+            </p>
+            <p>
+              Spectrum:{" "}
+              <strong>
+                {showSpectrum && !isSpectrumDisabled ? "Visible" : "Hidden"}
+              </strong>
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );
