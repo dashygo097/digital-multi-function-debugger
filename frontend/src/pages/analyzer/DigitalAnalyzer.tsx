@@ -1,6 +1,6 @@
 import React from "react";
 import { DigitalWaveformChart, DigitalByteData } from "@components";
-import { TerminalContext, Message } from "../../contexts/TerminalContext";
+import { SerialContext } from "../../contexts";
 
 const MAX_SAMPLES = 256; // Keep the last 256 bytes
 
@@ -19,8 +19,8 @@ export class DigitalAnalyzer extends React.Component<
   DigitalAnalyzerProps,
   DigitalAnalyzerState
 > {
-  static contextType = TerminalContext;
-  context!: React.ContextType<typeof TerminalContext>;
+  static contextType = SerialContext;
+  context!: React.ContextType<typeof SerialContext>;
 
   constructor(props: DigitalAnalyzerProps) {
     super(props);

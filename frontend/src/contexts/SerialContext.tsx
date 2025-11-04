@@ -1,13 +1,5 @@
-import React, { createContext, useContext, ReactNode } from "react";
-
-export interface Message {
-  timestamp: string;
-  direction: "TX" | "RX" | "INFO" | "ERROR";
-  data: string;
-  id: string;
-  source?: string;
-  payloadHex?: string;
-}
+import React, { ReactNode, useContext, createContext } from "react";
+import { Message } from "@utils";
 
 export interface PortInfo {
   usbVendorId?: number;
@@ -23,7 +15,7 @@ export enum ConnectionState {
   ERROR = "ERROR",
 }
 
-export interface SerialTerminalState {
+export interface SerialState {
   availablePorts: PortInfo[];
   selectedPortName: string;
   selectedPortInfo: PortInfo | null;
@@ -39,44 +31,7 @@ export interface SerialTerminalState {
   hexPrefix: "0x" | "\\x" | "";
 }
 
-export interface UDPTerminalState {
-  wsConnected: boolean;
-  localPort: number;
-  fpgaHost: string;
-  fpgaPort: number;
-  isBound: boolean;
-  messages: Message[];
-  inputMode: "TEXT" | "HEX";
-  stats: {
-    tx: number;
-    rx: number;
-    errors: number;
-    lastRxTime?: string;
-  };
-  autoScroll: boolean;
-  showHex: boolean;
-  hexPrefix: "0x" | "\\x" | "";
-}
-
-export interface TerminalContextType {
-  serialTerminal: SerialTerminalState;
-  udpTerminal: UDPTerminalState;
-  updateSerialTerminal: (updates: Partial<SerialTerminalState>) => void;
-  updateUDPTerminal: (updates: Partial<UDPTerminalState>) => void;
-  resetSerialTerminal: () => void;
-  resetUDPTerminal: () => void;
-  udpBind: () => void;
-  udpClose: () => void;
-  udpSendText: (text: string) => void;
-  udpSendHex: (hex: string) => void;
-  serialConnect: () => Promise<void>;
-  serialDisconnect: () => Promise<void>;
-  serialSend: (data: string) => void;
-  serialSendHex: (hex: string) => void;
-  serialSendRaw: (data: Uint8Array) => void;
-}
-
-const defaultSerialState: SerialTerminalState = {
+export const defaultSerialState: SerialState = {
   availablePorts: [],
   selectedPortName: "",
   selectedPortInfo: null,
@@ -87,40 +42,33 @@ const defaultSerialState: SerialTerminalState = {
   inputMode: "TEXT",
   lineEnding: "NONE",
   stats: { tx: 0, rx: 0, errors: 0 },
-  autoScroll: true,
-  showHex: false,
+  autoScroll: false,
+  showHex: true,
   hexPrefix: "0x",
 };
 
-const defaultUDPState: UDPTerminalState = {
-  wsConnected: false,
-  localPort: 8888,
-  fpgaHost: "127.0.0.1",
-  fpgaPort: 9999,
-  isBound: false,
-  messages: [],
-  inputMode: "TEXT",
-  stats: { tx: 0, rx: 0, errors: 0 },
-  autoScroll: true,
-  showHex: false,
-  hexPrefix: "0x",
-};
+export interface SerialContextType {
+  serialTerminal: SerialState;
+  updateSerialTerminal: (updates: Partial<SerialState>) => void;
+  resetSerialTerminal: () => void;
+  serialConnect: () => Promise<void>;
+  serialDisconnect: () => Promise<void>;
+  serialSend: (data: string) => void;
+  serialSendHex: (hex: string) => void;
+  serialSendRaw: (data: Uint8Array) => void;
+}
 
-export const TerminalContext = createContext<TerminalContextType | undefined>(
+export const SerialContext = createContext<SerialContextType | undefined>(
   undefined,
 );
 
-interface TerminalProviderProps {
+interface SerialProviderProps {
   children: ReactNode;
-  udpBridgeUrl?: string;
 }
 
-export class TerminalProvider extends React.Component<
-  TerminalProviderProps,
-  {
-    serialTerminal: SerialTerminalState;
-    udpTerminal: UDPTerminalState;
-  }
+export class SerialProvider extends React.Component<
+  SerialProviderProps,
+  { serialTerminal: SerialState }
 > {
   private ports: SerialPort[] = [];
   private port: SerialPort | null = null;
@@ -128,24 +76,17 @@ export class TerminalProvider extends React.Component<
   private writer: WritableStreamDefaultWriter<Uint8Array> | null = null;
   private readLoopPromise: Promise<void> | null = null;
   private portRefreshInterval: number | null = null;
-  private ws: WebSocket | null = null;
   private reconnectTimer: number | null = null;
-  static defaultProps = {
-    udpBridgeUrl: "ws://localhost:8080",
-  };
 
-  constructor(props: TerminalProviderProps) {
+  constructor(props: SerialProviderProps) {
     super(props);
     const savedSerial = this.loadFromStorage("serialTerminal");
-    const savedUDP = this.loadFromStorage("udpTerminal");
     this.state = {
       serialTerminal: { ...defaultSerialState, ...savedSerial },
-      udpTerminal: { ...defaultUDPState, ...savedUDP },
     };
   }
 
   componentDidMount() {
-    this.connectWebSocket();
     this.serialRefreshPorts();
     this.portRefreshInterval = window.setInterval(
       this.serialRefreshPorts,
@@ -158,7 +99,6 @@ export class TerminalProvider extends React.Component<
   }
 
   componentWillUnmount() {
-    this.disconnectWebSocket();
     if (this.reconnectTimer) {
       window.clearTimeout(this.reconnectTimer);
     }
@@ -181,10 +121,6 @@ export class TerminalProvider extends React.Component<
         parsed.connectionState = ConnectionState.DISCONNECTED;
         parsed.availablePorts = [];
       }
-      if (key === "udpTerminal" && parsed) {
-        parsed.wsConnected = false;
-        parsed.isBound = false;
-      }
       return parsed;
     } catch (error) {
       return null;
@@ -197,8 +133,6 @@ export class TerminalProvider extends React.Component<
         ...value,
         connectionState:
           key === "serialTerminal" ? ConnectionState.DISCONNECTED : undefined,
-        wsConnected: key === "udpTerminal" ? false : undefined,
-        isBound: key === "udpTerminal" ? false : undefined,
         availablePorts: key === "serialTerminal" ? [] : undefined,
         messages: [],
       };
@@ -206,7 +140,7 @@ export class TerminalProvider extends React.Component<
     } catch (error) {}
   };
 
-  updateSerialTerminal = (updates: Partial<SerialTerminalState>) => {
+  updateSerialTerminal = (updates: Partial<SerialState>) => {
     this.setState(
       (prevState) => ({
         serialTerminal: { ...prevState.serialTerminal, ...updates },
@@ -215,27 +149,11 @@ export class TerminalProvider extends React.Component<
     );
   };
 
-  updateUDPTerminal = (updates: Partial<UDPTerminalState>) => {
-    this.setState(
-      (prevState) => ({
-        udpTerminal: { ...prevState.udpTerminal, ...updates },
-      }),
-      () => this.saveToStorage("udpTerminal", this.state.udpTerminal),
-    );
-  };
-
   resetSerialTerminal = () => {
     this.serialDisconnect();
     this.setState({ serialTerminal: defaultSerialState }, () => {
       localStorage.removeItem("serialTerminal");
       this.serialRefreshPorts();
-    });
-  };
-
-  resetUDPTerminal = () => {
-    this.disconnectWebSocket();
-    this.setState({ udpTerminal: defaultUDPState }, () => {
-      localStorage.removeItem("udpTerminal");
     });
   };
 
@@ -272,34 +190,6 @@ export class TerminalProvider extends React.Component<
         },
       };
     });
-  };
-
-  private addUDPMessage = (
-    direction: "TX" | "RX" | "INFO" | "ERROR",
-    data: string,
-    source?: string,
-    payloadHex?: string,
-  ) => {
-    const newMessage: Message = {
-      id: `${Date.now()}-${Math.random()}`,
-      timestamp: new Date().toLocaleTimeString("en-US", {
-        hour12: false,
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-        fractionalSecondDigits: 3,
-      }),
-      direction,
-      data,
-      source,
-      payloadHex,
-    };
-    this.setState((prevState) => ({
-      udpTerminal: {
-        ...prevState.udpTerminal,
-        messages: [...prevState.udpTerminal.messages, newMessage],
-      },
-    }));
   };
 
   private getPortIdentifier = (portInfo: PortInfo): string => {
@@ -509,245 +399,11 @@ export class TerminalProvider extends React.Component<
     }
   };
 
-  private connectWebSocket = () => {
-    const { udpBridgeUrl } = this.props;
-    if (this.ws && this.ws.readyState === WebSocket.OPEN) return;
-    try {
-      this.addUDPMessage(
-        "INFO",
-        `Connecting to UDP bridge at ${udpBridgeUrl}...`,
-      );
-      this.ws = new WebSocket(udpBridgeUrl!);
-      this.ws.onopen = () => {
-        this.updateUDPTerminal({ wsConnected: true });
-        this.addUDPMessage("INFO", "✓ Connected to UDP bridge");
-        this.sendWSMessage({ type: "GET_STATUS", payload: {} });
-      };
-      this.ws.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          this.handleWSMessage(data);
-        } catch (error) {}
-      };
-      this.ws.onerror = () => {
-        this.addUDPMessage("ERROR", "WebSocket connection error");
-        this.updateUDPTerminal({
-          stats: {
-            ...this.state.udpTerminal.stats,
-            errors: this.state.udpTerminal.stats.errors + 1,
-          },
-        });
-      };
-      this.ws.onclose = () => {
-        this.updateUDPTerminal({ wsConnected: false, isBound: false });
-        this.addUDPMessage("INFO", "Disconnected from UDP bridge");
-        if (this.reconnectTimer) window.clearTimeout(this.reconnectTimer);
-        this.reconnectTimer = window.setTimeout(this.connectWebSocket, 3000);
-      };
-    } catch (error: any) {
-      this.addUDPMessage("ERROR", `Connection failed: ${error.message}`);
-    }
-  };
-
-  private disconnectWebSocket = () => {
-    if (this.reconnectTimer) {
-      window.clearTimeout(this.reconnectTimer);
-      this.reconnectTimer = null;
-    }
-    if (this.ws) {
-      this.ws.close();
-      this.ws = null;
-    }
-  };
-
-  private sendWSMessage = (data: any) => {
-    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      this.ws.send(JSON.stringify(data));
-    } else {
-      this.addUDPMessage("ERROR", "WebSocket not connected");
-    }
-  };
-
-  private handleWSMessage = (data: any) => {
-    const { type, payload } = data;
-    switch (type) {
-      case "STATUS":
-        this.updateUDPTerminal({
-          isBound: payload.isBound,
-          localPort: payload.localPort || this.state.udpTerminal.localPort,
-          fpgaHost: payload.remoteHost || this.state.udpTerminal.fpgaHost,
-          fpgaPort: payload.remotePort || this.state.udpTerminal.fpgaPort,
-        });
-        break;
-      case "BIND_SUCCESS":
-        this.updateUDPTerminal({
-          isBound: true,
-          messages: [], // Clear messages on new bind
-          stats: { tx: 0, rx: 0, errors: 0 }, // Reset stats
-        });
-        this.addUDPMessage("INFO", `✓ Bound to port ${payload.localPort}`);
-        break;
-      case "REMOTE_SET":
-        this.addUDPMessage(
-          "INFO",
-          `✓ Remote set to ${payload.host}:${payload.port}`,
-        );
-        break;
-      case "SEND_SUCCESS":
-        this.updateUDPTerminal({
-          stats: {
-            ...this.state.udpTerminal.stats,
-            tx: this.state.udpTerminal.stats.tx + 1,
-          },
-        });
-        break;
-      case "RECEIVE":
-        this.handleUDPReceive(payload);
-        break;
-      case "CLOSE_SUCCESS":
-        this.updateUDPTerminal({
-          isBound: false,
-          messages: [], // Clear messages on close
-          stats: { tx: 0, rx: 0, errors: 0 }, // Reset stats
-        });
-        this.addUDPMessage("INFO", "✓ UDP socket closed");
-        break;
-      case "BROADCAST_SET":
-        this.addUDPMessage(
-          "INFO",
-          `Broadcast ${payload.enabled ? "enabled" : "disabled"}`,
-        );
-        break;
-      case "ERROR":
-        this.addUDPMessage("ERROR", payload.message);
-        this.updateUDPTerminal({
-          stats: {
-            ...this.state.udpTerminal.stats,
-            errors: this.state.udpTerminal.stats.errors + 1,
-          },
-        });
-        break;
-      default:
-        break;
-    }
-  };
-
-  private handleUDPReceive = (payload: any) => {
-    const { data, remoteAddress, remotePort } = payload;
-    const bytes = new Uint8Array(data);
-    const text = new TextDecoder().decode(bytes);
-    const source = `${remoteAddress}:${remotePort}`;
-    const payloadHex = Array.from(bytes)
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join(" ");
-    const displayText = this.state.udpTerminal.showHex
-      ? Array.from(bytes)
-          .map(
-            (b) =>
-              `${this.state.udpTerminal.hexPrefix}${b.toString(16).padStart(2, "0")}`,
-          )
-          .join(" ")
-      : text;
-    this.addUDPMessage("RX", displayText, source, payloadHex);
-    this.updateUDPTerminal({
-      stats: {
-        ...this.state.udpTerminal.stats,
-        rx: this.state.udpTerminal.stats.rx + 1,
-        lastRxTime: new Date().toLocaleTimeString(),
-      },
-    });
-  };
-
-  udpBind = () => {
-    if (!this.state.udpTerminal.wsConnected) {
-      this.addUDPMessage("ERROR", "Not connected to bridge");
-      return;
-    }
-    this.addUDPMessage(
-      "INFO",
-      `Binding to port ${this.state.udpTerminal.localPort}...`,
-    );
-    this.sendWSMessage({
-      type: "BIND",
-      payload: { localPort: this.state.udpTerminal.localPort },
-    });
-    this.sendWSMessage({
-      type: "SET_REMOTE",
-      payload: {
-        host: this.state.udpTerminal.fpgaHost,
-        port: this.state.udpTerminal.fpgaPort,
-      },
-    });
-  };
-
-  udpClose = () => {
-    this.addUDPMessage("INFO", "Closing UDP socket...");
-    this.sendWSMessage({ type: "CLOSE", payload: {} });
-  };
-
-  udpSendText = (text: string) => {
-    const { fpgaHost, fpgaPort, isBound } = this.state.udpTerminal;
-    if (!isBound) {
-      this.addUDPMessage("ERROR", "UDP not bound");
-      return;
-    }
-    if (!text) return;
-    const encoded = new TextEncoder().encode(text);
-    this.sendWSMessage({
-      type: "SEND",
-      payload: { data: Array.from(encoded) },
-    });
-    this.addUDPMessage("TX", text, `${fpgaHost}:${fpgaPort}`);
-  };
-
-  udpSendHex = (hex: string) => {
-    const { fpgaHost, fpgaPort, isBound } = this.state.udpTerminal;
-    if (!isBound) {
-      this.addUDPMessage("ERROR", "UDP not bound");
-      return;
-    }
-    if (!hex) return;
-    try {
-      const hexValues = hex
-        .split(/[\s,]+/)
-        .filter((x) => x.length > 0)
-        .map((x) => {
-          const cleaned = x.replace(/^0x/i, "").replace(/^\\x/i, "");
-          return parseInt(cleaned, 16);
-        });
-      if (hexValues.some(isNaN) || hexValues.some((v) => v < 0 || v > 255)) {
-        this.addUDPMessage(
-          "ERROR",
-          "Invalid hex format. Use: 01 02 03 or 0x01 0x02 0x03",
-        );
-        return;
-      }
-      this.sendWSMessage({ type: "SEND", payload: { data: hexValues } });
-      const hexDisplay = hexValues
-        .map((b) => `0x${b.toString(16).padStart(2, "0")}`)
-        .join(" ");
-      this.addUDPMessage(
-        "TX",
-        `[HEX] ${hexDisplay}`,
-        `${fpgaHost}:${fpgaPort}`,
-      );
-    } catch (error: any) {
-      this.addUDPMessage("ERROR", `Hex send failed: ${error.message}`);
-    }
-  };
-
   render() {
-    const contextValue: TerminalContextType = {
+    const contextValue: SerialContextType = {
       serialTerminal: this.state.serialTerminal,
-      udpTerminal: this.state.udpTerminal,
-      updateSerialTerminal: this.updateSerialTerminal,
-      updateUDPTerminal: this.updateUDPTerminal,
       resetSerialTerminal: this.resetSerialTerminal,
-      resetUDPTerminal: this.resetUDPTerminal,
-      udpBind: this.udpBind,
-      udpClose: this.udpClose,
-      udpSendText: this.udpSendText,
-      udpSendHex: this.udpSendHex,
+      updateSerialTerminal: this.updateSerialTerminal,
       serialConnect: this.serialConnect,
       serialDisconnect: this.serialDisconnect,
       serialSend: this.serialSend,
@@ -755,19 +411,17 @@ export class TerminalProvider extends React.Component<
       serialSendRaw: this.serialSendRaw,
     };
     return (
-      <TerminalContext.Provider value={contextValue}>
+      <SerialContext.Provider value={contextValue}>
         {this.props.children}
-      </TerminalContext.Provider>
+      </SerialContext.Provider>
     );
   }
 }
 
-export const useTerminalContext = () => {
-  const context = useContext(TerminalContext);
+export const useSerialContext = () => {
+  const context = useContext(SerialContext);
   if (!context) {
-    throw new Error(
-      "useTerminalContext must be used within a TerminalProvider",
-    );
+    throw new Error("useSerialContext must be used within a SerialProvider");
   }
   return context;
 };

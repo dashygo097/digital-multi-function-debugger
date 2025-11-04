@@ -4,8 +4,8 @@ import {
   AnalogSignalData,
   SpectrumChart,
 } from "@components";
-import { TerminalContext, Message } from "../../contexts/TerminalContext";
-import { FFT } from "@utils";
+import { UDPContext } from "../../contexts";
+import { FFT, Message } from "@utils";
 
 const MAX_SAMPLES = 2048;
 const FFT_SIZE = 128;
@@ -29,8 +29,8 @@ export class AnalogAnalyzer extends React.Component<
   AnalogAnalyzerProps,
   AnalogAnalyzerState
 > {
-  static contextType = TerminalContext;
-  context!: React.ContextType<typeof TerminalContext>;
+  static contextType = UDPContext;
+  context!: React.ContextType<typeof UDPContext>;
 
   private fft: FFT;
   private readonly defaultColors = ["#00ff00", "#ff00ff", "#00ffff", "#ffff00"];
@@ -189,7 +189,7 @@ export class AnalogAnalyzer extends React.Component<
               className={`control-button ${isRunning ? "active" : ""}`}
               onClick={isRunning ? this.stopCapture : this.startCapture}
             >
-              {isRunning ? "Stop" : "Start"}
+              {isRunning ? "Stop Capture" : "Start Capture"}
             </button>
             <button className="control-button" onClick={this.clearData}>
               Clear
