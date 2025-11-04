@@ -107,6 +107,12 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
           startAddr: "0x30000",
           endAddr: "0x34000",
         },
+        {
+          id: "dac_engine",
+          name: "DAC Engine",
+          startAddr: "0x34000",
+          endAddr: "0x38000",
+        },
       ],
       presets: [
         {
@@ -656,6 +662,61 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
           address: "0x30038",
           description: "[0]: tx_fifo_ready, [1]: rx_fifo_valid",
           section: "i2c_engine",
+        },
+        {
+          name: "DAC_CONTROL",
+          address: "0x34000",
+          description: "[0]: dds_enable, [1]: high_quality_mode",
+          section: "dac_engine",
+        },
+        {
+          name: "DAC_FREQUENCY",
+          address: "0x34004",
+          description: "[31:0]: frequency_control_word",
+          section: "dac_engine",
+        },
+        {
+          name: "DAC_AMPLITUDE",
+          address: "0x34008",
+          description: "[15:0]: amplitude_scale (0x0000-0xFFFF)",
+          section: "dac_engine",
+        },
+        {
+          name: "DAC_PHASE_OFFSET",
+          address: "0x3400C",
+          description: "[15:0]: phase_offset (0x0000-0xFFFF)",
+          section: "dac_engine",
+        },
+        {
+          name: "DAC_WAVE_ADDR",
+          address: "0x34010",
+          description: "[8:0]: waveform_memory_address (0-511)",
+          section: "dac_engine",
+        },
+        {
+          name: "DAC_WAVE_DATA",
+          address: "0x34014",
+          description: "[15:0]: waveform_data_value (signed)",
+          section: "dac_engine",
+        },
+        {
+          name: "DAC_WAVE_WR_EN",
+          address: "0x34018",
+
+          description: "[0]: wave_write_enable (write 1 to push, auto-clears)",
+          section: "dac_engine",
+        },
+        {
+          name: "DAC_OUTPUT",
+          address: "0x3401C",
+          description: "[15:0]: current_dac_output_value (real-time)",
+          section: "dac_engine",
+        },
+        {
+          name: "DAC_STATUS",
+          address: "0x34020",
+          description: "[0]: engine_running, [1]: high_quality_active",
+          section: "dac_engine",
         },
       ],
     };
