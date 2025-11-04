@@ -8,6 +8,7 @@ interface CSRMessage {
   type: "TX" | "RX" | "INFO" | "ERROR";
   data: string;
   id: string;
+  payloadHex?: string;
 }
 
 interface Preset {
@@ -37,6 +38,7 @@ interface CSRPageState {
   presets: Preset[];
   isRegisterSidebarOpen: boolean;
   isLoadingRegisters: boolean;
+  responseResolver: ((value: string | null) => void) | null;
 }
 
 class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
@@ -60,6 +62,7 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
       lastProcessedMessageIndex: -1,
       isRegisterSidebarOpen: true,
       isLoadingRegisters: false,
+      responseResolver: null,
       sections: [
         {
           id: "slv_regs",
@@ -737,35 +740,59 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
     ) {
       this.terminalEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
+    this.processNewMessages();
   }
 
-  private stringToBytesLatin1 = (str: string): number[] => {
-    const bytes: number[] = [];
-    for (let i = 0; i < str.length; i++) {
-      bytes.push(str.charCodeAt(i) & 0xff);
-    }
-    return bytes;
-  };
+  private processNewMessages() {
+    if (!this.context) return;
+    const { serialTerminal } = this.context;
+    const { messages: contextMessages } = serialTerminal;
 
-  private formatRxData = (data: string): string => {
-    if (!this.state.showRxAsHex) {
+    if (
+      contextMessages.length === 0 &&
+      this.state.lastProcessedMessageIndex !== -1
+    ) {
+      this.setState({ lastProcessedMessageIndex: -1 });
+      return;
+    }
+
+    const startIndex = this.state.lastProcessedMessageIndex + 1;
+    if (startIndex >= contextMessages.length) return;
+
+    for (let i = startIndex; i < contextMessages.length; i++) {
+      const msg = contextMessages[i];
+      if (msg.direction === "RX") {
+        const displayData = this.formatRxData(msg.data, msg.payloadHex);
+        this.addMessage("RX", displayData, msg.payloadHex);
+        if (this.state.responseResolver && msg.payloadHex) {
+          const hexValues = msg.payloadHex.split(" ");
+          if (hexValues.length >= 5) {
+            this.state.responseResolver(msg.payloadHex);
+            this.setState({ responseResolver: null });
+          }
+        }
+      }
+    }
+
+    this.setState({ lastProcessedMessageIndex: contextMessages.length - 1 });
+  }
+
+  private formatRxData = (data: string, payloadHex?: string): string => {
+    if (!this.state.showRxAsHex || !payloadHex) {
       return data;
     }
-    const bytes = this.stringToBytesLatin1(data);
-    const hexString = bytes
-      .map((b) => b.toString(16).padStart(2, "0").toUpperCase())
-      .join(" ");
+    const bytes = payloadHex.split(" ").map((hex) => parseInt(hex, 16));
     const asciiString = bytes
       .map((b) => (b >= 32 && b <= 126 ? String.fromCharCode(b) : "."))
       .join("");
-    return `[HEX] ${hexString} | ${asciiString}`;
+    return `[HEX] ${payloadHex.toUpperCase()} | ${asciiString}`;
   };
 
-  private buildCSRCommand = (
+  private buildCSRCommandHex = (
     operation: "READ" | "WRITE",
     addressStr: string,
     dataStr?: string,
-  ): Uint8Array | null => {
+  ): string | null => {
     try {
       const addr = parseInt(addressStr.replace(/^0x/i, ""), 16);
       if (isNaN(addr) || addr < 0 || addr > 0xffffffff) {
@@ -782,64 +809,70 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
         }
       }
 
-      const cmd = new Uint8Array(9);
-      cmd[0] = operation === "WRITE" ? 0x00 : 0x01;
-      const addressBytes = new DataView(new ArrayBuffer(4));
-      addressBytes.setUint32(0, addr, false);
-      cmd.set(new Uint8Array(addressBytes.buffer), 1);
+      const cmdType = operation === "WRITE" ? "00" : "01";
+      const addrHex = addr.toString(16).padStart(8, "0");
+      const dataHex = data.toString(16).padStart(8, "0");
 
-      if (operation === "WRITE") {
-        const dataBytes = new DataView(new ArrayBuffer(4));
-        dataBytes.setUint32(0, data, false);
-        cmd.set(new Uint8Array(dataBytes.buffer), 5);
-      }
+      const finalCmd =
+        operation === "WRITE"
+          ? `${cmdType} ${addrHex.slice(0, 2)} ${addrHex.slice(2, 4)} ${addrHex.slice(4, 6)} ${addrHex.slice(6, 8)} ${dataHex.slice(0, 2)} ${dataHex.slice(2, 4)} ${dataHex.slice(4, 6)} ${dataHex.slice(6, 8)}`
+          : `${cmdType} ${addrHex.slice(0, 2)} ${addrHex.slice(2, 4)} ${addrHex.slice(4, 6)} ${addrHex.slice(6, 8)} 00 00 00 00`;
 
-      return cmd;
+      return finalCmd;
     } catch (error: any) {
       this.addMessage("ERROR", `Command build failed: ${error.message}`);
       return null;
     }
   };
 
+  private waitForResponse = (timeout = 2000): Promise<string | null> => {
+    return new Promise((resolve) => {
+      this.setState({ responseResolver: resolve });
+      setTimeout(() => {
+        if (this.state.responseResolver) {
+          this.setState({ responseResolver: null });
+          resolve(null);
+        }
+      }, timeout);
+    });
+  };
+
   private sendCSRCommand = async () => {
     if (
       this.context?.serialTerminal.connectionState !== ConnectionState.CONNECTED
     ) {
-      this.addMessage(
-        "ERROR",
-        "❌ Serial port not connected! Please connect via Serial Terminal page.",
-      );
+      this.addMessage("ERROR", "❌ Serial port not connected!");
       return;
     }
     const { csrOperation, csrAddress, csrData } = this.state;
-    const cmd = this.buildCSRCommand(csrOperation, csrAddress, csrData);
-    if (!cmd) return;
+    const cmdHex = this.buildCSRCommandHex(csrOperation, csrAddress, csrData);
+    if (!cmdHex) return;
 
-    const address = parseInt(csrAddress.replace(/^0x/i, ""), 16);
-    const dataVal =
-      csrOperation === "WRITE" ? parseInt(csrData.replace(/^0x/i, ""), 16) : 0;
-    const operationStr =
-      csrOperation === "WRITE"
-        ? `WRITE 0x${dataVal.toString(16).padStart(8, "0").toUpperCase()} to 0x${address.toString(16).padStart(8, "0").toUpperCase()}`
-        : `READ from 0x${address.toString(16).padStart(8, "0").toUpperCase()}`;
+    this.addMessage("TX", `[CSR HEX] ${cmdHex.toUpperCase()}`);
+    this.context.serialSendHex(cmdHex);
 
-    this.addMessage("TX", `[CSR ${operationStr}]`);
-
-    try {
-      const response = await this.context.serialCmd(cmd);
-      if (response && csrOperation === "READ") {
-        const dataView = new DataView(response.buffer);
-        const readValue = dataView.getUint32(1, false);
-        const hexValue = `0x${readValue.toString(16).padStart(8, "0").toUpperCase()}`;
-        this.addMessage(
-          "RX",
-          `[CSR READ from 0x${address.toString(16).padStart(8, "0").toUpperCase()}] -> ${hexValue}`,
-        );
-      } else if (!response) {
-        this.addMessage("ERROR", "No response or timeout for CSR command.");
+    if (csrOperation === "READ") {
+      const responseHex = await this.waitForResponse();
+      if (responseHex) {
+        const hexParts = responseHex.split(" ");
+        const status = parseInt(hexParts[0], 16);
+        if (status === 0x01) {
+          // Success status for read
+          const valueHex = hexParts.slice(1, 5).join("");
+          const value = parseInt(valueHex, 16);
+          this.addMessage(
+            "RX",
+            `[CSR READ from ${csrAddress}] -> 0x${value.toString(16).toUpperCase().padStart(8, "0")}`,
+          );
+        } else {
+          this.addMessage(
+            "ERROR",
+            `Read failed for ${csrAddress}. Status: 0x${status.toString(16)}`,
+          );
+        }
+      } else {
+        this.addMessage("ERROR", `No response for ${csrAddress}`);
       }
-    } catch (error: any) {
-      this.addMessage("ERROR", `❌ Send failed: ${error.message}`);
     }
   };
 
@@ -860,8 +893,8 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
       return { presets: newPresets };
     });
 
-    const cmd = this.buildCSRCommand("READ", preset.address);
-    if (!cmd) {
+    const cmdHex = this.buildCSRCommandHex("READ", preset.address);
+    if (!cmdHex) {
       this.setState((prevState) => {
         const newPresets = [...prevState.presets];
         newPresets[index] = { ...newPresets[index], loading: false };
@@ -870,59 +903,41 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
       return;
     }
 
-    try {
-      this.addMessage("TX", `[CSR READ from ${preset.address}]`);
-      const response = await this.context.serialCmd(cmd);
-      let hexValue = "Error";
-      if (response) {
-        const dataView = new DataView(response.buffer);
-        const status = dataView.getUint8(0);
-        if (status === 0x01) {
-          const value = dataView.getUint32(1, false);
-          hexValue = `0x${value.toString(16).padStart(8, "0").toUpperCase()}`;
-          this.addMessage(
-            "RX",
-            `[CSR READ from ${preset.address}] -> ${hexValue}`,
-          );
-        } else {
-          this.addMessage(
-            "ERROR",
-            `Read failed for ${preset.address}. Status: 0x${status.toString(16)}`,
-          );
-        }
-      } else {
-        this.addMessage("ERROR", `No response for ${preset.address}`);
-      }
+    this.context.serialSendHex(cmdHex);
+    this.addMessage("TX", `[CSR HEX] ${cmdHex.toUpperCase()}`);
 
-      this.setState((prevState) => {
-        const newPresets = [...prevState.presets];
-        newPresets[index] = {
-          ...newPresets[index],
-          value: hexValue,
-          loading: false,
-        };
-        return { presets: newPresets };
-      });
-    } catch (e: any) {
-      this.addMessage(
-        "ERROR",
-        `Read failed for ${preset.address}: ${e.message}`,
-      );
-      this.setState((prevState) => {
-        const newPresets = [...prevState.presets];
-        newPresets[index] = {
-          ...newPresets[index],
-          value: "Error",
-          loading: false,
-        };
-        return { presets: newPresets };
-      });
+    const responseHex = await this.waitForResponse();
+    let finalValue = "Error";
+    if (responseHex) {
+      const hexParts = responseHex.split(" ");
+      const status = parseInt(hexParts[0], 16);
+      if (status === 0x01) {
+        const valueHex = hexParts.slice(1, 5).join("");
+        finalValue = `0x${valueHex.toUpperCase()}`;
+      }
     }
+
+    this.setState((prevState) => {
+      const newPresets = [...prevState.presets];
+      newPresets[index] = {
+        ...newPresets[index],
+        value: finalValue,
+        loading: false,
+      };
+      return { presets: newPresets };
+    });
   };
 
   private readAllRegisters = async () => {
     this.setState({ isLoadingRegisters: true });
     for (let i = 0; i < this.state.presets.length; i++) {
+      if (
+        this.context?.serialTerminal.connectionState !==
+        ConnectionState.CONNECTED
+      ) {
+        this.addMessage("ERROR", "Connection lost. Aborting read all.");
+        break;
+      }
       await this.readRegisterValue(this.state.presets[i], i);
     }
     this.setState({ isLoadingRegisters: false });
@@ -936,7 +951,11 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
     );
   };
 
-  private addMessage = (type: "TX" | "RX" | "INFO" | "ERROR", data: string) => {
+  private addMessage = (
+    type: "TX" | "RX" | "INFO" | "ERROR",
+    data: string,
+    payloadHex?: string,
+  ) => {
     this.setState((prev) => ({
       messages: [
         ...prev.messages,
@@ -951,13 +970,17 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
           type,
           data,
           id: `${Date.now()}-${Math.random()}`,
+          payloadHex,
         },
       ],
     }));
   };
 
   private clearMessages = () => {
-    this.setState({ messages: [] });
+    this.setState({ messages: [], lastProcessedMessageIndex: -1 });
+    if (this.context) {
+      this.context.updateSerialTerminal({ messages: [] });
+    }
   };
 
   private exportLog = () => {
@@ -1060,7 +1083,7 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
                 <h3>{section.name}</h3>
                 {presets
                   .filter((p) => p.section === section.id)
-                  .map((preset, index) => {
+                  .map((preset) => {
                     const presetIndex = this.state.presets.findIndex(
                       (p) => p.address === preset.address,
                     );
@@ -1078,13 +1101,18 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
                         </div>
                         <div className="register-value-action">
                           <span className="register-value">
-                            {preset.loading ? "..." : preset.value || "N/A"}
+                            {this.state.presets[presetIndex].loading
+                              ? "..."
+                              : this.state.presets[presetIndex].value || "N/A"}
                           </span>
                           <button
                             onClick={() =>
                               this.readRegisterValue(preset, presetIndex)
                             }
-                            disabled={!isConnected || preset.loading}
+                            disabled={
+                              !isConnected ||
+                              this.state.presets[presetIndex].loading
+                            }
                             className="btn-read-single"
                           >
                             Read
