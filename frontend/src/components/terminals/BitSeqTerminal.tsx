@@ -65,7 +65,7 @@ export class BitseqLooperTerminal extends Component<
       channelConfigs: Array(NUM_CHANNELS)
         .fill(0)
         .map(() => ({
-          length: "256",
+          length: "16",
           rateDiv: "1000",
           phaseOff: "0",
           sequence: "0",
@@ -91,7 +91,7 @@ export class BitseqLooperTerminal extends Component<
     }
   }
 
-  addMessage = (direction: "CMD" | "INFO" | "ERROR", data: string) => {
+  addMessage = (direction: "TX" | "INFO" | "ERROR", data: string) => {
     const newMessage: Message = {
       id: `${Date.now()}-${Math.random()}`,
       timestamp: new Date().toLocaleTimeString("en-US", {
@@ -134,10 +134,8 @@ export class BitseqLooperTerminal extends Component<
     const value = enable !== undefined ? (enable ? 1 : 0) : 1 << bit;
     let regValue = 0;
     if (bit === 0 && enable !== undefined) {
-      // Sync Enable
       regValue = enable ? 1 : 0;
     } else {
-      // Pulses
       regValue = 1 << bit;
     }
     await writeCSR(REGS.CONTROL.toString(16), regValue.toString(16));
@@ -147,7 +145,7 @@ export class BitseqLooperTerminal extends Component<
         : bit === 2
           ? "Group Start"
           : `Sync Enable: ${enable}`;
-    this.addMessage("CMD", `Global Control: ${action}`);
+    this.addMessage("TX", `Global Control: ${action}`);
   };
 
   handleArmMaskChange = async (index: number) => {
@@ -164,7 +162,7 @@ export class BitseqLooperTerminal extends Component<
       maskValue.toString(16),
     );
     this.addMessage(
-      "CMD",
+      "TX",
       `Set Arm Mask to 0b${maskValue.toString(2).padStart(8, "0")}`,
     );
   };
@@ -178,7 +176,7 @@ export class BitseqLooperTerminal extends Component<
     const value = 1 << channel;
     await writeCSR(addr.toString(16), value.toString(16));
     this.addMessage(
-      "CMD",
+      "TX",
       `${reg === "START_CH" ? "Starting" : "Stopping"} Channel ${channel}`,
     );
   };
@@ -198,7 +196,7 @@ export class BitseqLooperTerminal extends Component<
     const { selectedChannel, channelConfigs } = this.state;
     const config = channelConfigs[selectedChannel];
 
-    this.addMessage("CMD", `Applying config to Channel ${selectedChannel}`);
+    this.addMessage("TX", `Applying config to Channel ${selectedChannel}`);
     await writeCSR(
       (REGS.LEN_BASE + selectedChannel * 4).toString(16),
       Number(config.length).toString(16),
@@ -231,11 +229,10 @@ export class BitseqLooperTerminal extends Component<
     }
 
     this.addMessage(
-      "CMD",
+      "TX",
       `Writing ${sequence.length}-bit sequence to Channel ${selectedChannel} BRAM...`,
     );
 
-    // Set write channel
     const wrControlValue = (1 << 7) | selectedChannel; // wr_en=1, wr_ch=selectedChannel
     await writeCSR(REGS.WR_CONTROL.toString(16), wrControlValue.toString(16));
 
@@ -264,8 +261,7 @@ export class BitseqLooperTerminal extends Component<
     const currentConfig = channelConfigs[selectedChannel];
 
     return (
-      <div className={`main-bitseqterminal ${className || ""}`}>
-        {/* Left Panel */}
+      <div className={className}>
         <div className="control-panel">
           <div className="section">
             <label>Playing Status</label>
@@ -379,7 +375,6 @@ export class BitseqLooperTerminal extends Component<
           </div>
         </div>
 
-        {/* Right Panel */}
         <div className="right-panel">
           <div className="section sequence-editor">
             <label>Sequence Editor (CH{selectedChannel})</label>

@@ -179,7 +179,7 @@ export class SignalMeasureTerminal extends Component<
     } = this.state;
 
     return (
-      <div className={`main-signalterminal ${className || ""}`}>
+      <div className={className}>
         <div className="control-panel">
           <div className="section">
             <span
