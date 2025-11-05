@@ -1,20 +1,25 @@
 import React, { Component, RefObject } from "react";
 import { ProtocolContext } from "@contexts";
+import { Message } from "@utils";
 
 interface PWMTerminalProps {
   className?: string;
 }
 
-interface PWMTerminalComponentState {
+interface PWMTerminalState {
+  messages: Message[];
+  stats: {
+    errors: number;
+  };
   selectedChannel: number;
+  channelEnables: boolean[];
   highCount: string;
   lowCount: string;
+  autoScroll: boolean;
+  isEnabled: boolean;
 }
 
-export class PWMTerminal extends Component<
-  PWMTerminalProps,
-  PWMTerminalComponentState
-> {
+export class PWMTerminal extends Component<PWMTerminalProps, PWMTerminalState> {
   static contextType = ProtocolContext;
   context!: React.ContextType<typeof ProtocolContext>;
 
@@ -22,79 +27,210 @@ export class PWMTerminal extends Component<
 
   constructor(props: PWMTerminalProps) {
     super(props);
-    const { pwmTerminal } = this.context;
     this.state = {
-      selectedChannel: pwmTerminal.selectedChannel || 0,
-      highCount: (pwmTerminal.highCount || 1000).toString(),
-      lowCount: (pwmTerminal.lowCount || 1000).toString(),
+      messages: [],
+      stats: { errors: 0 },
+      selectedChannel: 0,
+      channelEnables: Array(8).fill(false),
+      highCount: "1000",
+      lowCount: "1000",
+      autoScroll: false,
+      isEnabled: false,
     };
     this.terminalEndRef = React.createRef<HTMLDivElement>();
   }
 
-  componentDidUpdate() {
-    const { pwmTerminal } = this.context;
-    if (pwmTerminal.autoScroll) {
+  componentDidMount() {
+    this.updatePWMState();
+  }
+
+  componentDidUpdate(_: PWMTerminalProps, prevState: PWMTerminalState) {
+    if (
+      this.state.autoScroll &&
+      this.state.messages.length > prevState.messages.length
+    ) {
       this.terminalEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
   }
 
-  handleApplyConfig = () => {
-    const { updatePWMTimings } = this.context;
-    const { selectedChannel, highCount, lowCount } = this.state;
-    updatePWMTimings(selectedChannel, Number(highCount), Number(lowCount));
+  updatePWMState = async () => {
+    const { readCSR } = this.context;
+    if (!readCSR) return;
+
+    try {
+      const controlReg = await readCSR("0x2C000");
+      const statusReg = await readCSR("0x2C018");
+
+      if (controlReg === undefined || statusReg === undefined) {
+        this.addMessage("ERROR", "Failed to read PWM state from hardware.");
+        return;
+      }
+
+      const isEnabled = (controlReg & 0x1) !== 0;
+      const channelEnablesValue = (controlReg >> 1) & 0xff;
+
+      const newChannelEnables = Array(8)
+        .fill(false)
+        .map((_, i) => (channelEnablesValue & (1 << i)) !== 0);
+
+      this.setState({ isEnabled, channelEnables: newChannelEnables });
+    } catch (error) {
+      this.addMessage("ERROR", "An error occurred while updating PWM state.");
+    }
   };
 
-  handleToggleChannel = (channelIndex: number) => {
-    const { pwmTerminal, updatePWMChannelEnable } = this.context;
-    const currentEnables = [...pwmTerminal.channelEnables];
-    currentEnables[channelIndex] = !currentEnables[channelIndex];
-    updatePWMChannelEnable(currentEnables);
+  addMessage = (direction: "TX" | "INFO" | "ERROR", data: string) => {
+    const newMessage: Message = {
+      id: `${Date.now()}-${Math.random()}`,
+      timestamp: new Date().toLocaleTimeString("en-US", {
+        hour12: false,
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        fractionalSecondDigits: 3,
+      }),
+      direction,
+      data,
+    };
+    this.setState((prevState) => ({
+      messages: [...prevState.messages, newMessage],
+      stats:
+        direction === "ERROR"
+          ? { ...prevState.stats, errors: prevState.stats.errors + 1 }
+          : prevState.stats,
+    }));
+  };
+
+  handleApplyConfig = async () => {
+    const { selectedChannel, highCount, lowCount } = this.state;
+    this.addMessage(
+      "TX",
+      `Applying High: ${highCount}, Low: ${lowCount} to Channel ${selectedChannel}`,
+    );
+    await this.updatePWMTimings(
+      selectedChannel,
+      Number(highCount),
+      Number(lowCount),
+    );
+  };
+
+  handleToggleChannel = async (channelIndex: number) => {
+    const newEnables = [...this.state.channelEnables];
+    newEnables[channelIndex] = !newEnables[channelIndex];
+    this.setState({ channelEnables: newEnables });
+    await this.updatePWMChannelEnable(newEnables);
   };
 
   clearTerminal = () => {
-    this.context.updatePWMTerminal({
-      messages: [],
-      stats: { errors: 0 },
-    });
+    this.setState({ messages: [], stats: { errors: 0 } });
   };
 
   exportLog = () => {
-    const { pwmTerminal } = this.context;
-    const log = pwmTerminal.messages
+    const log = this.state.messages
       .map((m) => `[${m.timestamp}] ${m.direction}: ${m.data}`)
       .join("\n");
-
+    const blob = new Blob([log], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
     const element = document.createElement("a");
-    element.setAttribute(
-      "href",
-      "data:text/plain;charset=utf-8," + encodeURIComponent(log),
-    );
-    element.setAttribute("download", `fpga-pwm-log-${Date.now()}.txt`);
-    element.style.display = "none";
+    element.href = url;
+    element.download = `fpga-pwm-log-${Date.now()}.txt`;
     document.body.appendChild(element);
     element.click();
     document.body.removeChild(element);
+    URL.revokeObjectURL(url);
+  };
+
+  updatePWMTimings = async (
+    channel: number,
+    highCount: number,
+    lowCount: number,
+  ) => {
+    const { writeCSR } = this.context;
+    await writeCSR("0x2C004", channel.toString(16));
+    await writeCSR("0x2C008", highCount.toString(16));
+    await writeCSR("0x2C00C", lowCount.toString(16));
+    await writeCSR("0x2C010", "1");
+  };
+
+  resetPWMTerminal = async () => {
+    const { writeCSR } = this.context;
+    this.addMessage("TX", "Resetting all PWM configurations to 0.");
+    await writeCSR("0x2C000", "0");
+    await writeCSR("0x2C004", "0");
+    await writeCSR("0x2C008", "0");
+    await writeCSR("0x2C00C", "0");
+    await writeCSR("0x2C010", "0");
+    this.setState({
+      isEnabled: false,
+      channelEnables: Array(8).fill(false),
+      highCount: "1000",
+      lowCount: "1000",
+      selectedChannel: 0,
+    });
+  };
+
+  updatePWMChannelEnable = async (enables: boolean[]) => {
+    const { writeCSR } = this.context;
+    const { isEnabled } = this.state;
+    let concatEnables = 0;
+    enables.forEach((enabled, index) => {
+      if (enabled) {
+        concatEnables |= 1 << index;
+      }
+    });
+
+    // Preserve the main enable bit while updating channel enables
+    const finalValue = (concatEnables << 1) | (isEnabled ? 1 : 0);
+
+    this.addMessage(
+      "TX",
+      `Updating channel enable mask to 0x${finalValue.toString(16)}`,
+    );
+    await writeCSR("0x2C000", finalValue.toString(16));
+    await this.updatePWMState();
+  };
+
+  pwmEnable = async () => {
+    const { writeCSR } = this.context;
+    this.addMessage("TX", "Enabling PWM system.");
+    const currentValue = this.state.isEnabled ? 1 : 0;
+    let channelMask = 0;
+    this.state.channelEnables.forEach((en, i) => {
+      if (en) channelMask |= 1 << i;
+    });
+    const finalValue = (channelMask << 1) | 1;
+    await writeCSR("0x2C000", finalValue.toString(16));
+    this.setState({ isEnabled: true });
+  };
+
+  pwmDisable = async () => {
+    const { writeCSR } = this.context;
+    this.addMessage("TX", "Disabling PWM system.");
+    await writeCSR("0x2C000", "0");
+    this.setState({ isEnabled: false, channelEnables: Array(8).fill(false) });
   };
 
   render() {
     const { className } = this.props;
-    const { highCount, lowCount, selectedChannel } = this.state;
     const {
-      pwmTerminal,
-      updatePWMTerminal,
-      resetPWMTerminal,
-      pwmEnable,
-      pwmDisable,
-    } = this.context;
+      highCount,
+      lowCount,
+      selectedChannel,
+      isEnabled,
+      channelEnables,
+      autoScroll,
+      stats,
+      messages,
+    } = this.state;
 
     return (
-      <div className={`terminal-container ${className || "pwm-terminal"}`}>
+      <div className={`main-pwmterminal ${className || ""}`}>
         <div className="control-panel">
           <div className="section">
             <span
-              className={`status-indicator ${pwmTerminal.isEnabled ? "connected" : "disconnected"}`}
+              className={`status-indicator ${isEnabled ? "connected" : "disconnected"}`}
             >
-              {pwmTerminal.isEnabled ? "● PWM Enabled" : "○ PWM Disabled"}
+              {isEnabled ? "● PWM Enabled" : "○ PWM Disabled"}
             </span>
           </div>
 
@@ -105,7 +241,6 @@ export class PWMTerminal extends Component<
               onChange={(e) =>
                 this.setState({ selectedChannel: Number(e.target.value) })
               }
-              disabled={!pwmTerminal.isEnabled}
             >
               {[...Array(8).keys()].map((i) => (
                 <option key={i} value={i}>
@@ -121,7 +256,6 @@ export class PWMTerminal extends Component<
               type="number"
               value={highCount}
               onChange={(e) => this.setState({ highCount: e.target.value })}
-              disabled={!pwmTerminal.isEnabled}
               min={0}
             />
             <label>Low Count:</label>
@@ -129,14 +263,9 @@ export class PWMTerminal extends Component<
               type="number"
               value={lowCount}
               onChange={(e) => this.setState({ lowCount: e.target.value })}
-              disabled={!pwmTerminal.isEnabled}
               min={0}
             />
-            <button
-              onClick={this.handleApplyConfig}
-              className="btn-secondary"
-              disabled={!pwmTerminal.isEnabled}
-            >
+            <button onClick={this.handleApplyConfig} className="btn-secondary">
               Apply Config
             </button>
           </div>
@@ -148,9 +277,8 @@ export class PWMTerminal extends Component<
                 <label key={i} className="checkbox-label">
                   <input
                     type="checkbox"
-                    checked={pwmTerminal.channelEnables[i] || false}
+                    checked={channelEnables[i] || false}
                     onChange={() => this.handleToggleChannel(i)}
-                    disabled={!pwmTerminal.isEnabled}
                   />
                   CH{i}
                 </label>
@@ -159,35 +287,41 @@ export class PWMTerminal extends Component<
           </div>
 
           <div className="buttons">
-            {!pwmTerminal.isEnabled ? (
-              <button onClick={pwmEnable} className="btn-primary">
+            {!isEnabled ? (
+              <button onClick={this.pwmEnable} className="btn-primary">
                 Enable PWM
               </button>
             ) : (
-              <button onClick={pwmDisable} className="btn-danger">
+              <button onClick={this.pwmDisable} className="btn-danger">
                 Disable PWM
               </button>
             )}
             <button onClick={this.clearTerminal}>Clear Log</button>
             <button onClick={this.exportLog}>Export Log</button>
-            <button onClick={resetPWMTerminal}>Reset</button>
+            <button onClick={this.resetPWMTerminal} className="btn-danger">
+              Reset
+            </button>
           </div>
 
-          <label className="checkbox-label">
-            <input
-              type="checkbox"
-              checked={pwmTerminal.autoScroll}
-              onChange={(e) =>
-                updatePWMTerminal({ autoScroll: e.target.checked })
-              }
-            />
-            Auto-scroll
-          </label>
-          <div className="stats">Errors: {pwmTerminal.stats.errors}</div>
+          <div className="stats">
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                checked={autoScroll}
+                onChange={(e) =>
+                  this.setState({ autoScroll: e.target.checked })
+                }
+              />
+              Auto-scroll
+            </label>
+            <div>
+              Errors: <strong>{stats.errors}</strong>
+            </div>
+          </div>
         </div>
 
         <div className="terminal">
-          {pwmTerminal.messages.map((msg) => (
+          {messages.map((msg) => (
             <div
               key={msg.id}
               className={`message ${msg.direction.toLowerCase()}`}

@@ -9,3 +9,4 @@ export * from "./DigitalWaveformChart";
 export * from "./UDPTerminal";
 export * from "./SpectrumChart";
 export * from "./CollapsibleTerminal";
+export * from "./PWMTerminal";

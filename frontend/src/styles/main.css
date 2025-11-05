@@ -2,6 +2,7 @@
 @import "./components/usblist.css";
 @import "./components/serialterminal.css";
 @import "./components/udpterminal.css";
+@import "./components/pwmterminal.css";
 
 .main-page {
   position: relative;

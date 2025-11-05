@@ -1,0 +1,431 @@
+.main-pwmterminal {
+  width: 95%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family:
+    "Segoe UI",
+    system-ui,
+    -apple-system,
+    sans-serif;
+  background: linear-gradient(135deg, #1f1f1f 0%, #4a4a4a 100%);
+  border-radius: 20px;
+  box-shadow:
+    0 8px 32px 0 rgba(31, 38, 135, 0.37),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  grid-template-rows: 1fr auto;
+  gap: 16px;
+  min-height: 480px;
+  max-height: 480px;
+}
+
+/* Control Panel - Left Side */
+.main-pwmterminal .control-panel {
+  grid-column: 1;
+  grid-row: 1 / -1;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+  padding: 12px;
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: relative;
+  z-index: 1;
+  overflow-y: auto;
+}
+
+.main-pwmterminal .control-panel::-webkit-scrollbar {
+  width: 6px;
+}
+
+.main-pwmterminal .control-panel::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+}
+
+.main-pwmterminal .control-panel::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 3px;
+}
+
+.main-pwmterminal .section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+.main-pwmterminal .section:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.main-pwmterminal .section label {
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 600;
+  font-size: 12px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.main-pwmterminal select,
+.main-pwmterminal input[type="number"],
+.main-pwmterminal input[type="text"] {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: #2d3748;
+  font-size: 13px;
+  outline: none;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  width: 100%;
+}
+
+.main-pwmterminal select:focus,
+.main-pwmterminal input[type="number"]:focus,
+.main-pwmterminal input[type="text"]:focus {
+  background: rgba(255, 255, 255, 1);
+  border-color: rgba(102, 126, 234, 0.6);
+  box-shadow:
+    0 0 0 3px rgba(102, 126, 234, 0.2),
+    0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-1px);
+}
+
+.main-pwmterminal .status-indicator {
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-weight: bold;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.main-pwmterminal .status-indicator.connected {
+  background: rgba(72, 187, 120, 0.3);
+  color: #c6f6d5;
+  border: 1px solid rgba(72, 187, 120, 0.5);
+  text-shadow: 0 0 8px rgba(72, 187, 120, 0.7);
+}
+
+.main-pwmterminal .status-indicator.disconnected {
+  background: rgba(245, 101, 101, 0.2);
+  color: #fed7d7;
+  border: 1px solid rgba(245, 101, 101, 0.4);
+}
+
+.main-pwmterminal .channel-status-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.main-pwmterminal .checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+}
+
+.main-pwmterminal .checkbox-label input[type="checkbox"] {
+  accent-color: #667eea;
+}
+
+/* Buttons */
+.main-pwmterminal .buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: auto;
+}
+
+.main-pwmterminal button {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 10px;
+  padding: 10px 16px;
+  color: white;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.main-pwmterminal button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+}
+
+.main-pwmterminal button:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.main-pwmterminal button:disabled {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.4);
+  cursor: not-allowed;
+  transform: none;
+}
+
+.main-pwmterminal .btn-primary {
+  background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 4px 16px rgba(72, 187, 120, 0.3);
+}
+
+.main-pwmterminal .btn-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #38a169 0%, #2f855a 100%);
+  box-shadow: 0 6px 24px rgba(72, 187, 120, 0.5);
+}
+
+.main-pwmterminal .btn-secondary {
+  background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 4px 16px rgba(66, 153, 225, 0.3);
+}
+
+.main-pwmterminal .btn-secondary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #3182ce 0%, #2b6cb0 100%);
+  box-shadow: 0 6px 24px rgba(66, 153, 225, 0.5);
+}
+
+.main-pwmterminal .btn-danger {
+  background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 4px 16px rgba(245, 101, 101, 0.3);
+}
+
+.main-pwmterminal .btn-danger:hover:not(:disabled) {
+  background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+  box-shadow: 0 6px 24px rgba(245, 101, 101, 0.5);
+}
+
+/* Stats */
+.main-pwmterminal .stats {
+  padding: 10px 12px;
+  background: linear-gradient(
+    135deg,
+    rgba(0, 0, 0, 0.4) 0%,
+    rgba(0, 0, 0, 0.3) 100%
+  );
+  border-radius: 8px;
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: auto;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.main-pwmterminal .stats strong {
+  color: #fbbf24;
+  font-size: 15px;
+  text-shadow: 0 0 10px rgba(251, 191, 36, 0.5);
+}
+
+/* Terminal Display - Right Side */
+.main-pwmterminal .terminal {
+  grid-column: 2;
+  grid-row: 1 / -1;
+  background: linear-gradient(
+    135deg,
+    rgba(0, 0, 0, 0.5) 0%,
+    rgba(0, 0, 0, 0.4) 100%
+  );
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 16px;
+  padding: 16px;
+  overflow-y: auto;
+  font-family: "Consolas", "Monaco", "Courier New", monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  box-shadow:
+    inset 0 2px 8px rgba(0, 0, 0, 0.3),
+    0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.main-pwmterminal .terminal::-webkit-scrollbar {
+  width: 8px;
+}
+
+.main-pwmterminal .terminal::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+}
+
+.main-pwmterminal .terminal::-webkit-scrollbar-thumb {
+  background: linear-gradient(
+    180deg,
+    rgba(102, 126, 234, 0.5) 0%,
+    rgba(118, 75, 162, 0.5) 100%
+  );
+  border-radius: 4px;
+}
+
+.main-pwmterminal .terminal::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(
+    180deg,
+    rgba(102, 126, 234, 0.7) 0%,
+    rgba(118, 75, 162, 0.7) 100%
+  );
+}
+
+.main-pwmterminal .message {
+  margin-bottom: 6px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  animation: fadeIn 0.3s ease;
+  background: rgba(255, 255, 255, 0.03);
+  border-left: 3px solid transparent;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.main-pwmterminal .message:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.main-pwmterminal .message.cmd {
+  border-left-color: #4299e1;
+  background: rgba(66, 153, 225, 0.05);
+}
+
+.main-pwmterminal .message.info {
+  border-left-color: #ed8936;
+  background: rgba(237, 137, 54, 0.05);
+}
+
+.main-pwmterminal .message.error {
+  border-left-color: #f56565;
+  background: rgba(245, 101, 101, 0.15);
+}
+
+.main-pwmterminal .timestamp {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 10px;
+  min-width: 85px;
+}
+
+.main-pwmterminal .direction {
+  color: white;
+  font-weight: 700;
+  min-width: 45px;
+  font-size: 11px;
+}
+
+.main-pwmterminal .message.cmd .direction {
+  color: #4299e1;
+  text-shadow: 0 0 8px rgba(66, 153, 225, 0.6);
+}
+
+.main-pwmterminal .message.info .direction {
+  color: #ed8936;
+  text-shadow: 0 0 8px rgba(237, 137, 54, 0.6);
+}
+
+.main-pwmterminal .message.error .direction {
+  color: #f56565;
+  text-shadow: 0 0 8px rgba(245, 101, 101, 0.6);
+}
+
+.main-pwmterminal .data {
+  color: rgba(255, 255, 255, 0.95);
+  flex: 1;
+  word-break: break-word;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .main-pwmterminal {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+    min-height: auto;
+    padding: 12px;
+  }
+
+  .main-pwmterminal .control-panel {
+    grid-row: 1;
+    flex-direction: row;
+    flex-wrap: wrap;
+    overflow-y: visible;
+  }
+
+  .main-pwmterminal .section {
+    flex: 1 1 200px;
+  }
+
+  .main-pwmterminal .buttons {
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    width: 100%;
+    order: 99;
+  }
+
+  .main-pwmterminal .stats {
+    width: 100%;
+    order: 100;
+  }
+
+  .main-pwmterminal .terminal {
+    grid-row: 2;
+    height: 320px;
+    max-height: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .main-pwmterminal .control-panel {
+    flex-direction: column;
+  }
+
+  .main-pwmterminal .section {
+    flex-basis: auto;
+  }
+}
