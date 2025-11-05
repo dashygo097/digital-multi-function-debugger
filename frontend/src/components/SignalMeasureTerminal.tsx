@@ -108,22 +108,10 @@ export class SignalMeasureTerminal extends Component<
     }
 
     const isBusy = (statusReg & 0x1) !== 0;
-    const isFinished = (statusReg & 0x2) !== 0;
 
     this.setState({ isBusy });
-
-    if (isFinished) {
-      this.addMessage("INFO", "Measurement finished. Fetching results...");
-      if (this.pollInterval) clearInterval(this.pollInterval);
-      this.fetchResults();
-    } else if (this.state.isBusy && !isBusy) {
-      this.addMessage("ERROR", "Measurement timed out.");
-      if (this.pollInterval) clearInterval(this.pollInterval);
-      this.setState({ isBusy: false });
-    } else if (!isBusy && !isFinished && !this.state.isBusy) {
-      this.addMessage("INFO", "Measurement idle.");
-      if (this.pollInterval) clearInterval(this.pollInterval);
-    }
+    if (this.pollInterval) clearInterval(this.pollInterval);
+    this.fetchResults();
   };
 
   fetchResults = async () => {
