@@ -115,7 +115,11 @@ const reducer = (state: AnalyzerState, action: Action): AnalyzerState => {
       const { samples, messageId } = action.payload;
       const samplesCopy = samples.slice();
       for (let i = 0; i < samples.length; i++) {
-        samplesCopy[i] = (samples[i] - 127.5) / 25.5;
+        if (samples[i] > 127) {
+          samplesCopy[i] = samples[i] / 25.5;
+        } else {
+          samplesCopy[i] = (samples[i] - 128) / 25.5;
+        }
       }
       const ch1Samples = samplesCopy.filter((_, index) => index % 2 === 0);
       const combinedData = [...state.analog.channelData[0], ...ch1Samples];
