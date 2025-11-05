@@ -12,7 +12,7 @@ import { useSerialContext } from "./SerialContext";
 
 const MAX_SAMPLES_ANALOG = 2048;
 const MAX_SAMPLES_DIGITAL = 256;
-const FFT_SIZE = 128;
+const FFT_SIZE = 1024;
 
 interface AnalogState {
   channelData: AnalogSignalData[][];
