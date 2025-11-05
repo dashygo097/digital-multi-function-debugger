@@ -59,16 +59,14 @@ export class PWMTerminal extends Component<PWMTerminalProps, PWMTerminalState> {
 
     try {
       const controlReg = await readCSR("0x2C000");
-      const channelEnablesValue = (await readCSR("0x2C018")) & 0xff;
-      const statusReg = await readCSR("0x2C018");
 
-      if (controlReg === undefined || statusReg === undefined) {
+      if (controlReg === undefined) {
         this.addMessage("ERROR", "Failed to read PWM state from hardware.");
         return;
       }
 
       const isEnabled = (controlReg & 0x1) !== 0;
-
+      const channelEnablesValue = (controlReg >> 1) & 0xff;
       const newChannelEnables = Array(8)
         .fill(false)
         .map((_, i) => (channelEnablesValue & (1 << i)) !== 0);
@@ -117,7 +115,9 @@ export class PWMTerminal extends Component<PWMTerminalProps, PWMTerminalState> {
   handleToggleChannel = async (channelIndex: number) => {
     const newEnables = [...this.state.channelEnables];
     newEnables[channelIndex] = !newEnables[channelIndex];
+    // Optimistically update the UI
     this.setState({ channelEnables: newEnables });
+    // Send the full, correct state to the hardware
     await this.updatePWMChannelEnable(newEnables);
   };
 
@@ -153,25 +153,12 @@ export class PWMTerminal extends Component<PWMTerminalProps, PWMTerminalState> {
   };
 
   resetPWMTerminal = async () => {
-    const { writeCSR } = this.context;
     this.addMessage("TX", "Resetting all PWM configurations to 0.");
-    await writeCSR("0x2C000", "0");
-    await writeCSR("0x2C004", "0");
-    await writeCSR("0x2C008", "0");
-    await writeCSR("0x2C00C", "0");
-    await writeCSR("0x2C010", "0");
-    this.setState({
-      isEnabled: false,
-      channelEnables: Array(8).fill(false),
-      highCount: "1000",
-      lowCount: "1000",
-      selectedChannel: 0,
-    });
+    await this.pwmDisable();
   };
 
   updatePWMChannelEnable = async (enables: boolean[]) => {
     const { writeCSR } = this.context;
-    const { isEnabled } = this.state;
     let concatEnables = 0;
     enables.forEach((enabled, index) => {
       if (enabled) {
@@ -179,26 +166,26 @@ export class PWMTerminal extends Component<PWMTerminalProps, PWMTerminalState> {
       }
     });
 
-    // Preserve the main enable bit while updating channel enables
-    const finalValue = (concatEnables << 1) | (isEnabled ? 1 : 0);
+    const masterEnable = concatEnables > 0 ? 1 : 0;
+    const finalValue = (concatEnables << 1) | masterEnable;
 
     this.addMessage(
       "TX",
-      `Updating channel enable mask to 0x${finalValue.toString(16)}`,
+      `Updating PWM_CONTROL register to 0x${finalValue.toString(16)}`,
     );
     await writeCSR("0x2C000", finalValue.toString(16));
+
     await this.updatePWMState();
   };
 
   pwmEnable = async () => {
-    const { writeCSR } = this.context;
     this.addMessage("TX", "Enabling PWM system.");
-    const currentValue = this.state.isEnabled ? 1 : 0;
+    const { writeCSR } = this.context;
     let channelMask = 0;
     this.state.channelEnables.forEach((en, i) => {
       if (en) channelMask |= 1 << i;
     });
-    const finalValue = (channelMask << 1) | 1;
+    const finalValue = (channelMask << 1) | 1; // Set bit 0 to 1
     await writeCSR("0x2C000", finalValue.toString(16));
     this.setState({ isEnabled: true });
   };
@@ -224,7 +211,7 @@ export class PWMTerminal extends Component<PWMTerminalProps, PWMTerminalState> {
     } = this.state;
 
     return (
-      <div className={`main-pwmterminal ${className || ""}`}>
+      <div className={className}>
         <div className="control-panel">
           <div className="section">
             <span

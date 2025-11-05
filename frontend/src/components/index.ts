@@ -4,11 +4,7 @@ export * from "./GithubIcon";
 export * from "./SelectList";
 export * from "./InputTracer";
 export * from "./USBDeviceList";
-export * from "./SerialTerminal";
 export * from "./DigitalWaveformChart";
-export * from "./UDPTerminal";
 export * from "./SpectrumChart";
-export * from "./CollapsibleTerminal";
-export * from "./PWMTerminal";
-export * from "./SignalMeasureTerminal";
-export * from "./BitSeqTerminal";
+
+export * from "./terminals";
