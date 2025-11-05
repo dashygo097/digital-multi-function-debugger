@@ -7,17 +7,17 @@ module i2c_engine (
 
     // fifo transmit 
     input  wire [7:0] tx_fifo_data,
-    input  wire       tx_fifo_wr_en,    // 自动清零的脉冲写入信号
-    input  wire       tx_start_pulse,   // 自动清零的脉冲启动发送信号
+    input  wire       tx_fifo_wr_en,   // 自动清零的脉冲写入信号
+    input  wire       tx_start_pulse,  // 自动清零的脉冲启动发送信号
     output wire       tx_fifo_full,
-    output wire       tx_busy,          // 发送进行中
-    
+    output wire       tx_busy,         // 发送进行中
+
     // fifo receive 
     output wire [7:0] rx_fifo_data,
-    input  wire       rx_fifo_rd_en,    // 自动清零的脉冲读取信号
-    input  wire       rx_start_pulse,   // 自动清零的脉冲启动读取信号
+    input  wire       rx_fifo_rd_en,   // 自动清零的脉冲读取信号
+    input  wire       rx_start_pulse,  // 自动清零的脉冲启动读取信号
     output wire       rx_fifo_empty,
-    output wire       rx_data_ready,    // RX FIFO中有数据可用
+    output wire       rx_data_ready,   // RX FIFO中有数据可用
 
     // config register
     input wire       i2c_enable,
@@ -38,10 +38,10 @@ module i2c_engine (
     output wire       i2c_ack_error,
     output wire [7:0] i2c_tx_count_rem,
     output wire [7:0] i2c_rx_count_rem,
-    
+
     // fifo状态指示
     output wire [10:0] tx_fifo_data_count,  // TX FIFO数据计数
-    output wire [10:0] rx_fifo_data_count  // RX FIFO数据计数
+    output wire [10:0] rx_fifo_data_count   // RX FIFO数据计数
 );
 
   // FIFO参数定义
@@ -52,7 +52,7 @@ module i2c_engine (
   wire [7:0] tx_fifo_rd_data;
   wire tx_fifo_rd_en;
   wire tx_fifo_empty;
-  
+
   wire [7:0] rx_fifo_wr_data;
   wire rx_fifo_wr_en;
   wire rx_fifo_full;
@@ -62,13 +62,13 @@ module i2c_engine (
   reg tx_start_pulse_dly;
   reg rx_fifo_rd_en_dly;
   reg rx_start_pulse_dly;
-  
+
   // 边沿检测信号
   wire tx_fifo_wr_en_edge;
   wire tx_start_pulse_edge;
   wire rx_fifo_rd_en_edge;
   wire rx_start_pulse_edge;
-  
+
   // 连续读取控制
   reg rx_continuous_read;
   reg [7:0] rx_read_count;
@@ -90,7 +90,7 @@ module i2c_engine (
     STOP           = 4'd11;
 
   // Internal signals
-  reg [3:0] state;
+  reg [ 3:0] state;
   reg [31:0] clk_counter;
   reg scl_oe, sda_oe;
   reg scl_out, sda_out;
@@ -130,13 +130,13 @@ module i2c_engine (
       tx_start_pulse_dly <= tx_start_pulse;
       rx_fifo_rd_en_dly <= rx_fifo_rd_en;
       rx_start_pulse_dly <= rx_start_pulse;
-      sda_sync <= {sda_sync[0], i2c_sda}; // SDA输入同步
+      sda_sync <= {sda_sync[0], i2c_sda};  // SDA输入同步
     end
   end
 
-  assign tx_fifo_wr_en_edge = tx_fifo_wr_en && !tx_fifo_wr_en_dly;
+  assign tx_fifo_wr_en_edge  = tx_fifo_wr_en && !tx_fifo_wr_en_dly;
   assign tx_start_pulse_edge = tx_start_pulse && !tx_start_pulse_dly;
-  assign rx_fifo_rd_en_edge = rx_fifo_rd_en && !rx_fifo_rd_en_dly;
+  assign rx_fifo_rd_en_edge  = rx_fifo_rd_en && !rx_fifo_rd_en_dly;
   assign rx_start_pulse_edge = rx_start_pulse && !rx_start_pulse_dly;
 
   // 连续读取控制逻辑 - 合并到一个always块中
@@ -149,7 +149,7 @@ module i2c_engine (
       if (rx_start_pulse_edge) begin
         rx_continuous_read <= 1;
         rx_read_count <= 0;
-        rx_read_target <= i2c_rx_count; // 使用配置的接收计数作为目标
+        rx_read_target <= i2c_rx_count;  // 使用配置的接收计数作为目标
       end else if (rx_continuous_read) begin
         if (rx_fifo_rd_en_edge) begin
           if (rx_read_count < rx_read_target) begin
@@ -161,7 +161,7 @@ module i2c_engine (
           rx_continuous_read <= 0;
         end
       end else begin
-        rx_read_count <= 0; // 非连续读取模式时，计数器清零
+        rx_read_count <= 0;  // 非连续读取模式时，计数器清零
       end
     end
   end
@@ -205,7 +205,7 @@ module i2c_engine (
       case (state)
         IDLE: begin
           if (tx_start_pulse_edge && i2c_enable) begin
-            read_mode <= 0; // 写模式
+            read_mode <= 0;  // 写模式
             dev_addr <= i2c_dev_addr;
             tx_bytes_remaining <= i2c_tx_count;
             rx_bytes_remaining <= 0;
@@ -224,7 +224,7 @@ module i2c_engine (
             bit_counter <= 0;
             ack_error <= 0;
           end else if (rx_start_pulse_edge && i2c_enable) begin
-            read_mode <= 1; // 读模式
+            read_mode <= 1;  // 读模式
             dev_addr <= i2c_dev_addr;
             tx_bytes_remaining <= 0;
             rx_bytes_remaining <= i2c_rx_count;
@@ -291,7 +291,7 @@ module i2c_engine (
                   if (tx_bytes_remaining > 0) begin
                     state <= TX_DATA;
                     bit_counter <= 0;
-                    data_loaded <= 0; // 准备加载数据
+                    data_loaded <= 0;  // 准备加载数据
                   end else begin
                     state <= STOP;
                   end
@@ -334,7 +334,7 @@ module i2c_engine (
                 if (tx_bytes_remaining > 0) begin
                   state <= TX_DATA;
                   bit_counter <= 0;
-                  data_loaded <= 0; // 准备加载数据
+                  data_loaded <= 0;  // 准备加载数据
                 end else begin
                   state <= STOP;
                 end
@@ -352,28 +352,28 @@ module i2c_engine (
           end
         end
 
-TX_DATA: begin
-  if (!data_loaded && !tx_fifo_empty) begin
-    // 加载数据
-    shift_reg <= tx_fifo_rd_data;
-    data_loaded <= 1;
-    bit_counter <= 0;
-  end else if (data_loaded && clk_tick) begin
-    // 在时钟节拍时移位数据
-    if (bit_counter < 3'd7) begin
-      shift_reg <= {shift_reg[6:0], 1'b0};
-      bit_counter <= bit_counter + 3'd1;
-    end else begin
-      // 发送完一个字节
-      state <= RX_ACK3;
-      bit_counter <= 0;
-      data_loaded <= 0;
-      if (tx_bytes_remaining > 0) begin
-        tx_bytes_remaining <= tx_bytes_remaining - 8'd1;
-      end
-    end
-  end
-end
+        TX_DATA: begin
+          if (!data_loaded && !tx_fifo_empty) begin
+            // 加载数据
+            shift_reg   <= tx_fifo_rd_data;
+            data_loaded <= 1;
+            bit_counter <= 0;
+          end else if (data_loaded && clk_tick) begin
+            // 在时钟节拍时移位数据
+            if (bit_counter < 3'd7) begin
+              shift_reg   <= {shift_reg[6:0], 1'b0};
+              bit_counter <= bit_counter + 3'd1;
+            end else begin
+              // 发送完一个字节
+              state <= RX_ACK3;
+              bit_counter <= 0;
+              data_loaded <= 0;
+              if (tx_bytes_remaining > 0) begin
+                tx_bytes_remaining <= tx_bytes_remaining - 8'd1;
+              end
+            end
+          end
+        end
 
         RX_ACK3: begin
           if (scl_pos_edge) begin
@@ -383,7 +383,7 @@ end
             end else if (tx_bytes_remaining > 0) begin
               state <= TX_DATA;
               bit_counter <= 0;
-              data_loaded <= 0; // 准备加载下一个数据
+              data_loaded <= 0;  // 准备加载下一个数据
             end else begin
               state <= STOP;
             end
@@ -425,9 +425,9 @@ end
             done  <= 1;
           end
         end
-        
+
         default: begin
-          state <= IDLE; // 安全保护
+          state <= IDLE;  // 安全保护
         end
       endcase
     end
@@ -438,7 +438,7 @@ end
     if (!rst_n) begin
       sda_in <= 1;
     end else begin
-      sda_in <= sda_sync[1]; // 使用同步后的SDA值
+      sda_in <= sda_sync[1];  // 使用同步后的SDA值
     end
   end
 
@@ -533,7 +533,7 @@ end
   // RX数据捕获和FIFO写入
   reg [7:0] rx_data_reg;
   reg rx_valid_reg;
-  reg [7:0] rx_data_pipeline [0:1];
+  reg [7:0] rx_data_pipeline[0:1];
   reg [1:0] valid_pipeline;
 
   always @(posedge clk or negedge rst_n) begin
@@ -546,7 +546,7 @@ end
     end else begin
       // 捕获RX数据
       if (state == RX_DATA && scl_pos_edge && bit_counter == 3'd7) begin
-        rx_data_reg <= {shift_reg[6:0], sda_in};
+        rx_data_reg  <= {shift_reg[6:0], sda_in};
         rx_valid_reg <= 1;
       end else begin
         rx_valid_reg <= 0;
@@ -559,37 +559,37 @@ end
 
   // FIFO写入信号
   assign rx_fifo_wr_data = rx_data_pipeline[1];
-  assign rx_fifo_wr_en = valid_pipeline[1];
+  assign rx_fifo_wr_en   = valid_pipeline[1];
 
 
   bram_fifo #(
-    .DATA_WIDTH(8),
-    .FIFO_DEPTH(FIFO_DEPTH)
+      .DATA_WIDTH(8),
+      .FIFO_DEPTH(FIFO_DEPTH)
   ) tx_fifo_inst (
-    .clk(clk),
-    .rst_n(rst_n),
-    .wr_data(tx_fifo_data),
-    .wr_en(tx_fifo_wr_en_edge),
-    .full(tx_fifo_full),
-    .rd_data(tx_fifo_rd_data),
-    .rd_en(tx_fifo_rd_en),
-    .empty(tx_fifo_empty),
-    .data_count(tx_fifo_data_count)
+      .clk(clk),
+      .rst_n(rst_n),
+      .wr_data(tx_fifo_data),
+      .wr_en(tx_fifo_wr_en_edge),
+      .full(tx_fifo_full),
+      .rd_data(tx_fifo_rd_data),
+      .rd_en(tx_fifo_rd_en),
+      .empty(tx_fifo_empty),
+      .data_count(tx_fifo_data_count)
   );
 
   bram_fifo #(
-    .DATA_WIDTH(8),
-    .FIFO_DEPTH(FIFO_DEPTH)
+      .DATA_WIDTH(8),
+      .FIFO_DEPTH(FIFO_DEPTH)
   ) rx_fifo_inst (
-    .clk(clk),
-    .rst_n(rst_n),
-    .wr_data(rx_fifo_wr_data),
-    .wr_en(rx_fifo_wr_en),
-    .full(rx_fifo_full),
-    .rd_data(rx_fifo_data),
-    .rd_en(rx_fifo_rd_en_edge),
-    .empty(rx_fifo_empty),
-    .data_count(rx_fifo_data_count)
+      .clk(clk),
+      .rst_n(rst_n),
+      .wr_data(rx_fifo_wr_data),
+      .wr_en(rx_fifo_wr_en),
+      .full(rx_fifo_full),
+      .rd_data(rx_fifo_data),
+      .rd_en(rx_fifo_rd_en_edge),
+      .empty(rx_fifo_empty),
+      .data_count(rx_fifo_data_count)
   );
 
   // 输出分配
