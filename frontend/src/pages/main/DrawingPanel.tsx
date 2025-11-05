@@ -120,7 +120,7 @@ export class DrawingPanel extends React.Component<
     this.setState({ isDrawing: false });
   };
 
-  handleSend = () => {
+  handleSend = async () => {
     const { writeCSR } = useSerialContext();
     const { onWaveformReady } = this.props;
     const dacData = this.state.waveform.map((val) =>
@@ -128,9 +128,12 @@ export class DrawingPanel extends React.Component<
     );
     const frequency = Number(this.state.frequency) || 0;
     onWaveformReady({ data: dacData, frequency });
+    await writeCSR("0x0003400C", "FF");
+    await writeCSR("0x00034008", frequency.toString());
     for (let i = 0; i < dacData.length; i++) {
-      writeCSR("0x", dacData[i].toString());
+      await writeCSR("0x00034010", dacData[i].toString());
     }
+    await writeCSR("0x00034014", "1");
   };
 
   handleFrequencyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
