@@ -172,8 +172,8 @@ class CSRPage extends React.Component<WithRouterProps, CSRPageState> {
       this.setState({ responseResolver: resolve });
       setTimeout(() => {
         if (this.state.responseResolver) {
-          this.setState({ responseResolver: null });
           resolve(null);
+          this.setState({ responseResolver: null });
         }
       }, timeout);
     });
