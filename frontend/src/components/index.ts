@@ -11,3 +11,4 @@ export * from "./SpectrumChart";
 export * from "./CollapsibleTerminal";
 export * from "./PWMTerminal";
 export * from "./SignalMeasureTerminal";
+export * from "./BitSeqTerminal";

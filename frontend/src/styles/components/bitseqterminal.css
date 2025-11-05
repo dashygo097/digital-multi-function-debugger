@@ -1,0 +1,224 @@
+.main-bitseqterminal {
+  width: 95%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family:
+    "Segoe UI",
+    system-ui,
+    -apple-system,
+    sans-serif;
+  background: linear-gradient(135deg, #1f1f1f 0%, #4a4a4a 100%);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 16px;
+  height: 540px;
+  color: white;
+}
+
+.main-bitseqterminal .control-panel {
+  grid-column: 1;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+}
+
+.main-bitseqterminal .section {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.main-bitseqterminal .section > label {
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: rgba(255, 255, 255, 0.9);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  padding-bottom: 4px;
+  margin-bottom: 4px;
+}
+
+/* Status Grids */
+.main-bitseqterminal .status-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  text-align: center;
+}
+
+.main-bitseqterminal .status-dot {
+  font-size: 12px;
+  padding: 4px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+}
+
+.main-bitseqterminal .status-dot.playing {
+  background: rgba(72, 187, 120, 0.4);
+  color: #c6f6d5;
+  font-weight: bold;
+  box-shadow: 0 0 8px rgba(72, 187, 120, 0.5);
+}
+
+/* Checkboxes */
+.main-bitseqterminal .checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.main-bitseqterminal .checkbox-label.small {
+  font-size: 12px;
+}
+
+.main-bitseqterminal input[type="checkbox"] {
+  accent-color: #667eea;
+}
+
+/* Inputs and Selects */
+.main-bitseqterminal input[type="number"],
+.main-bitseqterminal select {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: #2d3748;
+  font-size: 13px;
+  outline: none;
+  width: 90%;
+  /* Changed from 90% to 100% for better alignment */
+}
+
+.main-bitseqterminal input[type="number"]:focus,
+.main-bitseqterminal select:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+}
+
+/* --- Right Panel (Editor + Terminal) --- */
+.main-bitseqterminal .right-panel {
+  position: relative;
+  /* Establish a positioning context */
+  display: flex;
+  flex-direction: column;
+}
+
+.main-bitseqterminal .sequence-editor {
+  /* This will have a calculated height based on its content */
+  flex-shrink: 0;
+  padding-bottom: 16px;
+  /* This becomes the gap between editor and terminal */
+}
+
+.main-bitseqterminal .sequence-editor textarea {
+  width: 100%;
+  height: 120px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: #c6f6d5;
+  padding: 10px;
+  font-family: "Consolas", monospace;
+  font-size: 14px;
+  resize: vertical;
+  margin-bottom: 8px;
+}
+
+.main-bitseqterminal .terminal {
+  /* Removed from flex flow and positioned absolutely */
+  position: absolute;
+  top: 190px;
+  /* Approximate height of editor + padding + button */
+  left: 0;
+  right: 0;
+  bottom: 0;
+
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 16px;
+  padding: 16px;
+  overflow-y: auto;
+  /* This will now work correctly */
+  font-family: "Consolas", monospace;
+  font-size: 12px;
+}
+
+.main-bitseqterminal .terminal .message {
+  margin-bottom: 6px;
+  display: flex;
+  gap: 10px;
+}
+
+.main-bitseqterminal .terminal .timestamp {
+  color: #888;
+}
+
+.main-bitseqterminal .terminal .direction {
+  font-weight: bold;
+}
+
+.main-bitseqterminal .terminal .cmd .direction {
+  color: #4299e1;
+}
+
+.main-bitseqterminal .terminal .info .direction {
+  color: #ed8936;
+}
+
+.main-bitseqterminal .terminal .error .direction {
+  color: #f56565;
+}
+
+/* Buttons */
+.main-bitseqterminal .buttons-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.main-bitseqterminal button {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 10px;
+  padding: 10px;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.main-bitseqterminal button:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.main-bitseqterminal .btn-primary {
+  background-color: #48bb78;
+}
+
+.main-bitseqterminal .btn-secondary {
+  background-color: #4299e1;
+}
+
+.main-bitseqterminal .btn-danger {
+  background-color: #f56565;
+}
+
+.main-bitseqterminal .btn-special {
+  background-color: #9f7aea;
+}

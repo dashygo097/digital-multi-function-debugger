@@ -6,8 +6,9 @@ import {
   SerialTerminal,
   UDPTerminal,
   PWMTerminal,
-  SignalMeasureTerminal,
   CollapsiblePanel,
+  SignalMeasureTerminal,
+  BitseqLooperTerminal,
 } from "@components";
 import "@styles/main.css";
 import { DrawingPanel } from "./DrawingPanel";
@@ -54,6 +55,10 @@ class MainPage extends React.Component<WithRouterProps, MainPageState> {
 
             <CollapsiblePanel title="Signal Measure Terminal">
               <SignalMeasureTerminal className="main-signalterminal" />
+            </CollapsiblePanel>
+
+            <CollapsiblePanel title="Bit Sequence Terminal">
+              <BitseqLooperTerminal className="main-bitseqterminal" />
             </CollapsiblePanel>
 
             <CollapsiblePanel title="Custom Waveform Drawer">
