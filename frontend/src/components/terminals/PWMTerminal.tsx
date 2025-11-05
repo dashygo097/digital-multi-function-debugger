@@ -55,10 +55,9 @@ export class PWMTerminal extends Component<PWMTerminalProps, PWMTerminalState> {
 
   updatePWMState = async () => {
     const { readCSR } = this.context;
-    if (!readCSR) return;
 
     try {
-      const controlReg = await readCSR("0x2C000");
+      const controlReg = (await readCSR("0x2C000")) as unknown as number;
 
       if (controlReg === undefined) {
         this.addMessage("ERROR", "Failed to read PWM state from hardware.");
