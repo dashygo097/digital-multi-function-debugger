@@ -26,10 +26,11 @@ module uart_tx_engine (
 
   // fsm state define
   localparam [2:0] IDLE = 3'b000;
-  localparam [2:0] START = 3'b001;
-  localparam [2:0] DATA = 3'b010;
-  localparam [2:0] PARITY = 3'b011;
-  localparam [2:0] STOP = 3'b100;
+  localparam [2:0] LOAD_DATA = 3'b001;  // 新增：数据加载状态
+  localparam [2:0] START = 3'b010;
+  localparam [2:0] DATA = 3'b011;
+  localparam [2:0] PARITY = 3'b100;
+  localparam [2:0] STOP = 3'b101;
 
   reg [2:0] state;
   reg [2:0] next_state;
@@ -80,8 +81,11 @@ module uart_tx_engine (
     case (state)
       IDLE: begin
         if (tx_valid && tx_ready) begin
-          next_state = START;
+          next_state = LOAD_DATA;  // 先进入数据加载状态
         end
+      end
+      LOAD_DATA: begin
+        next_state = START;  // 下一个周期立即进入START状态
       end
       START: begin
         if (baud_counter == clk_div - 1) begin
@@ -127,14 +131,18 @@ module uart_tx_engine (
           tx_busy <= 1'b0;
           bit_count <= 0;
           baud_counter <= 0;
+          tx_ready <= 1'b1;  // 准备好接收新数据
 
-          if (tx_valid && tx_ready) begin
-            shift_reg <= tx_data;
-            tx_ready  <= 1'b0;
-            tx_busy   <= 1'b1;
-          end else begin
-            tx_ready <= 1'b1;
-          end
+          // 注意：这里不加载数据，等待LOAD_DATA状态
+        end
+
+        LOAD_DATA: begin
+          // 关键修复：在LOAD_DATA状态加载数据到移位寄存器
+          // 此时tx_data已经从FIFO中稳定读取
+          shift_reg <= tx_data;
+          tx_ready <= 1'b0;  // 不再接收新数据
+          tx_busy <= 1'b1;   // 标记为忙碌
+          baud_counter <= 0;
         end
 
         START: begin
@@ -178,7 +186,7 @@ module uart_tx_engine (
           if (baud_counter == stop_cycles - 1) begin
             baud_counter <= 0;
             tx_byte_count <= tx_byte_count + 1;
-            tx_ready <= 1'b1;
+            // tx_ready在IDLE状态重新置为1
           end else begin
             baud_counter <= baud_counter + 1;
           end

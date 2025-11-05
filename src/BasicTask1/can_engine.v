@@ -9,15 +9,6 @@
 //--------------------------------------------------------------------------------------------------------
 
 module can_engine #(
-    // local ID parameter
-    parameter [10:0] LOCAL_ID = 11'h456,
-
-    // recieve ID filter parameters
-    parameter [10:0] RX_ID_SHORT_FILTER = 11'h123,
-    parameter [10:0] RX_ID_SHORT_MASK   = 11'h7ff,
-    parameter [28:0] RX_ID_LONG_FILTER  = 29'h12345678,
-    parameter [28:0] RX_ID_LONG_MASK    = 29'h1fffffff,
-
     // CAN timing parameters
     parameter [15:0] default_c_PTS  = 16'd34,
     parameter [15:0] default_c_PBS1 = 16'd5,
@@ -30,6 +21,13 @@ module can_engine #(
     input  wire can_rx,
     output wire can_tx,
 
+    //config register
+    input  wire [10:0] local_id,
+    input  wire [10:0] rx_id_short_filter,
+    input  wire [10:0] rx_id_short_mask,
+    input  wire [28:0] rx_id_long_filter,
+    input  wire [28:0] rx_id_long_mask,
+
     // user tx-buffer write interface
     input  wire        tx_valid,  // when tx_valid=1 and tx_ready=1, push a data to tx fifo
     output wire        tx_ready,  // whether the tx fifo is available
@@ -39,6 +37,7 @@ module can_engine #(
     output reg        rx_valid,  // whether data byte is valid
     output reg        rx_last,   // indicate the last data byte of a packet
     output reg [ 7:0] rx_data,   // a data byte in the packet
+    
     output reg [28:0] rx_id,     // the ID of a packet
     output reg        rx_ide     // whether the ID is LONG or SHORT
 );
@@ -123,14 +122,14 @@ module can_engine #(
   //  CAN packet level controller
   // ---------------------------------------------------------------------------------------------------------------------------------------
   can_level_packet #(
-      .TX_ID         (LOCAL_ID),
+      
       .default_c_PTS (default_c_PTS),
       .default_c_PBS1(default_c_PBS1),
       .default_c_PBS2(default_c_PBS2)
   ) u_can_level_packet (
       .rstn(rstn),
       .clk (clk),
-
+      .TX_ID(local_id),
       .can_rx(can_rx),
       .can_tx(can_tx),
 
@@ -180,19 +179,19 @@ module can_engine #(
         r_data <= pkt_rx_data;  // latches the rx_data
 
         if (pkt_rx_rtr) begin
-          if(~pkt_rx_ide && pkt_rx_id[10:0]==LOCAL_ID) begin                                           // is a short-ID remote packet, and the ID matches LOCAL_ID
+          if(~pkt_rx_ide && pkt_rx_id[10:0]==local_id) begin                                           // is a short-ID remote packet, and the ID matches local_id
             pkt_rx_ack <= 1'b1;
             r_rtr_req  <= 1'b1;
           end
         end else if (~pkt_rx_ide) begin  // is a short-ID data packet
-          if( (pkt_rx_id[10:0] & RX_ID_SHORT_MASK) == (RX_ID_SHORT_FILTER & RX_ID_SHORT_MASK) ) begin  // ID match
+          if( (pkt_rx_id[10:0] & rx_id_short_mask) == (rx_id_short_filter & rx_id_short_mask) ) begin  // ID match
             pkt_rx_ack <= 1'b1;
             r_cnt <= 4'd8;
             rx_id <= pkt_rx_id;
             rx_ide <= pkt_rx_ide;
           end
         end else begin  // is a long-ID data packet
-          if( (pkt_rx_id & RX_ID_LONG_MASK) == (RX_ID_LONG_FILTER & RX_ID_LONG_MASK) ) begin           // ID match
+          if( (pkt_rx_id & rx_id_long_mask) == (rx_id_long_filter & rx_id_long_mask) ) begin           // ID match
             pkt_rx_ack <= 1'b1;
             r_cnt <= 4'd8;
             rx_id <= pkt_rx_id;

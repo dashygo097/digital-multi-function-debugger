@@ -9,7 +9,7 @@
 
 module can_level_packet #(
     parameter [ 0:0] TX_RTR         = 1'b0,
-    parameter [10:0] TX_ID          = 11'h456,
+    
     parameter [15:0] default_c_PTS  = 16'd34,
     parameter [15:0] default_c_PBS1 = 16'd5,
     parameter [15:0] default_c_PBS2 = 16'd10
@@ -26,7 +26,7 @@ module can_level_packet #(
     input  wire [31:0] tx_data,
     output reg         tx_done,
     output reg         tx_acked,
-
+    input  wire [10:0] TX_ID,
     // user rx packet interface
     output reg         rx_valid,
     output reg  [28:0] rx_id,
