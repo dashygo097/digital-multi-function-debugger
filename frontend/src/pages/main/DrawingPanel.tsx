@@ -135,16 +135,12 @@ export class DrawingPanel extends React.Component<
     await writeCSR("0x34008", ((frequency * 600) / 7).toString(16));
 
     for (let i = 0; i < dacData.length; i += 2) {
-      console.log(`Sending DAC ${dacData[i]}`);
-      if (dacData[i] > 127) {
-        await writeCSR("0x34010", (dacData[i] - 128).toString(16));
-      } else {
-        await writeCSR("0x34010", (255 - dacData[i]).toString(16));
-      }
+      await writeCSR("0x34010", (256 - dacData[i]).toString(16));
       await writeCSR("0x34014", "1");
     }
     await writeCSR("0x34000", "1");
 
+    console.log(`Frequency set to ${((frequency * 600) / 7).toString(16)} Hz`);
     console.log("Finished sending waveform and configuration to DAC.");
   };
 
@@ -155,7 +151,7 @@ export class DrawingPanel extends React.Component<
   render() {
     const { className, width, height } = this.props;
     return (
-      <div className={`${className} drawing-panel-container`}>
+      <div className={`${className} drawing - panel - container`}>
         <div className="drawing-area">
           <h3 className="drawing-panel-title">Custom Waveform Drawer</h3>
           <canvas
