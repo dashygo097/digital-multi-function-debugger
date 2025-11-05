@@ -4800,7 +4800,7 @@ module axi_cmd_test_module (
   wire        _master_M_AXI_RREADY;
   axilite_master_uart_cmd_32x32_b115200_f50000000 master (
       .clock        (clock),
-      .reset        (reset),
+      .reset        (!reset),
       .M_AXI_AWADDR (_master_M_AXI_AWADDR),
       .M_AXI_AWVALID(_master_M_AXI_AWVALID),
       .M_AXI_AWREADY(_interconnect_S_AXI_AWREADY),
@@ -5006,7 +5006,7 @@ module axi_cmd_test_module (
   );
   axilite_slave_mmap_32x32_r4 slave1 (
       .clock        (clock),
-      .reset        (reset),
+      .reset        (!reset),
       .S_AXI_AWADDR (_interconnect_M_AXI_0_AWADDR),
       .S_AXI_AWVALID(_interconnect_M_AXI_0_AWVALID),
       .S_AXI_AWREADY(_slave1_S_AXI_AWREADY),
@@ -5024,7 +5024,7 @@ module axi_cmd_test_module (
   );
   axifull_slave_ram_32x32_i4_u1_s8_b81920 slave2 (
       .clock        (clock),
-      .reset        (reset),
+      .reset        (!reset),
       .S_AXI_AWADDR (_lite2fullBridge_M_AXI_AWADDR),
       .S_AXI_AWVALID(_lite2fullBridge_M_AXI_AWVALID),
       .S_AXI_AWREADY(_slave2_S_AXI_AWREADY),
@@ -5042,7 +5042,7 @@ module axi_cmd_test_module (
   );
   acm2108_wrapper slave3 (
       .clock         (clock),
-      .reset         (reset),
+      .reset         (!reset),
       .S_AXI_AWADDR  (_interconnect_M_AXI_2_AWADDR),
       .S_AXI_AWVALID (_interconnect_M_AXI_2_AWVALID),
       .S_AXI_AWREADY (_slave3_S_AXI_AWREADY),
@@ -5094,7 +5094,7 @@ module axi_cmd_test_module (
   );
   signal_measure_wrapper slave4 (
       .clock        (clock),
-      .reset        (reset),
+      .reset        (!reset),
       .S_AXI_AWADDR (_interconnect_M_AXI_3_AWADDR),
       .S_AXI_AWVALID(_interconnect_M_AXI_3_AWVALID),
       .S_AXI_AWREADY(_slave4_S_AXI_AWREADY),
@@ -5113,7 +5113,7 @@ module axi_cmd_test_module (
   );
   bitseq_looper_wrapper slave5 (
       .clock        (clock),
-      .reset        (reset),
+      .reset        (!reset),
       .S_AXI_AWADDR (_interconnect_M_AXI_4_AWADDR),
       .S_AXI_AWVALID(_interconnect_M_AXI_4_AWVALID),
       .S_AXI_AWREADY(_slave5_S_AXI_AWREADY),
@@ -5132,7 +5132,7 @@ module axi_cmd_test_module (
   );
   uart_engine_wrapper slave6 (
       .clock        (clock),
-      .reset        (reset),
+      .reset        (!reset),
       .S_AXI_AWADDR (_interconnect_M_AXI_5_AWADDR),
       .S_AXI_AWVALID(_interconnect_M_AXI_5_AWVALID),
       .S_AXI_AWREADY(_slave6_S_AXI_AWREADY),
@@ -5152,7 +5152,7 @@ module axi_cmd_test_module (
   );
   spi_engine_wrapper slave7 (
       .clock        (clock),
-      .reset        (reset),
+      .reset        (!reset),
       .S_AXI_AWADDR (_interconnect_M_AXI_6_AWADDR),
       .S_AXI_AWVALID(_interconnect_M_AXI_6_AWVALID),
       .S_AXI_AWREADY(_slave7_S_AXI_AWREADY),
@@ -5174,7 +5174,7 @@ module axi_cmd_test_module (
   );
   pwm_engine_wrapper slave8 (
       .clock        (clock),
-      .reset        (reset),
+      .reset        (!reset),
       .S_AXI_AWADDR (_interconnect_M_AXI_7_AWADDR),
       .S_AXI_AWVALID(_interconnect_M_AXI_7_AWVALID),
       .S_AXI_AWREADY(_slave8_S_AXI_AWREADY),
@@ -5193,7 +5193,7 @@ module axi_cmd_test_module (
   );
   i2c_engine_wrapper slave9 (
       .clock        (clock),
-      .reset        (reset),
+      .reset        (!reset),
       .S_AXI_AWADDR (_interconnect_M_AXI_8_AWADDR),
       .S_AXI_AWVALID(_interconnect_M_AXI_8_AWVALID),
       .S_AXI_AWREADY(_slave9_S_AXI_AWREADY),
@@ -5213,7 +5213,7 @@ module axi_cmd_test_module (
   );
   dac_engine_wrapper slave10 (
       .clock        (clock),
-      .reset        (reset),
+      .reset        (!reset),
       .S_AXI_AWADDR (_interconnect_M_AXI_9_AWADDR),
       .S_AXI_AWVALID(_interconnect_M_AXI_9_AWVALID),
       .S_AXI_AWREADY(_slave10_S_AXI_AWREADY),
