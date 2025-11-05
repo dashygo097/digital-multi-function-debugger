@@ -237,8 +237,10 @@ export const AnalyzerProvider = ({ children }: { children: ReactNode }) => {
   };
   const updateSampleRate = async () => {
     const rawData = await readCSR("0x00010000");
+    console.log("Raw Sample Rate Divisor Data:", rawData);
     const div = parseInt(rawData, 32) + 1;
-    state.analog.sampleRate = (10000000 / div).toFixed(2) as unknown as number;
+    console.log("Sample Rate Divisor:", div);
+    state.analog.sampleRate = (5000000 / div).toFixed(2) as unknown as number;
   };
   const toggleDigitalCapture = () => {
     if (!state.digital.isRunning) {
