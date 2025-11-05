@@ -4316,7 +4316,8 @@ module i2c_engine_wrapper (
   reg  [ 7:0] regTxFifoData;
   reg         regTxFifoWrEn;
   reg         regRxFifoRdEn;
-  reg         regStartPulse;
+  reg         regStartTxPulse;
+  reg         regStartRxPulse;
   reg         axi_awready;
   reg  [31:0] axi_awaddr;
   reg         axi_wready;
@@ -4350,7 +4351,8 @@ module i2c_engine_wrapper (
       regTxFifoData <= 8'h0;
       regTxFifoWrEn <= 1'h0;
       regRxFifoRdEn <= 1'h0;
-      regStartPulse <= 1'h0;
+      regStartTxPulse <= 1'h0;
+      regStartRxPulse <= 1'h0;
       axi_awready <= 1'h0;
       axi_awaddr <= 32'h0;
       axi_wready <= 1'h0;
@@ -4382,7 +4384,8 @@ module i2c_engine_wrapper (
       regRxFifoRdEn <=
         _GEN_0 & ~(_GEN_2 | _GEN_3 | _GEN_4 | _GEN_5 | _GEN_7 | _GEN_8)
         & _waddr_T == 32'h24 & S_AXI_WDATA[0];
-      regStartPulse <= _GEN_0 & ~_GEN_6 & _GEN_5 & S_AXI_WDATA[31];
+      regStartTxPulse <= _GEN_0 & ~_GEN_6 & _GEN_5 & S_AXI_WDATA[30];
+      regStartRxPulse <= _GEN_0 & ~_GEN_6 & _GEN_5 & S_AXI_WDATA[31];
       axi_awready <= _GEN;
       if (_GEN) axi_awaddr <= S_AXI_AWADDR;
       axi_wready  <= ~axi_wready & S_AXI_WVALID & axi_awready;
@@ -4423,13 +4426,13 @@ module i2c_engine_wrapper (
       .clk_div           (regClkDiv),
       .tx_fifo_data      (regTxFifoData),
       .tx_fifo_wr_en     (regTxFifoWrEn),
-      .tx_start_pulse    (regStartPulse & (|regTxCount)),
+      .tx_start_pulse    (regStartTxPulse & (|regTxCount)),
       .tx_fifo_full      (  /* unused */),
       .tx_busy           (  /* unused */),
       .tx_fifo_data_count(_i2cEngine_tx_fifo_data_count),
       .rx_fifo_data      (_i2cEngine_rx_fifo_data),
       .rx_fifo_rd_en     (regRxFifoRdEn),
-      .rx_start_pulse    (regStartPulse & (|regRxCount)),
+      .rx_start_pulse    (regStartRxPulse & (|regRxCount)),
       .rx_fifo_empty     (  /* unused */),
       .rx_data_ready     (  /* unused */),
       .rx_fifo_data_count(_i2cEngine_rx_fifo_data_count),
@@ -4586,7 +4589,9 @@ module axi_cmd_test_module (
     output        AD0_CLK,
     AD1_CLK,
     output [ 7:0] DA0_Data,
+    DA1_Data,
     output        DA0_Clk,
+    DA1_Clk,
     output [13:0] O_ddr_addr,
     output [ 2:0] O_ddr_ba,
     output        O_ddr_cs_n,
@@ -5228,6 +5233,8 @@ module axi_cmd_test_module (
       .dac_out      (dac_out)
   );
 endmodule
+
+
 module acm2108_ddr3_udp (
     clk,
     reset_n,

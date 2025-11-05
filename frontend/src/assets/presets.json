@@ -500,7 +500,7 @@
   {
     "name": "I2C_TRANS_CFG",
     "address": "0x3000C",
-    "description": "[7:0] tx_count, [15:8] rx_count, [31] start_transaction (tx_start_pulse/rx_start_pulse)",
+    "description": "[7:0] tx_count, [15:8] rx_count, [30] tx_start_pulse, [31] rx_start_pulse",
     "section": "i2c_engine"
   },
   {
