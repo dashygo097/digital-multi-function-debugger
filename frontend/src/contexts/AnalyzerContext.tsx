@@ -62,6 +62,7 @@ export interface AnalyzerContextType extends AnalyzerState {
   setAnalyzerType: (type: "analog" | "digital") => void;
   setDataSource: (source: "serial" | "udp") => void;
   toggleAnalogCapture: () => void;
+  updateSampleRate: () => Promise<void>;
   clearAnalogData: (currentMessageIds: Set<string>) => void;
   toggleSpectrum: () => void;
   toggleDigitalCapture: () => void;
@@ -80,7 +81,7 @@ const initialState: AnalyzerState = {
     isRunning: false,
     showSpectrum: false,
     processedMessageIds: new Set(),
-    sampleRate: 44100,
+    sampleRate: NaN,
   },
   digital: {
     byteData: [],
@@ -218,7 +219,7 @@ export const AnalyzerProvider = ({ children }: { children: ReactNode }) => {
   const [state, dispatch] = useReducer(reducer, initialState);
 
   const { udpTerminal } = useUDPContext();
-  const { serialTerminal } = useSerialContext();
+  const { serialTerminal, readCSR } = useSerialContext();
 
   const addAnalogSamples = (samples: number[], messageId: string) =>
     dispatch({ type: "ADD_ANALOG_SAMPLES", payload: { samples, messageId } });
@@ -233,6 +234,11 @@ export const AnalyzerProvider = ({ children }: { children: ReactNode }) => {
     } else {
       dispatch({ type: "STOP_ANALOG_CAPTURE" });
     }
+  };
+  const updateSampleRate = async () => {
+    const rawData = await readCSR("0x00010000");
+    const div = parseInt(rawData, 32) + 1;
+    state.analog.sampleRate = (10000000 / div).toFixed(2) as unknown as number;
   };
   const toggleDigitalCapture = () => {
     if (!state.digital.isRunning) {
@@ -314,6 +320,7 @@ export const AnalyzerProvider = ({ children }: { children: ReactNode }) => {
     setDataSource: (source) =>
       dispatch({ type: "SET_DATA_SOURCE", payload: source }),
     toggleAnalogCapture,
+    updateSampleRate,
     clearAnalogData: (ids) =>
       dispatch({ type: "CLEAR_ANALOG_DATA", payload: ids }),
     toggleSpectrum: () => dispatch({ type: "TOGGLE_SPECTRUM" }),

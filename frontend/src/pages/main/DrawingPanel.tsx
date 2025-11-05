@@ -1,8 +1,13 @@
 import React, { RefObject } from "react";
 
+interface WaveformPayload {
+  data: number[];
+  frequency: number;
+}
+
 interface DrawingPanelProps {
   className: string;
-  onWaveformReady: (data: number[]) => void;
+  onWaveformReady: (payload: WaveformPayload) => void;
   width?: number;
   height?: number;
 }
@@ -10,6 +15,7 @@ interface DrawingPanelProps {
 interface DrawingPanelState {
   isDrawing: boolean;
   waveform: number[];
+  frequency: string;
 }
 
 export class DrawingPanel extends React.Component<
@@ -31,6 +37,7 @@ export class DrawingPanel extends React.Component<
     this.state = {
       isDrawing: false,
       waveform: new Array(this.props.width!).fill(0),
+      frequency: "1000",
     };
   }
 
@@ -44,9 +51,8 @@ export class DrawingPanel extends React.Component<
     if (canvas) {
       const ctx = canvas.getContext("2d");
       if (ctx) {
-        ctx.fillStyle = "#1a1a2e"; // Dark background
+        ctx.fillStyle = "#1a1a2e";
         ctx.fillRect(0, 0, width!, height!);
-        // Draw center line guide
         ctx.strokeStyle = "rgba(255, 255, 255, 0.2)";
         ctx.setLineDash([5, 5]);
         ctx.beginPath();
@@ -83,7 +89,7 @@ export class DrawingPanel extends React.Component<
     if (!ctx) return;
 
     const { x, y } = this.getMousePos(canvas, e);
-    ctx.strokeStyle = "#50fa7b"; // Lime green for drawing
+    ctx.strokeStyle = "#50fa7b";
     ctx.lineWidth = 2;
     ctx.lineCap = "round";
 
@@ -92,7 +98,6 @@ export class DrawingPanel extends React.Component<
     ctx.lineTo(x, y);
     ctx.stroke();
 
-    // Update waveform data based on drawing
     const startX = Math.floor(Math.min(this.lastX, x));
     const endX = Math.ceil(Math.max(this.lastX, x));
     const newWaveform = [...this.state.waveform];
@@ -101,7 +106,6 @@ export class DrawingPanel extends React.Component<
       if (i >= 0 && i < width!) {
         const t = endX - startX === 0 ? 1 : (i - startX) / (endX - startX);
         const interpolatedY = this.lastY + (y - this.lastY) * t;
-        // Normalize Y to be between -1 and 1
         const normalizedY = -((interpolatedY - height! / 2) / (height! / 2));
         newWaveform[i] = Math.max(-1, Math.min(1, normalizedY));
       }
@@ -117,35 +121,58 @@ export class DrawingPanel extends React.Component<
 
   handleSend = () => {
     const { onWaveformReady } = this.props;
-    // Convert waveform from [-1, 1] to whatever format is needed, e.g., [0, 65535] for a 16-bit DAC
     const dacData = this.state.waveform.map((val) =>
-      Math.round((val + 1) * 32767.5),
+      Math.round((val + 1) * 127.5),
     );
-    onWaveformReady(dacData);
-    console.log("Waveform data sent:", dacData);
+    const frequency = Number(this.state.frequency) || 0;
+    onWaveformReady({ data: dacData, frequency });
+    console.log("Waveform data sent:", { data: dacData, frequency });
+  };
+
+  handleFrequencyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    this.setState({ frequency: e.target.value });
   };
 
   render() {
     const { className, width, height } = this.props;
     return (
-      <div className={className}>
-        <canvas
-          ref={this.canvasRef}
-          width={width}
-          height={height}
-          className="drawing-canvas"
-          onMouseDown={this.startDrawing}
-          onMouseMove={this.draw}
-          onMouseUp={this.stopDrawing}
-          onMouseLeave={this.stopDrawing}
-        />
-        <div className="drawing-panel-controls">
-          <button onClick={this.clearCanvas} className="control-button">
-            Clear
-          </button>
-          <button onClick={this.handleSend} className="control-button">
-            Send to DAC
-          </button>
+      <div className={`${className} drawing-panel-container`}>
+        <div className="drawing-area">
+          <h3 className="drawing-panel-title">Custom Waveform Drawer</h3>
+          <canvas
+            ref={this.canvasRef}
+            width={width}
+            height={height}
+            className="drawing-canvas"
+            onMouseDown={this.startDrawing}
+            onMouseMove={this.draw}
+            onMouseUp={this.stopDrawing}
+            onMouseLeave={this.stopDrawing}
+          />
+        </div>
+        <div className="drawing-panel-right-controls">
+          <div className="control-group">
+            <label htmlFor="frequency-input">Frequency (Hz)</label>
+            <input
+              id="frequency-input"
+              type="number"
+              value={this.state.frequency}
+              onChange={this.handleFrequencyChange}
+              className="control-input"
+              placeholder="e.g., 1000"
+            />
+          </div>
+          <div className="control-button-group">
+            <button onClick={this.handleSend} className="control-button">
+              Send to DAC
+            </button>
+            <button
+              onClick={this.clearCanvas}
+              className="control-button clear-btn"
+            >
+              Clear
+            </button>
+          </div>
         </div>
       </div>
     );

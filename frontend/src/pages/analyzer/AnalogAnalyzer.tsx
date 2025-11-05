@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { AnalogWaveformChart, SpectrumChart } from "@components";
-import { useAnalyzer, useUDPContext } from "@contexts";
+import { useAnalyzer, useProtocolContext } from "@contexts";
 
 const FFT_SIZE = 128;
 const defaultColors = ["#00ff00", "#ff00ff", "#00ffff", "#ffff00"];
@@ -14,9 +14,14 @@ export const AnalogAnalyzer: React.FC<AnalogAnalyzerProps> = ({
   className,
   colors,
 }) => {
-  const { analog, toggleAnalogCapture, clearAnalogData, toggleSpectrum } =
-    useAnalyzer();
-  const { udpTerminal } = useUDPContext();
+  const {
+    analog,
+    toggleAnalogCapture,
+    clearAnalogData,
+    toggleSpectrum,
+    updateSampleRate,
+  } = useAnalyzer();
+  const { udpTerminal } = useProtocolContext();
   const {
     isRunning,
     channelData,
@@ -27,6 +32,16 @@ export const AnalogAnalyzer: React.FC<AnalogAnalyzerProps> = ({
   } = analog;
 
   const isSpectrumDisabled = channelData[0].length < FFT_SIZE;
+
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      updateSampleRate();
+    }, 2000);
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [updateSampleRate]);
 
   const handleClearData = () => {
     const currentMessageIds = new Set<string>(
