@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import { AnalogWaveformChart, SpectrumChart } from "@components";
 import { useAnalyzer, useProtocolContext } from "@contexts";
 
-const FFT_SIZE = 128;
+const FFT_SIZE = 1024;
 const defaultColors = ["#00ff00", "#ff00ff", "#00ffff", "#ffff00"];
 
 interface AnalogAnalyzerProps {
