@@ -52,7 +52,7 @@ export class SignalMeasureTerminal extends Component<
     }
   }
 
-  componentDidUpdate(_: {}, prevState: SignalMeasureTerminalState) {
+  componentDidUpdate(_: any, prevState: SignalMeasureTerminalState) {
     if (
       this.state.autoScroll &&
       this.state.messages.length > prevState.messages.length
@@ -116,16 +116,15 @@ export class SignalMeasureTerminal extends Component<
 
   fetchResults = async () => {
     const { readCSR } = this.context;
-    const period = await readCSR("0x1C008");
-    console.log("Fetched period:", period);
-    const highTime = await readCSR("0x1C00C");
+    const periodCount = await readCSR("0x1C008");
+    const highTimeCount = await readCSR("0x1C00C");
 
-    if (period === undefined || highTime === undefined) {
+    if (periodCount === undefined || highTimeCount === undefined) {
       this.addMessage("ERROR", "Failed to read result registers.");
       return;
     }
 
-    if (period === 0) {
+    if (periodCount === 0) {
       this.addMessage("ERROR", "Measured period is zero. Check signal input.");
       this.setState({
         isBusy: false,
@@ -138,8 +137,11 @@ export class SignalMeasureTerminal extends Component<
       return;
     }
 
-    const frequency = SYSTEM_CLOCK_HZ / period;
-    const dutyCycle = (highTime / period) * 100;
+    const frequency = (8 * SYSTEM_CLOCK_HZ) / periodCount;
+    const period = periodCount * 2.5;
+    const highTime = highTimeCount * 2.5;
+    const lowTime = period - highTime;
+    const dutyCycle = (highTimeCount / periodCount) * 100;
 
     this.setState({
       period,
@@ -152,7 +154,7 @@ export class SignalMeasureTerminal extends Component<
 
     this.addMessage(
       "INFO",
-      `Period: ${period.toLocaleString()}, High Time: ${highTime.toLocaleString()}`,
+      `Period: ${period.toLocaleString()}, High Time: ${highTime.toLocaleString()}, Low Time: ${lowTime.toLocaleString()}`,
     );
     this.addMessage(
       "INFO",
@@ -200,11 +202,15 @@ export class SignalMeasureTerminal extends Component<
             </div>
             <div className="result-item">
               <label>Period</label>
-              <span>{period.toLocaleString()} cycles</span>
+              <span>{period.toLocaleString()} ns</span>
             </div>
             <div className="result-item">
               <label>High Time</label>
-              <span>{highTime.toLocaleString()} cycles</span>
+              <span>{highTime.toLocaleString()} ns</span>
+            </div>
+            <div className="result-item">
+              <label>Low Time</label>
+              <span>{(period - highTime).toLocaleString()} ns</span>
             </div>
           </div>
 

@@ -466,7 +466,7 @@ export class SerialProvider extends React.Component<
       const status = parseInt(hexParts[0], 16);
       if (status === 0x00) {
         const valueHex = hexParts.slice(1, 5).join("");
-        finalValue = parseInt(valueHex, 16); // Fixed: was 32, should be 16
+        finalValue = parseInt(valueHex, 16);
       }
     }
 
@@ -485,7 +485,6 @@ export class SerialProvider extends React.Component<
     }
 
     this.serialSendHex(cmdHex);
-
     const responseHex = await this.waitForResponse();
   };
 
