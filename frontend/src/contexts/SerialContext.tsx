@@ -56,6 +56,8 @@ export interface SerialContextType {
   serialSend: (data: string) => void;
   serialSendHex: (hex: string) => void;
   serialSendRaw: (data: Uint8Array) => void;
+  readCSR: (addr: string) => Promise<string>;
+  writeCSR: (addr: string, value: string) => Promise<void>;
 }
 
 export const SerialContext = createContext<SerialContextType | undefined>(
@@ -77,7 +79,7 @@ export class SerialProvider extends React.Component<
   private readLoopPromise: Promise<void> | null = null;
   private portRefreshInterval: number | null = null;
   private reconnectTimer: number | null = null;
-  private cmdResolver: ((value: Uint8Array | null) => void) | null = null;
+  private cmdResolver: ((value: string | null) => void) | null = null;
 
   constructor(props: SerialProviderProps) {
     super(props);
@@ -436,6 +438,96 @@ export class SerialProvider extends React.Component<
     }
   };
 
+  readCSR = async (addr: string) => {
+    if (
+      this.state.serialTerminal.connectionState !== ConnectionState.CONNECTED
+    ) {
+      return;
+    }
+
+    const cmdHex = this.buildCSRCommandHex("READ", addr);
+    if (!cmdHex) {
+      return;
+    }
+
+    this.serialSendHex(cmdHex);
+
+    const responseHex = await this.waitForResponse();
+    let finalValue = "N/A";
+    if (responseHex) {
+      const hexParts = responseHex.split(" ");
+      const status = parseInt(hexParts[0], 16);
+      if (status === 0x00) {
+        const valueHex = hexParts.slice(1, 5).join("");
+        finalValue = `0x${valueHex.toUpperCase()}`;
+      }
+    }
+
+    return finalValue;
+  };
+  writeCSR = async (addr: string, value: string) => {
+    if (
+      this.state.serialTerminal.connectionState !== ConnectionState.CONNECTED
+    ) {
+      return;
+    }
+
+    const cmdHex = this.buildCSRCommandHex("WRITE", addr, value);
+    if (!cmdHex) {
+      return;
+    }
+
+    this.serialSendHex(cmdHex);
+
+    const responseHex = await this.waitForResponse();
+  };
+
+  private waitForResponse = (timeout = 100): Promise<string | null> => {
+    return new Promise((resolve) => {
+      this.cmdResolver = resolve;
+      setTimeout(() => {
+        if (this.cmdResolver) {
+          this.cmdResolver(null);
+          this.cmdResolver = null;
+        }
+      }, timeout);
+    });
+  };
+
+  private buildCSRCommandHex = (
+    operation: "READ" | "WRITE",
+    addressStr: string,
+    dataStr?: string,
+  ): string | null => {
+    try {
+      const addr = parseInt(addressStr.replace(/^0x/i, ""), 16);
+      if (isNaN(addr) || addr < 0 || addr > 0xffffffff) {
+        return null;
+      }
+
+      let data = 0;
+      if (operation === "WRITE") {
+        data = parseInt((dataStr || "0x0").replace(/^0x/i, ""), 16);
+        if (isNaN(data) || data < 0 || data > 0xffffffff) {
+          return null;
+        }
+      }
+
+      const cmdType = operation === "WRITE" ? "00" : "01";
+      const addrHex = addr.toString(16).padStart(8, "0");
+      const dataHex = data.toString(16).padStart(8, "0");
+
+      const finalCmd =
+        operation === "WRITE"
+          ? `${cmdType} ${addrHex.slice(0, 2)} ${addrHex.slice(2, 4)} ${addrHex.slice(4, 6)} ${addrHex.slice(6, 8)} ${dataHex.slice(0, 2)} ${dataHex.slice(2, 4)} ${dataHex.slice(4, 6)} ${dataHex.slice(6, 8)}`
+          : `${cmdType} ${addrHex.slice(0, 2)} ${addrHex.slice(2, 4)} ${addrHex.slice(4, 6)} ${addrHex.slice(6, 8)} 00 00 00 00`;
+
+      return finalCmd;
+    } catch (error: any) {
+      return null;
+    }
+  };
+
   render() {
     const contextValue: SerialContextType = {
       serialTerminal: this.state.serialTerminal,
@@ -446,6 +538,8 @@ export class SerialProvider extends React.Component<
       serialSend: this.serialSend,
       serialSendHex: this.serialSendHex,
       serialSendRaw: this.serialSendRaw,
+      readCSR: this.readCSR,
+      writeCSR: this.writeCSR,
     };
     return (
       <SerialContext.Provider value={contextValue}>
