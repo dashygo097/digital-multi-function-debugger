@@ -131,14 +131,15 @@ export class DrawingPanel extends React.Component<
     );
     const frequency = Number(this.state.frequency) || 0;
 
-    await writeCSR("0x3400C", "255"); // Set amplitude to max (0xFF = 255)
-    await writeCSR("0x34008", frequency.toString(16)); // Set frequency (passed as hex string)
+    await writeCSR("0x3400C", "FF");
+    await writeCSR("0x34008", frequency.toString(16));
 
-    for (let i = 0; i < dacData.length; i++) {
+    for (let i = 0; i < dacData.length; i += 2) {
       await writeCSR("0x34010", dacData[i].toString(16));
+      await writeCSR("0x34014", "1");
     }
+    await writeCSR("0x34000", "1");
 
-    await writeCSR("0x34014", "1");
     console.log("Finished sending waveform and configuration to DAC.");
   };
 
