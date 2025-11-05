@@ -56,7 +56,7 @@ export interface SerialContextType {
   serialSend: (data: string) => void;
   serialSendHex: (hex: string) => void;
   serialSendRaw: (data: Uint8Array) => void;
-  readCSR: (addr: string) => Promise<string>;
+  readCSR: (addr: string) => Promise<number>;
   writeCSR: (addr: string, value: string) => Promise<void>;
 }
 
@@ -453,13 +453,13 @@ export class SerialProvider extends React.Component<
     this.serialSendHex(cmdHex);
 
     const responseHex = await this.waitForResponse();
-    let finalValue = "N/A";
+    let finalValue = NaN;
     if (responseHex) {
       const hexParts = responseHex.split(" ");
       const status = parseInt(hexParts[0], 16);
       if (status === 0x00) {
         const valueHex = hexParts.slice(1, 5).join("");
-        finalValue = `0x${valueHex.toUpperCase()}`;
+        finalValue = parseInt(valueHex, 32);
       }
     }
 
