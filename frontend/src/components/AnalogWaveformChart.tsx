@@ -53,7 +53,7 @@ export class AnalogWaveformChart extends React.Component<AnalogWaveformChartProp
           <XAxis
             dataKey="index"
             type="number"
-            domain={[0, this.props.data.length / 2]}
+            domain={["dataMin", "dataMax"]}
           />
           <YAxis
             type="number"
