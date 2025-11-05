@@ -1,14 +1,8 @@
 import React, { RefObject } from "react";
-import { useSerialContext } from "@contexts";
-
-interface WaveformPayload {
-  data: number[];
-  frequency: number;
-}
+import { SerialContext } from "@contexts";
 
 interface DrawingPanelProps {
   className: string;
-  onWaveformReady: (payload: WaveformPayload) => void;
   width?: number;
   height?: number;
 }
@@ -23,6 +17,9 @@ export class DrawingPanel extends React.Component<
   DrawingPanelProps,
   DrawingPanelState
 > {
+  static contextType = SerialContext;
+  context!: React.ContextType<typeof SerialContext>;
+
   private canvasRef: RefObject<HTMLCanvasElement>;
   private lastX = 0;
   private lastY = 0;
@@ -121,19 +118,28 @@ export class DrawingPanel extends React.Component<
   };
 
   handleSend = async () => {
-    const { writeCSR } = useSerialContext();
-    const { onWaveformReady } = this.props;
+    if (!this.context) {
+      console.error(
+        "SerialContext not found. Component might not be wrapped in SerialProvider.",
+      );
+      return;
+    }
+    const { writeCSR } = this.context;
+
     const dacData = this.state.waveform.map((val) =>
       Math.round((val + 1) * 127.5),
     );
     const frequency = Number(this.state.frequency) || 0;
-    onWaveformReady({ data: dacData, frequency });
-    await writeCSR("0x0003400C", "FF");
-    await writeCSR("0x00034008", frequency.toString());
+
+    await writeCSR("0x3400C", "255"); // Set amplitude to max (0xFF = 255)
+    await writeCSR("0x34008", frequency.toString(16)); // Set frequency (passed as hex string)
+
     for (let i = 0; i < dacData.length; i++) {
-      await writeCSR("0x00034010", dacData[i].toString());
+      await writeCSR("0x34010", dacData[i].toString(16));
     }
-    await writeCSR("0x00034014", "1");
+
+    await writeCSR("0x34014", "1");
+    console.log("Finished sending waveform and configuration to DAC.");
   };
 
   handleFrequencyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
