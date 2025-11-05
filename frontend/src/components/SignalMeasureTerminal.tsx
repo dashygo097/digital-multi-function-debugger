@@ -90,7 +90,7 @@ export class SignalMeasureTerminal extends Component<
     }
     this.addMessage("TX", "Starting signal measurement...");
     const { writeCSR } = this.context;
-    await writeCSR("0x2C000", "1");
+    await writeCSR("0x1C000", "1");
     this.setState({ isFinished: false });
 
     if (this.pollInterval) clearInterval(this.pollInterval);
@@ -99,7 +99,7 @@ export class SignalMeasureTerminal extends Component<
 
   pollStatus = async () => {
     const { readCSR } = this.context;
-    const statusReg = await readCSR("0x2C004");
+    const statusReg = await readCSR("0x1C004");
 
     if (statusReg === undefined) {
       this.addMessage("ERROR", "Failed to read status register.");
@@ -128,8 +128,8 @@ export class SignalMeasureTerminal extends Component<
 
   fetchResults = async () => {
     const { readCSR } = this.context;
-    const period = await readCSR("0x2C008");
-    const highTime = await readCSR("0x2C00C");
+    const period = await readCSR("0x1C008");
+    const highTime = await readCSR("0x1C00C");
 
     if (period === undefined || highTime === undefined) {
       this.addMessage("ERROR", "Failed to read result registers.");
