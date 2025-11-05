@@ -17,7 +17,7 @@ export class CollapsiblePanel extends Component<
   constructor(props: CollapsiblePanelProps) {
     super(props);
     this.state = {
-      isCollapsed: props.initialCollapsed || false,
+      isCollapsed: props.initialCollapsed || true,
     };
   }
 

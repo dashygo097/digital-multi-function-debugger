@@ -59,6 +59,7 @@ export class PWMTerminal extends Component<PWMTerminalProps, PWMTerminalState> {
 
     try {
       const controlReg = await readCSR("0x2C000");
+      const channelEnablesValue = (await readCSR("0x2C018")) & 0xff;
       const statusReg = await readCSR("0x2C018");
 
       if (controlReg === undefined || statusReg === undefined) {
@@ -67,7 +68,6 @@ export class PWMTerminal extends Component<PWMTerminalProps, PWMTerminalState> {
       }
 
       const isEnabled = (controlReg & 0x1) !== 0;
-      const channelEnablesValue = (controlReg >> 1) & 0xff;
 
       const newChannelEnables = Array(8)
         .fill(false)
