@@ -1,6 +1,9 @@
 .vscode/
 .DS_Store
 
+# FPGA Proj
+fpga/
+
 # Logs
 logs/
 *.log
