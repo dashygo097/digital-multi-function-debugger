@@ -3852,13 +3852,6 @@ module uart_engine_wrapper (
   wire        _uartEngine_rx_error;
   wire [15:0] _uartEngine_tx_byte_count;
   wire [15:0] _uartEngine_rx_byte_count;
-  reg         axi_awready;
-  reg         axi_wready;
-  reg         axi_bvalid;
-  reg         axi_arready;
-  reg         axi_rvalid;
-  reg  [31:0] axi_awaddr;
-  reg  [31:0] axi_araddr;
   reg  [31:0] regClkDiv;
   reg         regCheckEn;
   reg  [ 1:0] regCheckType;
@@ -3869,29 +3862,30 @@ module uart_engine_wrapper (
   reg         regTxStartPulse;
   reg         regRxFifoRdEn;
   reg         regRxStartPulse;
-  wire [31:0] _raddr_T = axi_araddr - 32'h24000;
+  reg         axi_awready;
+  reg  [31:0] axi_awaddr;
+  reg         axi_wready;
+  reg         axi_bvalid;
+  reg         axi_arready;
+  reg  [31:0] axi_araddr;
+  reg  [31:0] axi_rdata;
+  reg         axi_rvalid;
   wire        _GEN = ~axi_awready & S_AXI_AWVALID;
-  wire        _GEN_0 = axi_wready & S_AXI_WVALID & axi_awready;
+  wire        _GEN_0 = axi_wready & S_AXI_WVALID;
+  wire        _GEN_1 = ~axi_arready & S_AXI_ARVALID;
   wire [31:0] _waddr_T = axi_awaddr - 32'h24000;
-  wire        _GEN_1 = _waddr_T == 32'h0;
-  wire        _GEN_2 = _waddr_T == 32'h4;
-  wire        _GEN_3 = _waddr_T == 32'h8;
-  wire        _GEN_4 = _waddr_T == 32'h10;
-  wire        _GEN_5 = _waddr_T == 32'h14;
-  wire        _GEN_6 = _GEN_1 | _GEN_2 | _GEN_3 | _GEN_4;
-  wire        _GEN_7 = _waddr_T == 32'h24;
-  wire        _GEN_8 = _GEN_1 | _GEN_2 | _GEN_3 | _GEN_4 | _GEN_5;
-  wire        _GEN_9 = ~axi_arready & S_AXI_ARVALID;
+  wire        _GEN_2 = _waddr_T == 32'h0;
+  wire        _GEN_3 = _waddr_T == 32'h4;
+  wire        _GEN_4 = _waddr_T == 32'h8;
+  wire        _GEN_5 = _waddr_T == 32'h10;
+  wire        _GEN_6 = _waddr_T == 32'h14;
+  wire        _GEN_7 = _GEN_2 | _GEN_3 | _GEN_4 | _GEN_5;
+  wire        _GEN_8 = _waddr_T == 32'h24;
+  wire        _GEN_9 = _GEN_2 | _GEN_3 | _GEN_4 | _GEN_5 | _GEN_6;
+  wire [31:0] _raddr_T = axi_araddr - 32'h24000;
   always @(posedge clock) begin
     if (reset) begin
-      axi_awready <= 1'h0;
-      axi_wready <= 1'h0;
-      axi_bvalid <= 1'h0;
-      axi_arready <= 1'h0;
-      axi_rvalid <= 1'h0;
-      axi_awaddr <= 32'h0;
-      axi_araddr <= 32'h0;
-      regClkDiv <= 32'h43E;
+      regClkDiv <= 32'h4D2;
       regCheckEn <= 1'h0;
       regCheckType <= 2'h0;
       regDataBit <= 2'h3;
@@ -3901,35 +3895,60 @@ module uart_engine_wrapper (
       regTxStartPulse <= 1'h0;
       regRxFifoRdEn <= 1'h0;
       regRxStartPulse <= 1'h0;
+      axi_awready <= 1'h0;
+      axi_awaddr <= 32'h0;
+      axi_wready <= 1'h0;
+      axi_bvalid <= 1'h0;
+      axi_arready <= 1'h0;
+      axi_araddr <= 32'h0;
+      axi_rdata <= 32'h0;
+      axi_rvalid <= 1'h0;
     end else begin
-      axi_awready <= _GEN;
-      axi_wready <= ~axi_wready & axi_awready & S_AXI_AWVALID;
-      axi_bvalid <=
-        ~axi_bvalid & axi_wready & S_AXI_WVALID & axi_awready
-        | ~(axi_bvalid & S_AXI_BREADY) & axi_bvalid;
-      axi_arready <= _GEN_9;
-      axi_rvalid <=
-        ~axi_rvalid & axi_arready & S_AXI_ARVALID | ~(axi_rvalid & S_AXI_RREADY)
-        & axi_rvalid;
-      if (_GEN) axi_awaddr <= S_AXI_AWADDR;
-      if (_GEN_9) axi_araddr <= S_AXI_ARADDR;
-      if (_GEN_0 & _GEN_1) regClkDiv <= S_AXI_WDATA;
-      if (~_GEN_0 | _GEN_1 | ~_GEN_2) begin
+      if (_GEN_0 & _GEN_2) regClkDiv <= S_AXI_WDATA;
+      if (~_GEN_0 | _GEN_2 | ~_GEN_3) begin
       end else begin
         regCheckEn   <= S_AXI_WDATA[0];
         regCheckType <= S_AXI_WDATA[2:1];
       end
-      if (~_GEN_0 | _GEN_1 | _GEN_2 | ~_GEN_3) begin
+      if (~_GEN_0 | _GEN_2 | _GEN_3 | ~_GEN_4) begin
       end else begin
         regDataBit <= S_AXI_WDATA[1:0];
         regStopBit <= S_AXI_WDATA[3:2];
       end
-      if (~_GEN_0 | _GEN_1 | _GEN_2 | _GEN_3 | ~_GEN_4) begin
+      if (~_GEN_0 | _GEN_2 | _GEN_3 | _GEN_4 | ~_GEN_5) begin
       end else regTxFifoData <= S_AXI_WDATA[7:0];
-      regTxFifoWrEn   <= _GEN_0 & ~_GEN_6 & _GEN_5 & S_AXI_WDATA[0];
-      regTxStartPulse <= _GEN_0 & ~_GEN_6 & _GEN_5 & S_AXI_WDATA[1];
-      regRxFifoRdEn   <= _GEN_0 & ~_GEN_8 & _GEN_7 & S_AXI_WDATA[0];
-      regRxStartPulse <= _GEN_0 & ~_GEN_8 & _GEN_7 & S_AXI_WDATA[1];
+      regTxFifoWrEn <= _GEN_0 & ~_GEN_7 & _GEN_6 & S_AXI_WDATA[0];
+      regTxStartPulse <= _GEN_0 & ~_GEN_7 & _GEN_6 & S_AXI_WDATA[1];
+      regRxFifoRdEn <= _GEN_0 & ~_GEN_9 & _GEN_8 & S_AXI_WDATA[0];
+      regRxStartPulse <= _GEN_0 & ~_GEN_9 & _GEN_8 & S_AXI_WDATA[1];
+      axi_awready <= _GEN;
+      if (_GEN) axi_awaddr <= S_AXI_AWADDR;
+      axi_wready  <= ~axi_wready & S_AXI_WVALID & axi_awready;
+      axi_bvalid  <= _GEN_0 & ~axi_bvalid | ~(axi_bvalid & S_AXI_BREADY) & axi_bvalid;
+      axi_arready <= _GEN_1;
+      if (_GEN_1) axi_araddr <= S_AXI_ARADDR;
+      axi_rdata <=
+        _raddr_T == 32'h3C
+          ? {5'h0, _uartEngine_rx_fifo_data_count, 5'h0, _uartEngine_tx_fifo_data_count}
+          : _raddr_T == 32'h38
+              ? {16'h0, _uartEngine_rx_byte_count}
+              : _raddr_T == 32'h34
+                  ? {16'h0, _uartEngine_tx_byte_count}
+                  : _raddr_T == 32'h30
+                      ? {29'h0,
+                         _uartEngine_rx_error,
+                         _uartEngine_rx_busy,
+                         _uartEngine_tx_busy}
+                      : _raddr_T == 32'h20
+                          ? {24'h0, _uartEngine_rx_fifo_data}
+                          : _raddr_T == 32'h8
+                              ? {28'h0, regStopBit, regDataBit}
+                              : _raddr_T == 32'h4
+                                  ? {29'h0, regCheckType, regCheckEn}
+                                  : _raddr_T == 32'h0 ? regClkDiv : 32'h0;
+      axi_rvalid <=
+        axi_arready & S_AXI_ARVALID & ~axi_rvalid | ~(axi_rvalid & S_AXI_RREADY)
+        & axi_rvalid;
     end
   end  // always @(posedge)
   uart_engine uartEngine (
@@ -3960,33 +3979,11 @@ module uart_engine_wrapper (
       .rx_byte_count     (_uartEngine_rx_byte_count)
   );
   assign S_AXI_AWREADY = axi_awready;
-  assign S_AXI_WREADY = axi_wready;
-  assign S_AXI_BVALID = axi_bvalid;
+  assign S_AXI_WREADY  = axi_wready;
+  assign S_AXI_BVALID  = axi_bvalid;
   assign S_AXI_ARREADY = axi_arready;
-  assign S_AXI_RDATA =
-    _raddr_T == 32'h0
-      ? regClkDiv
-      : _raddr_T == 32'h4
-          ? {29'h0, regCheckType, regCheckEn}
-          : _raddr_T == 32'h8
-              ? {28'h0, regStopBit, regDataBit}
-              : _raddr_T == 32'h20
-                  ? {24'h0, _uartEngine_rx_fifo_data}
-                  : _raddr_T == 32'h30
-                      ? {29'h0,
-                         _uartEngine_rx_error,
-                         _uartEngine_rx_busy,
-                         _uartEngine_tx_busy}
-                      : _raddr_T == 32'h34
-                          ? {16'h0, _uartEngine_tx_byte_count}
-                          : _raddr_T == 32'h38
-                              ? {16'h0, _uartEngine_rx_byte_count}
-                              : _raddr_T == 32'h3C
-                                  ? {10'h0,
-                                     _uartEngine_rx_fifo_data_count,
-                                     _uartEngine_tx_fifo_data_count}
-                                  : 32'h0;
-  assign S_AXI_RVALID = axi_rvalid;
+  assign S_AXI_RDATA   = axi_rdata;
+  assign S_AXI_RVALID  = axi_rvalid;
 endmodule
 
 module spi_engine_wrapper (
@@ -5231,7 +5228,6 @@ module axi_cmd_test_module (
       .dac_out      (dac_out)
   );
 endmodule
-
 module acm2108_ddr3_udp (
     clk,
     reset_n,
