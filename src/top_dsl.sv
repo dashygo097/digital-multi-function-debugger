@@ -4476,6 +4476,7 @@ module dac_engine_wrapper (
     output [31:0] S_AXI_RDATA,
     output        S_AXI_RVALID,
     input         S_AXI_RREADY,
+    output        dac_clk,
     output [ 7:0] dac_out
 );
 
@@ -4562,7 +4563,7 @@ module dac_engine_wrapper (
       .amplitude     (regAmplitude),
       .wave_wr_pulse (regWaveWr),
       .wave_data     (regWaveData),
-      .dac_clk       (  /* unused */),
+      .dac_clk       (dac_clk),
       .dac_out       (_dacEngine_dac_out),
       .waveform_ready(_dacEngine_waveform_ready)
   );
@@ -4588,9 +4589,7 @@ module axi_cmd_test_module (
     output        AD0_CLK,
     AD1_CLK,
     output [ 7:0] DA0_Data,
-    DA1_Data,
     output        DA0_Clk,
-    DA1_Clk,
     output [13:0] O_ddr_addr,
     output [ 2:0] O_ddr_ba,
     output        O_ddr_cs_n,
@@ -4626,7 +4625,7 @@ module axi_cmd_test_module (
     output [ 7:0] pwm_out,
     output        i2c_scl,
     inout         i2c_sda,
-    input         dac_clk,
+    output        dac_clk,
     output [ 7:0] dac_out
 );
 
@@ -5228,10 +5227,10 @@ module axi_cmd_test_module (
       .S_AXI_RDATA  (_slave10_S_AXI_RDATA),
       .S_AXI_RVALID (_slave10_S_AXI_RVALID),
       .S_AXI_RREADY (_interconnect_M_AXI_9_RREADY),
+      .dac_clk      (dac_clk),
       .dac_out      (dac_out)
   );
 endmodule
-
 
 module acm2108_ddr3_udp (
     clk,
