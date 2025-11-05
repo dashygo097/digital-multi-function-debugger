@@ -116,7 +116,9 @@ export class BitseqLooperTerminal extends Component<
   pollPlayingStatus = async () => {
     const { readCSR } = this.context;
     try {
-      const status = await readCSR(REGS.STATUS.toString(16));
+      const status = (await readCSR(
+        REGS.STATUS.toString(16),
+      )) as unknown as number;
       if (status !== undefined) {
         const newPlayingStatus = Array.from(
           { length: NUM_CHANNELS },
