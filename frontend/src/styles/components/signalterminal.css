@@ -1,0 +1,270 @@
+.main-signalterminal {
+  width: 95%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family:
+    "Segoe UI",
+    system-ui,
+    -apple-system,
+    sans-serif;
+  background: linear-gradient(135deg, #1f1f1f 0%, #4a4a4a 100%);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 16px;
+  min-height: 480px;
+  max-height: 480px;
+}
+
+/* Control Panel */
+.main-signalterminal .control-panel {
+  grid-column: 1;
+  grid-row: 1 / -1;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+  padding: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.main-signalterminal .section {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.main-signalterminal .status-indicator {
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-weight: bold;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.main-signalterminal .status-indicator.busy {
+  background: rgba(237, 137, 54, 0.3);
+  color: #fbd38d;
+  border: 1px solid rgba(237, 137, 54, 0.5);
+  text-shadow: 0 0 8px rgba(237, 137, 54, 0.7);
+}
+
+.main-signalterminal .status-indicator.connected {
+  background: rgba(72, 187, 120, 0.3);
+  color: #c6f6d5;
+  border: 1px solid rgba(72, 187, 120, 0.5);
+}
+
+.main-signalterminal .status-indicator.disconnected {
+  background: rgba(113, 128, 150, 0.2);
+  color: #e2e8f0;
+  border: 1px solid rgba(113, 128, 150, 0.4);
+}
+
+.main-signalterminal .result-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.main-signalterminal .result-item {
+  background: rgba(0, 0, 0, 0.2);
+  padding: 8px;
+  border-radius: 6px;
+  text-align: center;
+}
+
+.main-signalterminal .result-item label {
+  display: block;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.main-signalterminal .result-item span {
+  font-size: 16px;
+  font-weight: 700;
+  color: #c6f6d5;
+  font-family: "Courier New", monospace;
+}
+
+/* Buttons */
+.main-signalterminal .buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.main-signalterminal button {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 10px;
+  padding: 10px 16px;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.main-signalterminal button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+}
+
+.main-signalterminal button:disabled {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.4);
+  cursor: not-allowed;
+}
+
+.main-signalterminal .btn-primary {
+  background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+}
+
+.main-signalterminal .btn-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #38a169 0%, #2f855a 100%);
+}
+
+.main-signalterminal .btn-secondary {
+  background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
+}
+
+.main-signalterminal .btn-secondary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #3182ce 0%, #2b6cb0 100%);
+}
+
+/* Stats & Autoscroll */
+.main-signalterminal .stats {
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  color: white;
+  font-size: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: auto;
+}
+
+.main-signalterminal .checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+}
+
+.main-signalterminal .checkbox-label input[type="checkbox"] {
+  accent-color: #667eea;
+}
+
+.main-signalterminal .stats strong {
+  color: #fbbf24;
+}
+
+/* Terminal Display */
+.main-signalterminal .terminal {
+  grid-column: 2;
+  grid-row: 1 / -1;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 16px;
+  padding: 16px;
+  overflow-y: auto;
+  font-family: "Consolas", monospace;
+  font-size: 12px;
+}
+
+.main-signalterminal .terminal::-webkit-scrollbar {
+  width: 8px;
+}
+
+.main-signalterminal .terminal::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.main-signalterminal .terminal::-webkit-scrollbar-thumb {
+  background: rgba(102, 126, 234, 0.5);
+  border-radius: 4px;
+}
+
+.main-signalterminal .terminal::-webkit-scrollbar-thumb:hover {
+  background: rgba(102, 126, 234, 0.7);
+}
+
+.main-signalterminal .message {
+  margin-bottom: 6px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  display: flex;
+  gap: 10px;
+  border-left: 3px solid transparent;
+}
+
+.main-signalterminal .message.cmd {
+  border-left-color: #4299e1;
+  background: rgba(66, 153, 225, 0.05);
+}
+
+.main-signalterminal .message.cmd .direction {
+  color: #4299e1;
+}
+
+.main-signalterminal .message.info {
+  border-left-color: #ed8936;
+  background: rgba(237, 137, 54, 0.05);
+}
+
+.main-signalterminal .message.info .direction {
+  color: #ed8936;
+}
+
+.main-signalterminal .message.error {
+  border-left-color: #f56565;
+  background: rgba(245, 101, 101, 0.15);
+}
+
+.main-signalterminal .message.error .direction {
+  color: #f56565;
+}
+
+.main-signalterminal .timestamp {
+  color: rgba(255, 255, 255, 0.5);
+  min-width: 85px;
+}
+
+.main-signalterminal .direction {
+  font-weight: 700;
+  min-width: 45px;
+}
+
+.main-signalterminal .data {
+  color: rgba(255, 255, 255, 0.95);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .main-signalterminal {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+  }
+
+  .main-signalterminal .control-panel {
+    grid-row: 1;
+  }
+
+  .main-signalterminal .terminal {
+    grid-row: 2;
+    height: 300px;
+  }
+}

@@ -3,6 +3,7 @@
 @import "./components/serialterminal.css";
 @import "./components/udpterminal.css";
 @import "./components/pwmterminal.css";
+@import "./components/signalterminal.css";
 
 .main-page {
   position: relative;

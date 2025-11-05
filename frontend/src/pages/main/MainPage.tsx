@@ -6,6 +6,7 @@ import {
   SerialTerminal,
   UDPTerminal,
   PWMTerminal,
+  SignalMeasureTerminal,
   CollapsiblePanel,
 } from "@components";
 import "@styles/main.css";
@@ -49,6 +50,10 @@ class MainPage extends React.Component<WithRouterProps, MainPageState> {
 
             <CollapsiblePanel title="PWM Terminal">
               <PWMTerminal className="main-pwmterminal" />
+            </CollapsiblePanel>
+
+            <CollapsiblePanel title="Signal Measure Terminal">
+              <SignalMeasureTerminal className="main-signalterminal" />
             </CollapsiblePanel>
 
             <CollapsiblePanel title="Custom Waveform Drawer">
