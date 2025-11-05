@@ -31,11 +31,23 @@ module dac_engine (
   reg ready_flag;
   
   // 波形写入
+  reg wave_wr_pulse_reg;
+  wire wave_wr_pulse_en = wave_wr_pulse && ~ wave_wr_pulse_reg;
+  
+  always @(posedge clk or posedge rst_n) begin
+    if (rst_n) begin
+      wave_wr_pulse_reg <= 0;
+    end
+    else begin
+      wave_wr_pulse_reg <= wave_wr_pulse;
+    end
+  end
+
   always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
       write_address <= 0;
       ready_flag <= 0;
-    end else if (wave_wr_pulse) begin
+    end else if (wave_wr_pulse_en) begin
       waveform_memory[write_address] <= wave_data;
       if (write_address == WAVE_POINTS-1) begin
         write_address <= 0;
