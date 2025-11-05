@@ -452,14 +452,21 @@ export class SerialProvider extends React.Component<
 
     this.serialSendHex(cmdHex);
 
-    const responseHex = await this.waitForResponse();
+    const response = await this.waitForResponse();
     let finalValue = NaN;
-    if (responseHex) {
+    if (response) {
+      const responseHex =
+        typeof response === "string"
+          ? response
+          : Array.from(response)
+              .map((b) => b.toString().padStart(2, "0"))
+              .join(" ");
+
       const hexParts = responseHex.split(" ");
       const status = parseInt(hexParts[0], 16);
       if (status === 0x00) {
         const valueHex = hexParts.slice(1, 5).join("");
-        finalValue = parseInt(valueHex, 32);
+        finalValue = parseInt(valueHex, 16); // Fixed: was 32, should be 16
       }
     }
 
