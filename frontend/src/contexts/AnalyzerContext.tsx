@@ -116,7 +116,7 @@ const reducer = (state: AnalyzerState, action: Action): AnalyzerState => {
       const samplesCopy = samples.slice();
       for (let i = 0; i < samples.length; i++) {
         if (samples[i] > 127) {
-          samplesCopy[i] = (128 - samples[i]) / 25.5;
+          samplesCopy[i] = (samples[i] - 255) / 25.5;
         } else {
           samplesCopy[i] = samples[i] / 25.5;
         }
