@@ -41,7 +41,7 @@ export class SignalMeasureTerminal extends Component<
       highTime: 0,
       frequency: 0,
       dutyCycle: 0,
-      autoScroll: true,
+      autoScroll: false,
     };
     this.terminalEndRef = React.createRef<HTMLDivElement>();
   }
@@ -117,6 +117,7 @@ export class SignalMeasureTerminal extends Component<
   fetchResults = async () => {
     const { readCSR } = this.context;
     const period = await readCSR("0x1C008");
+    console.log("Fetched period:", period);
     const highTime = await readCSR("0x1C00C");
 
     if (period === undefined || highTime === undefined) {
