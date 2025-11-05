@@ -117,9 +117,12 @@ export class SignalMeasureTerminal extends Component<
       if (this.pollInterval) clearInterval(this.pollInterval);
       this.fetchResults();
     } else if (this.state.isBusy && !isBusy) {
-      // Handle the case where busy has gone low but finish hasn't been set yet
+      this.addMessage("ERROR", "Measurement timed out.");
+      if (this.pollInterval) clearInterval(this.pollInterval);
+      this.setState({ isBusy: false });
     } else if (!isBusy && !isFinished && !this.state.isBusy) {
-      // Measurement may have finished between polls.
+      this.addMessage("INFO", "Measurement idle.");
+      if (this.pollInterval) clearInterval(this.pollInterval);
     }
   };
 
