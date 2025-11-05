@@ -307,283 +307,283 @@
   },
   {
     "name": "UART_CONFIG",
-    "address": "0x00",
+    "address": "0x24000",
     "description": "[31:0] clk_div for baud rate generation",
     "section": "uart_engine"
   },
   {
     "name": "UART_PARITY_CFG",
-    "address": "0x04",
+    "address": "0x24004",
     "description": "[0] check_en, [2:1] check_type",
     "section": "uart_engine"
   },
   {
     "name": "UART_FRAME_CFG",
-    "address": "0x08",
+    "address": "0x24008",
     "description": "[1:0] data_bit, [3:2] stop_bit",
     "section": "uart_engine"
   },
   {
     "name": "UART_TX_DATA",
-    "address": "0x10",
+    "address": "0x24010",
     "description": "[7:0] Data to be written to TX FIFO",
     "section": "uart_engine"
   },
   {
     "name": "UART_TX_CTRL",
-    "address": "0x14",
+    "address": "0x24014",
     "description": "[0] tx_fifo_wr_en (pulse), [1] tx_start_pulse (pulse)",
     "section": "uart_engine"
   },
   {
     "name": "UART_RX_DATA",
-    "address": "0x20",
+    "address": "0x24020",
     "description": "[7:0] Data read from RX FIFO",
     "section": "uart_engine"
   },
   {
     "name": "UART_RX_CTRL",
-    "address": "0x24",
+    "address": "0x24024",
     "description": "[0] rx_fifo_rd_en (pulse), [1] rx_start_pulse (pulse)",
     "section": "uart_engine"
   },
   {
     "name": "UART_STATUS",
-    "address": "0x30",
+    "address": "0x24030",
     "description": "[0] tx_busy, [1] rx_busy, [2] rx_error",
     "section": "uart_engine"
   },
   {
     "name": "UART_TX_COUNT",
-    "address": "0x34",
+    "address": "0x24034",
     "description": "[15:0] tx_byte_count",
     "section": "uart_engine"
   },
   {
     "name": "UART_RX_COUNT",
-    "address": "0x38",
+    "address": "0x24038",
     "description": "[15:0] rx_byte_count",
     "section": "uart_engine"
   },
   {
     "name": "UART_FIFO_STATUS",
-    "address": "0x3C",
+    "address": "0x2403C",
     "description": "[10:0] tx_fifo_data_count, [26:16] rx_fifo_data_count",
     "section": "uart_engine"
   },
   {
     "name": "SPI_CONFIG",
-    "address": "0x00",
+    "address": "0x28000",
     "description": "[31:0] clk_div for SPI clock generation",
     "section": "spi_engine"
   },
   {
     "name": "SPI_CONTROL",
-    "address": "0x04",
+    "address": "0x28004",
     "description": "[0] spi_enable, [2:1] spi_mode, [3] spi_msb_first",
     "section": "spi_engine"
   },
   {
     "name": "SPI_TX_DATA",
-    "address": "0x10",
+    "address": "0x28010",
     "description": "[7:0] Data to be written to TX FIFO",
     "section": "spi_engine"
   },
   {
     "name": "SPI_TX_CTRL",
-    "address": "0x14",
+    "address": "0x28014",
     "description": "[0] tx_fifo_wr_en (pulse), [1] tx_start_pulse (pulse)",
     "section": "spi_engine"
   },
   {
     "name": "SPI_RX_DATA",
-    "address": "0x20",
+    "address": "0x28020",
     "description": "[7:0] Data read from RX FIFO",
     "section": "spi_engine"
   },
   {
     "name": "SPI_RX_CTRL",
-    "address": "0x24",
+    "address": "0x28024",
     "description": "[0] rx_fifo_rd_en (pulse), [1] rx_start_pulse (pulse)",
     "section": "spi_engine"
   },
   {
     "name": "SPI_STATUS",
-    "address": "0x30",
+    "address": "0x28030",
     "description": "[0] spi_busy, [1] spi_mosi_oe",
     "section": "spi_engine"
   },
   {
     "name": "SPI_TX_COUNT",
-    "address": "0x34",
+    "address": "0x28034",
     "description": "[15:0] spi_tx_count",
     "section": "spi_engine"
   },
   {
     "name": "SPI_RX_COUNT",
-    "address": "0x38",
+    "address": "0x28038",
     "description": "[15:0] spi_rx_count",
     "section": "spi_engine"
   },
   {
     "name": "SPI_FIFO_STATUS",
-    "address": "0x3C",
+    "address": "0x2803C",
     "description": "[0] tx_fifo_full, [1] rx_fifo_empty, [12:2] tx_fifo_data_count, [23:13] rx_fifo_data_count",
     "section": "spi_engine"
   },
   {
     "name": "SPI_PIN_STATUS",
-    "address": "0x40",
+    "address": "0x28040",
     "description": "[0] spi_sck, [1] spi_mosi, [2] spi_miso, [3] spi_cs",
     "section": "spi_engine"
   },
   {
     "name": "PWM_CONTROL",
-    "address": "0x00",
+    "address": "0x2C000",
     "description": "[0]: pwm_enable, [8:1]: pwm_channel_enable",
     "section": "pwm_engine"
   },
   {
     "name": "PWM_CH_SEL",
-    "address": "0x04",
+    "address": "0x2C004",
     "description": "[2:0]: channel_config (select which channel to configure)",
     "section": "pwm_engine"
   },
   {
     "name": "PWM_HIGH_COUNT",
-    "address": "0x08",
+    "address": "0x2C008",
     "description": "[31:0]: pwm_high_count (for selected channel)",
     "section": "pwm_engine"
   },
   {
     "name": "PWM_LOW_COUNT",
-    "address": "0x0C",
+    "address": "0x2C00C",
     "description": "[31:0]: pwm_low_count (for selected channel)",
     "section": "pwm_engine"
   },
   {
     "name": "PWM_CONFIG_SET",
-    "address": "0x10",
+    "address": "0x2C010",
     "description": "[0]: config_set (write 1 to apply, auto-clear)",
     "section": "pwm_engine"
   },
   {
     "name": "PWM_OUTPUT",
-    "address": "0x14",
+    "address": "0x2C014",
     "description": "[7:0]: current PWM output states",
     "section": "pwm_engine"
   },
   {
     "name": "PWM_CH_STATUS",
-    "address": "0x18",
+    "address": "0x2C018",
     "description": "[7:0]: channel enable status",
     "section": "pwm_engine"
   },
   {
     "name": "I2C_CONFIG",
-    "address": "0x00",
+    "address": "0x30000",
     "description": "[31:0] clk_div for SCL generation",
     "section": "i2c_engine"
   },
   {
     "name": "I2C_CONTROL",
-    "address": "0x04",
+    "address": "0x30004",
     "description": "[0] i2c_enable, [1] i2c_master_mode, [2] i2c_10bit_addr, [3] i2c_restart",
     "section": "i2c_engine"
   },
   {
     "name": "I2C_DEV_ADDR",
-    "address": "0x08",
+    "address": "0x30008",
     "description": "[9:0] i2c_dev_addr",
     "section": "i2c_engine"
   },
   {
     "name": "I2C_TRANS_CFG",
-    "address": "0x0C",
+    "address": "0x3000C",
     "description": "[7:0] tx_count, [15:8] rx_count, [31] start_transaction (tx_start_pulse/rx_start_pulse)",
     "section": "i2c_engine"
   },
   {
     "name": "I2C_TX_DATA",
-    "address": "0x10",
+    "address": "0x30010",
     "description": "[7:0] Data for TX FIFO",
     "section": "i2c_engine"
   },
   {
     "name": "I2C_TX_CTRL",
-    "address": "0x14",
+    "address": "0x30014",
     "description": "[0] tx_fifo_wr_en (pulse)",
     "section": "i2c_engine"
   },
   {
     "name": "I2C_RX_DATA",
-    "address": "0x20",
+    "address": "0x30020",
     "description": "[7:0] Data from RX FIFO",
     "section": "i2c_engine"
   },
   {
     "name": "I2C_RX_CTRL",
-    "address": "0x24",
+    "address": "0x30024",
     "description": "[0] rx_fifo_rd_en (pulse)",
     "section": "i2c_engine"
   },
   {
     "name": "I2C_STATUS",
-    "address": "0x30",
+    "address": "0x30030",
     "description": "[0] busy, [1] done, [2] ack_error",
     "section": "i2c_engine"
   },
   {
     "name": "I2C_CNT_STATUS",
-    "address": "0x34",
+    "address": "0x30034",
     "description": "[7:0] tx_count_rem, [15:8] rx_count_rem",
     "section": "i2c_engine"
   },
   {
     "name": "I2C_FIFO_STATUS",
-    "address": "0x38",
+    "address": "0x30038",
     "description": "[10:0] tx_fifo_data_count, [26:16] rx_fifo_data_count",
     "section": "i2c_engine"
   },
   {
     "name": "DAC_CONTROL",
-    "address": "0x00",
+    "address": "0x34000",
     "description": "[0]: dds_enable",
     "section": "dac_engine"
   },
   {
+    "name": "DAC_STATUS",
+    "address": "0x34004",
+    "description": "[0]: waveform_ready (indicates BRAM is full)",
+    "section": "dac_engine"
+  },
+  {
     "name": "DAC_FREQUENCY",
-    "address": "0x08",
+    "address": "0x34008",
     "description": "[31:0]: frequency control word for DDS",
     "section": "dac_engine"
   },
   {
     "name": "DAC_AMPLITUDE",
-    "address": "0x0C",
+    "address": "0x3400C",
     "description": "[7:0]: amplitude scaling factor",
     "section": "dac_engine"
   },
   {
     "name": "DAC_WAVE_DATA",
-    "address": "0x10",
+    "address": "0x34010",
     "description": "[7:0]: data to write into waveform BRAM",
     "section": "dac_engine"
   },
   {
     "name": "DAC_WAVE_WR",
-    "address": "0x14",
+    "address": "0x34014",
     "description": "[0]: write enable pulse to write WAVE_DATA into BRAM",
     "section": "dac_engine"
   },
   {
-    "name": "DAC_STATUS",
-    "address": "0x04",
-    "description": "[0]: waveform_ready (indicates BRAM is full)",
-    "section": "dac_engine"
-  },
-  {
     "name": "DAC_OUTPUT",
-    "address": "0x18",
+    "address": "0x34018",
     "description": "[7:0]: current live DAC output value",
     "section": "dac_engine"
   }

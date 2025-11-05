@@ -1,4 +1,5 @@
 import React, { RefObject } from "react";
+import { useSerialContext } from "@contexts";
 
 interface WaveformPayload {
   data: number[];
@@ -120,13 +121,16 @@ export class DrawingPanel extends React.Component<
   };
 
   handleSend = () => {
+    const { writeCSR } = useSerialContext();
     const { onWaveformReady } = this.props;
     const dacData = this.state.waveform.map((val) =>
       Math.round((val + 1) * 127.5),
     );
     const frequency = Number(this.state.frequency) || 0;
     onWaveformReady({ data: dacData, frequency });
-    console.log("Waveform data sent:", { data: dacData, frequency });
+    for (let i = 0; i < dacData.length; i++) {
+      writeCSR("0x", dacData[i].toString());
+    }
   };
 
   handleFrequencyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
