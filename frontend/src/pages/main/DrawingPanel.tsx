@@ -132,16 +132,13 @@ export class DrawingPanel extends React.Component<
     const frequency = Number(this.state.frequency) || 0;
 
     await writeCSR("0x3400C", "FF");
-    await writeCSR("0x34008", ((frequency * 600) / 7).toString(16));
+    await writeCSR("0x34008", (frequency * 85.9).toString(16));
 
     for (let i = 0; i < dacData.length; i += 2) {
       await writeCSR("0x34010", (256 - dacData[i]).toString(16));
       await writeCSR("0x34014", "1");
     }
     await writeCSR("0x34000", "1");
-
-    console.log(`Frequency set to ${((frequency * 600) / 7).toString(16)} Hz`);
-    console.log("Finished sending waveform and configuration to DAC.");
   };
 
   handleFrequencyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
