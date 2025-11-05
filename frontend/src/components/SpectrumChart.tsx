@@ -67,7 +67,6 @@ export const SpectrumChart: React.FC<SpectrumChartProps> = ({
           }}
         />
         <YAxis
-          scale="log"
           domain={[0.001, "dataMax"]}
           allowDataOverflow
           label={{
