@@ -58,7 +58,7 @@ export const SpectrumChart: React.FC<SpectrumChartProps> = ({
         <XAxis
           dataKey="frequency"
           type="number"
-          domain={[0, sampleRate / 2]}
+          domain={[0, sampleRate / 2000]}
           tickFormatter={(freq) => `${(freq / 1000).toFixed(1)}k`}
           label={{
             value: "Frequency (kHz)",
@@ -70,7 +70,7 @@ export const SpectrumChart: React.FC<SpectrumChartProps> = ({
           domain={[0.001, "dataMax"]}
           allowDataOverflow
           label={{
-            value: "Magnitude (log)",
+            value: "Magnitude",
             angle: -90,
             position: "insideLeft",
           }}
