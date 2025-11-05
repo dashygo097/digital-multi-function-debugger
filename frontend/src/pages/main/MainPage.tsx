@@ -5,10 +5,10 @@ import {
   AnalogSignalData,
   SerialTerminal,
   UDPTerminal,
-  DrawingPanel,
   CollapsiblePanel,
 } from "@components";
 import "@styles/main.css";
+import { DrawingPanel } from "./DrawingPanel";
 
 interface MainPageState {
   data: AnalogSignalData[];

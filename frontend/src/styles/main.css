@@ -2,7 +2,6 @@
 @import "./components/usblist.css";
 @import "./components/serialterminal.css";
 @import "./components/udpterminal.css";
-@import "./components/drawingpanel.css";
 
 .main-page {
   position: relative;
@@ -14,7 +13,6 @@
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
-/* Main Content */
 .main-content {
   position: relative;
   z-index: 1;
@@ -28,7 +26,6 @@
   margin: 0 auto;
 }
 
-/* Header Section */
 .main-header {
   text-align: center;
   margin-bottom: 40px;
@@ -52,7 +49,6 @@
   margin: 10px 0 0 0;
 }
 
-/* Animations */
 .fade-in {
   animation: fadeIn 1s ease-out;
 }
@@ -85,74 +81,15 @@
   }
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-  .main-title {
-    font-size: 36px;
-  }
-
-  .main-content {
-    padding: 30px 16px;
-  }
-
-  .terminal-wrapper {
-    padding: 16px;
-  }
-
-  .terminal-heading {
-    font-size: 18px;
-  }
-
-  .main-serialterminal,
-  .main-udpterminal {
-    min-height: 350px;
-  }
-}
-
-@media (max-width: 480px) {
-  .main-title {
-    font-size: 28px;
-  }
-
-  .main-subtitle {
-    font-size: 16px;
-  }
-
-  .terminals-wrapper {
-    gap: 20px;
-  }
-
-  .terminal-wrapper {
-    padding: 12px;
-  }
-}
-
-/* Optional: Side-by-side layout for larger screens */
-@media (min-width: 1400px) {
-  .terminals-wrapper {
-    flex-direction: row;
-    align-items: stretch;
-  }
-
-  .terminal-wrapper {
-    flex: 1;
-    min-width: 0;
-    /* Prevent flex items from overflowing */
-  }
-}
-
-/* Existing styles for .main-page, .main-content, etc. should remain */
-
-/* Styles for Collapsible Terminals */
 .terminal-wrapper {
   background-color: #1e1e1e;
   border-radius: 8px;
   border: 1px solid #333;
   overflow: hidden;
-  /* Important for containing the content */
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
   margin-bottom: 2rem;
   transition: all 0.3s ease;
+  width: 100%;
 }
 
 .terminal-header {
@@ -192,7 +129,6 @@
   justify-content: center;
   line-height: 1;
   padding-bottom: 2px;
-  /* Center the +/- symbol visually */
   transition:
     background-color 0.2s,
     transform 0.3s ease;
@@ -204,7 +140,6 @@
 
 .terminal-content {
   max-height: 1000px;
-  /* A large enough value to show content */
   overflow: hidden;
   transition:
     max-height 0.5s cubic-bezier(0.25, 0.1, 0.25, 1),
@@ -220,9 +155,119 @@
   border-top: none;
 }
 
-/* Adjustments for the components inside the collapsible content */
-.main-serialterminal,
-.main-udpterminal {
-  /* You may need to adjust or remove fixed heights if they exist on these components */
+.drawing-panel-container {
+  display: flex;
+  flex-direction: row;
+  gap: 2rem;
+  align-items: flex-start;
+}
+
+.drawing-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  flex-grow: 1;
+}
+
+.drawing-panel-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #fff;
+  margin: 0;
+}
+
+.drawing-canvas {
+  border: 1px solid rgba(88, 166, 255, 0.3);
+  border-radius: 8px;
+  cursor: crosshair;
+  background-color: #1a1a2e;
+}
+
+.drawing-panel-right-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  width: 220px;
+  flex-shrink: 0;
+}
+
+.control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.control-group label {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 500;
+}
+
+.control-input {
+  padding: 0.75rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.4);
+  color: white;
+  font-size: 1rem;
   width: 100%;
+  box-sizing: border-box;
+}
+
+.control-button-group {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.control-button {
+  padding: 0.75rem 1.5rem;
+  border: 1px solid rgba(88, 166, 255, 0.4);
+  border-radius: 10px;
+  background: rgba(88, 166, 255, 0.15);
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 100%;
+}
+
+.control-button:hover {
+  transform: translateY(-2px);
+  background: rgba(88, 166, 255, 0.25);
+  box-shadow: 0 4px 16px rgba(88, 166, 255, 0.2);
+}
+
+.control-button.clear-btn {
+  background: rgba(255, 107, 107, 0.15);
+  border-color: rgba(255, 107, 107, 0.4);
+}
+
+.control-button.clear-btn:hover {
+  background: rgba(255, 107, 107, 0.25);
+  box-shadow: 0 4px 16px rgba(255, 107, 107, 0.2);
+}
+
+@media (max-width: 900px) {
+  .drawing-panel-container {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .drawing-panel-right-controls {
+    width: 100%;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .control-group {
+    flex-grow: 1;
+  }
+
+  .control-button-group {
+    flex-direction: row;
+    flex-grow: 1;
+  }
 }
