@@ -108,7 +108,7 @@ export class WaveSelTerminal extends Component<
     }
 
     const phaseIncrement = Math.round(
-      (freqHz * (SYSTEM_CLOCK_HZ / TWO_POW_N_2)) / TWO_POW_N_2,
+      freqHz * (TWO_POW_N_2 / SYSTEM_CLOCK_HZ) * TWO_POW_N_2,
     );
     const waveformId = WAVEFORM_MAP[selectedWaveform];
 
