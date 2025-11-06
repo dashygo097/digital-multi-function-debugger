@@ -56,7 +56,7 @@ export class SpiTerminal extends Component<SpiTerminalProps, SpiTerminalState> {
     this.state = {
       messages: [],
       stats: { errors: 0 },
-      autoScroll: true,
+      autoScroll: false,
       clkDiv: "250",
       spiMode: 0,
       msbFirst: true,
@@ -75,7 +75,7 @@ export class SpiTerminal extends Component<SpiTerminalProps, SpiTerminalState> {
   }
 
   componentDidMount() {
-    this.applyConfig(false); // Apply initial config without logging
+    this.applyConfig(false);
     this.pollInterval = window.setInterval(this.pollStatus, 1000);
   }
 

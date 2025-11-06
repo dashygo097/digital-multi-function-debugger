@@ -60,7 +60,7 @@ export class UartTerminal extends Component<
     this.state = {
       messages: [],
       stats: { errors: 0 },
-      autoScroll: true,
+      autoScroll: false,
       baudRate: "115200",
       dataBits: 8,
       stopBits: 1,

@@ -56,7 +56,7 @@ export class I2cTerminal extends Component<I2cTerminalProps, I2cTerminalState> {
     this.state = {
       messages: [],
       stats: { errors: 0, acks: 0, nacks: 0 },
-      autoScroll: true,
+      autoScroll: false,
       clkDiv: "500", // Default for 100kHz
       isEnabled: true,
       isMaster: true,
