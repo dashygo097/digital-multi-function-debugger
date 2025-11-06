@@ -2,7 +2,7 @@ import React, { Component, RefObject } from "react";
 import { ProtocolContext } from "@contexts";
 import { Message } from "@utils";
 
-const BASE_ADDR = 0x10000;
+const BASE_ADDR = 0x18000;
 const REGS = {
   STATUS: BASE_ADDR + 0x04,
   CHANNEL_SEL: BASE_ADDR + 0x08,
