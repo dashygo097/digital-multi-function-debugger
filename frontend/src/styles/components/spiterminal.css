@@ -1,0 +1,250 @@
+.main-spiterminal {
+  width: 95%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family:
+    "Segoe UI",
+    system-ui,
+    -apple-system,
+    sans-serif;
+  background: linear-gradient(135deg, #1f1f1f 0%, #4a4a4a 100%);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: 16px;
+  height: 600px;
+  color: white;
+}
+
+.main-spiterminal .control-panel {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+}
+
+.main-spiterminal .section {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.main-spiterminal .section > label {
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.9);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  padding-bottom: 4px;
+  margin-bottom: 4px;
+}
+
+.main-spiterminal .sub-label {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.7);
+  margin-top: 4px;
+}
+
+.main-spiterminal input,
+.main-spiterminal select,
+.main-spiterminal textarea {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: #e2e8f0;
+  font-size: 13px;
+  outline: none;
+  width: 90%;
+  font-family: "Consolas", monospace;
+}
+
+.main-spiterminal input:focus,
+.main-spiterminal select:focus,
+.main-spiterminal textarea:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+}
+
+.main-spiterminal textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+/* --- Right Panel (Status + Terminal) --- */
+.main-spiterminal .right-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 0;
+}
+
+.main-spiterminal .status-panel {
+  flex-shrink: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+  gap: 12px;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.main-spiterminal .status-item {
+  text-align: center;
+}
+
+.main-spiterminal .status-item label {
+  font-size: 11px;
+  color: #a0aec0;
+  text-transform: uppercase;
+}
+
+.main-spiterminal .status-item span {
+  display: block;
+  font-size: 16px;
+  font-weight: bold;
+  color: #f7fafc;
+}
+
+.main-spiterminal .status-item.busy span {
+  color: #fbd38d;
+}
+
+.main-spiterminal .pin-status div {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.main-spiterminal .pin-status span {
+  font-size: 11px;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.main-spiterminal .pin-status span.active {
+  background: #48bb78;
+  color: white;
+}
+
+.main-spiterminal .terminal {
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 16px;
+  padding: 16px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+  font-family: "Consolas", monospace;
+  font-size: 12px;
+}
+
+.main-spiterminal .message {
+  margin-bottom: 6px;
+  display: flex;
+  gap: 10px;
+}
+
+.main-spiterminal .timestamp {
+  color: #888;
+}
+
+.main-spiterminal .direction {
+  font-weight: bold;
+}
+
+.main-spiterminal .cmd .direction {
+  color: #4299e1;
+}
+
+.main-spiterminal .tx .direction {
+  color: #9f7aea;
+}
+
+.main-spiterminal .rx .direction {
+  color: #48bb78;
+}
+
+.main-spiterminal .info .direction {
+  color: #ed8936;
+}
+
+.main-spiterminal .error .direction {
+  color: #f56565;
+}
+
+/* RX Display */
+.main-spiterminal .rx-display {
+  margin-top: 8px;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 8px;
+  border-radius: 6px;
+}
+
+.main-spiterminal .rx-display label {
+  font-size: 11px;
+  color: #a0aec0;
+}
+
+.main-spiterminal .rx-display pre {
+  margin: 4px 0;
+  padding: 4px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+  font-size: 11px;
+  color: #c6f6d5;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+/* Buttons */
+.main-spiterminal button {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 10px;
+  padding: 10px;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.main-spiterminal button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+}
+
+.main-spiterminal button:disabled {
+  background: rgba(255, 255, 255, 0.1);
+  color: #a0aec0;
+  cursor: not-allowed;
+}
+
+.main-spiterminal .btn-primary {
+  background-color: #48bb78;
+}
+
+.main-spiterminal .btn-secondary {
+  background-color: #4299e1;
+}
+
+.main-spiterminal .btn-danger {
+  background-color: #f56565;
+}
+
+.main-spiterminal .btn-special {
+  background-color: #9f7aea;
+}

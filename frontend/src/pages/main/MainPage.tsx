@@ -9,6 +9,8 @@ import {
   CollapsiblePanel,
   SignalMeasureTerminal,
   BitseqLooperTerminal,
+  SpiTerminal,
+  I2cTerminal,
 } from "@components";
 import "@styles/main.css";
 import { DrawingPanel } from "./DrawingPanel";
@@ -59,6 +61,14 @@ class MainPage extends React.Component<WithRouterProps, MainPageState> {
 
             <CollapsiblePanel title="Bit Sequence Terminal">
               <BitseqLooperTerminal className="main-bitseqterminal" />
+            </CollapsiblePanel>
+
+            <CollapsiblePanel title="SPI Terminal">
+              <SpiTerminal className="main-spiterminal" />
+            </CollapsiblePanel>
+
+            <CollapsiblePanel title="IIC Terminal">
+              <I2cTerminal className="main-i2cterminal" />
             </CollapsiblePanel>
 
             <CollapsiblePanel title="Custom Waveform Drawer">
