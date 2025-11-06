@@ -16,7 +16,7 @@ const REGS = {
   SPI_FIFO_STATUS: BASE_ADDR + 0x3c,
   SPI_PIN_STATUS: BASE_ADDR + 0x40,
 };
-const SYSTEM_CLOCK_HZ = 125_000_000; // Assuming a 125MHz system clock
+const SYSTEM_CLOCK_HZ = 50_000_000; // Assuming a 125MHz system clock
 
 interface SpiTerminalProps {
   className?: string;
