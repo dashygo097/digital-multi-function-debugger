@@ -50,7 +50,6 @@ export class BitseqLooperTerminal extends Component<
   context!: React.ContextType<typeof ProtocolContext>;
 
   private terminalEndRef: RefObject<HTMLDivElement>;
-  private pollInterval: number | null = null;
 
   constructor(props: BitseqTerminalProps) {
     super(props);
@@ -72,14 +71,6 @@ export class BitseqLooperTerminal extends Component<
         })),
     };
     this.terminalEndRef = React.createRef<HTMLDivElement>();
-  }
-
-  componentDidMount() {
-    this.pollInterval = window.setInterval(this.pollPlayingStatus, 1000);
-  }
-
-  componentWillUnmount() {
-    if (this.pollInterval) clearInterval(this.pollInterval);
   }
 
   componentDidUpdate(_: {}, prevState: BitseqTerminalState) {
@@ -113,24 +104,6 @@ export class BitseqLooperTerminal extends Component<
     }));
   };
 
-  pollPlayingStatus = async () => {
-    const { readCSR } = this.context;
-    try {
-      const status = (await readCSR(
-        REGS.STATUS.toString(16),
-      )) as unknown as number;
-      if (status !== undefined) {
-        const newPlayingStatus = Array.from(
-          { length: NUM_CHANNELS },
-          (_, i) => (status & (1 << i)) !== 0,
-        );
-        this.setState({ playingStatus: newPlayingStatus });
-      }
-    } catch (e) {
-      /* Fail silently during polling */
-    }
-  };
-
   handleGlobalControlWrite = async (bit: 0 | 1 | 2, enable?: boolean) => {
     const { writeCSR } = this.context;
     const value = enable !== undefined ? (enable ? 1 : 0) : 1 << bit;
@@ -148,6 +121,12 @@ export class BitseqLooperTerminal extends Component<
           ? "Group Start"
           : `Sync Enable: ${enable}`;
     this.addMessage("TX", `Global Control: ${action}`);
+
+    if (bit === 2) {
+      const { armMask, playingStatus } = this.state;
+      const newPlayingStatus = playingStatus.map((p, i) => armMask[i] || p);
+      this.setState({ playingStatus: newPlayingStatus });
+    }
   };
 
   handleArmMaskChange = async (index: number) => {
@@ -181,6 +160,10 @@ export class BitseqLooperTerminal extends Component<
       "TX",
       `${reg === "START_CH" ? "Starting" : "Stopping"} Channel ${channel}`,
     );
+
+    const newPlayingStatus = [...this.state.playingStatus];
+    newPlayingStatus[channel] = reg === "START_CH";
+    this.setState({ playingStatus: newPlayingStatus });
   };
 
   handleChannelConfigChange = (field: keyof ChannelConfig, value: string) => {
@@ -219,7 +202,7 @@ export class BitseqLooperTerminal extends Component<
     const sequence = channelConfigs[selectedChannel].sequence.replace(
       /[^01]/g,
       "",
-    ); // Sanitize
+    );
     const sequenceLength = Number(channelConfigs[selectedChannel].length);
 
     if (sequence.length > sequenceLength) {

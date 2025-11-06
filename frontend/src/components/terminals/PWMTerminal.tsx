@@ -40,10 +40,6 @@ export class PWMTerminal extends Component<PWMTerminalProps, PWMTerminalState> {
     this.terminalEndRef = React.createRef<HTMLDivElement>();
   }
 
-  componentDidMount() {
-    this.updatePWMState();
-  }
-
   componentDidUpdate(_: PWMTerminalProps, prevState: PWMTerminalState) {
     if (
       this.state.autoScroll &&
@@ -52,29 +48,6 @@ export class PWMTerminal extends Component<PWMTerminalProps, PWMTerminalState> {
       this.terminalEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
   }
-
-  updatePWMState = async () => {
-    const { readCSR } = this.context;
-
-    try {
-      const controlReg = (await readCSR("0x2C000")) as unknown as number;
-
-      if (controlReg === undefined) {
-        this.addMessage("ERROR", "Failed to read PWM state from hardware.");
-        return;
-      }
-
-      const isEnabled = (controlReg & 0x1) !== 0;
-      const channelEnablesValue = (controlReg >> 1) & 0xff;
-      const newChannelEnables = Array(8)
-        .fill(false)
-        .map((_, i) => (channelEnablesValue & (1 << i)) !== 0);
-
-      this.setState({ isEnabled, channelEnables: newChannelEnables });
-    } catch (error) {
-      this.addMessage("ERROR", "An error occurred while updating PWM state.");
-    }
-  };
 
   addMessage = (direction: "TX" | "INFO" | "ERROR", data: string) => {
     const newMessage: Message = {
@@ -93,7 +66,7 @@ export class PWMTerminal extends Component<PWMTerminalProps, PWMTerminalState> {
       messages: [...prevState.messages, newMessage],
       stats:
         direction === "ERROR"
-          ? { ...prevState.stats, errors: prevState.stats.errors + 1 }
+          ? { errors: prevState.stats.errors + 1 }
           : prevState.stats,
     }));
   };
@@ -114,9 +87,10 @@ export class PWMTerminal extends Component<PWMTerminalProps, PWMTerminalState> {
   handleToggleChannel = async (channelIndex: number) => {
     const newEnables = [...this.state.channelEnables];
     newEnables[channelIndex] = !newEnables[channelIndex];
-    // Optimistically update the UI
-    this.setState({ channelEnables: newEnables });
-    // Send the full, correct state to the hardware
+
+    const isNowEnabled = newEnables.some((e) => e === true);
+    this.setState({ channelEnables: newEnables, isEnabled: isNowEnabled });
+
     await this.updatePWMChannelEnable(newEnables);
   };
 
@@ -173,8 +147,6 @@ export class PWMTerminal extends Component<PWMTerminalProps, PWMTerminalState> {
       `Updating PWM_CONTROL register to 0x${finalValue.toString(16)}`,
     );
     await writeCSR("0x2C000", finalValue.toString(16));
-
-    await this.updatePWMState();
   };
 
   pwmEnable = async () => {
@@ -184,7 +156,7 @@ export class PWMTerminal extends Component<PWMTerminalProps, PWMTerminalState> {
     this.state.channelEnables.forEach((en, i) => {
       if (en) channelMask |= 1 << i;
     });
-    const finalValue = (channelMask << 1) | 1; // Set bit 0 to 1
+    const finalValue = (channelMask << 1) | 1;
     await writeCSR("0x2C000", finalValue.toString(16));
     this.setState({ isEnabled: true });
   };
