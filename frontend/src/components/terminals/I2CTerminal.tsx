@@ -2,7 +2,7 @@ import React, { Component, RefObject } from "react";
 import { ProtocolContext } from "@contexts";
 import { Message } from "@utils";
 
-const BASE_ADDR = 0x84000;
+const BASE_ADDR = 0x30000;
 const REGS = {
   I2C_CONFIG: BASE_ADDR + 0x00,
   I2C_CONTROL: BASE_ADDR + 0x04,
@@ -58,7 +58,7 @@ export class I2cTerminal extends Component<I2cTerminalProps, I2cTerminalState> {
       stats: { errors: 0, acks: 0, nacks: 0 },
       autoScroll: false,
       clkDiv: "500", // Default for 100kHz
-      isEnabled: true,
+      isEnabled: false,
       isMaster: true,
       use10BitAddr: false,
       devAddr: "0x5A",
@@ -225,9 +225,8 @@ export class I2cTerminal extends Component<I2cTerminalProps, I2cTerminalState> {
 
     await writeCSR(REGS.I2C_TRANS_CFG.toString(16), transCfgValue.toString(16));
 
-    // After transaction, if we expect data, read it.
     if (bytesToRead > 0) {
-      setTimeout(() => this.readRxFifo(bytesToRead), 100); // Delay to allow transaction to complete
+      setTimeout(() => this.readRxFifo(bytesToRead), 2000);
     }
   };
 
@@ -236,7 +235,7 @@ export class I2cTerminal extends Component<I2cTerminalProps, I2cTerminalState> {
     const poll = async (resolve: any) => {
       const status = await readCSR(REGS.I2C_STATUS.toString(16));
       if (status !== undefined && (status & 0x1) === 0) resolve();
-      else setTimeout(() => poll(resolve), 50);
+      else setTimeout(() => poll(resolve), 100);
     };
     await new Promise(poll);
 
