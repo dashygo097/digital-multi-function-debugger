@@ -13,6 +13,7 @@ import {
   I2cTerminal,
   UartTerminal,
   WaveSelTerminal,
+  ACM2108Terminal,
 } from "@components";
 import "@styles/main.css";
 import { DrawingPanel } from "./DrawingPanel";
@@ -70,6 +71,10 @@ class MainPage extends React.Component<WithRouterProps, MainPageState> {
 
             <CollapsiblePanel title="WaveSel Terminal">
               <WaveSelTerminal className="main-wavesel" />
+            </CollapsiblePanel>
+
+            <CollapsiblePanel title="ADC Terminal">
+              <ACM2108Terminal className="main-acm2108" />
             </CollapsiblePanel>
 
             <CollapsiblePanel title="Custom Waveform Drawer">

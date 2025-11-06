@@ -1,0 +1,202 @@
+.main-acm2108 {
+  width: 95%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family:
+    "Segoe UI",
+    system-ui,
+    -apple-system,
+    sans-serif;
+  background: linear-gradient(135deg, #1f1f1f 0%, #4a4a4a 100%);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: 16px;
+  height: 520px;
+  color: white;
+}
+
+/* --- Left Control Panel --- */
+.main-acm2108 .control-panel {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+}
+
+.main-acm2108 .section {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.main-acm2108 .section > label {
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.9);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  padding-bottom: 4px;
+  margin-bottom: 4px;
+}
+
+.main-acm2108 .sub-label {
+  font-size: 11px;
+  color: #a0aec0;
+  margin-bottom: -4px;
+}
+
+/* Status & Grids */
+.main-acm2108 .status-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.main-acm2108 .status-item {
+  text-align: center;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.main-acm2108 .status-item label {
+  font-size: 11px;
+  color: #a0aec0;
+  text-transform: uppercase;
+}
+
+.main-acm2108 .status-item span {
+  display: block;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.main-acm2108 .status-item.ok span {
+  color: #9ae6b4;
+}
+
+.main-acm2108 .status-item.error span {
+  color: #feb2b2;
+}
+
+.main-acm2108 .channel-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.main-acm2108 .checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.main-acm2108 input[type="checkbox"] {
+  accent-color: #667eea;
+}
+
+/* Inputs */
+.main-acm2108 input[type="number"] {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: #e2e8f0;
+  font-size: 14px;
+  outline: none;
+  width: 90%;
+  font-family: "Consolas", monospace;
+}
+
+.main-acm2108 input[type="number"]:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+}
+
+/* --- Right Terminal Panel --- */
+.main-acm2108 .terminal {
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 16px;
+  padding: 16px;
+  overflow-y: auto;
+  font-family: "Consolas", monospace;
+  font-size: 12px;
+}
+
+.main-acm2108 .message {
+  margin-bottom: 6px;
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+}
+
+.main-acm2108 .timestamp {
+  color: #888;
+}
+
+.main-acm2108 .direction {
+  font-weight: bold;
+}
+
+.main-acm2108 .cmd .direction {
+  color: #4299e1;
+}
+
+.main-acm2108 .info .direction {
+  color: #ed8936;
+}
+
+.main-acm2108 .error .direction {
+  color: #f56565;
+}
+
+.main-acm2_108 .rx .direction {
+  color: #48bb78;
+}
+
+.main-acm2108 .data {
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+/* General Buttons */
+.main-acm2108 button {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 10px;
+  padding: 10px;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.main-acm2108 button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+}
+
+.main-acm2108 .btn-info {
+  background-color: #3182ce;
+}
+
+.main-acm2108 .btn-special {
+  background-color: #9f7aea;
+  font-size: 16px;
+  padding: 12px;
+}
