@@ -10,7 +10,7 @@ const REGS = {
   ADC_SPEED: BASE_ADDR + 0x10,
   RESTART: BASE_ADDR + 0x14,
 };
-const NUM_CHANNELS = 2;
+const NUM_CHANNELS = 1;
 const SYSTEM_CLOCK_HZ = 50_000_000;
 
 interface ACM2108TerminalProps {
@@ -49,8 +49,8 @@ export class ACM2108Terminal extends Component<
       autoScroll: false,
       isPllLocked: false,
       isDdrInit: false,
-      channelSelMask: Array(NUM_CHANNELS).fill(false),
-      dataNum: "1024",
+      channelSelMask: Array(NUM_CHANNELS).fill(true),
+      dataNum: "2048",
       adcSpeedDiv: "10",
     };
     this.terminalRef = React.createRef<HTMLDivElement>();
