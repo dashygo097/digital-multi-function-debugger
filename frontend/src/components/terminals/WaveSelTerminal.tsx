@@ -2,23 +2,22 @@ import React, { Component, RefObject } from "react";
 import { ProtocolContext } from "@contexts";
 import { Message } from "@utils";
 
-const N = 32; // Width of the phase accumulator
+const N = 32;
 const SYSTEM_CLOCK_HZ = 50_000_000;
-const TWO_POW_N = Math.pow(2, N);
+const TWO_POW_N_2 = Math.pow(2, N / 2);
 
-// Register addresses
 const REGS = {
+  ENABLE: 0x18018,
   WAVE_SEL: 0x1801c,
   FREQ_CONTROL: 0x18020,
-  ENABLE: 0x18018,
 };
 
 const WAVEFORM_MAP: { [key: string]: number } = {
   Sine: 0,
   Square: 1,
   Triangle: 2,
-  Sawtooth: 3,
-  Pulse: 4,
+  sawTooth: 3,
+  pulse: 4,
 };
 
 interface WaveSelTerminalProps {
@@ -48,7 +47,7 @@ export class WaveSelTerminal extends Component<
       messages: [],
       stats: { errors: 0 },
       selectedWaveform: "Sine",
-      autoScroll: true,
+      autoScroll: false,
       frequency: "1000",
     };
     this.terminalRef = React.createRef<HTMLDivElement>();
@@ -92,7 +91,13 @@ export class WaveSelTerminal extends Component<
     this.setState({ selectedWaveform: waveform });
   };
 
-  startGenerator = async () => {
+  handleEnableToggle = async () => {
+    const { writeCSR } = this.context;
+    this.addMessage("TX", `Starting Waveform Generator...`);
+    await writeCSR(REGS.ENABLE.toString(16), "1");
+  };
+
+  applySettings = async () => {
     const { writeCSR } = this.context;
     const { frequency, selectedWaveform } = this.state;
     const freqHz = parseFloat(frequency);
@@ -102,27 +107,21 @@ export class WaveSelTerminal extends Component<
       return;
     }
 
-    const phaseIncrement = Math.round((freqHz * TWO_POW_N) / SYSTEM_CLOCK_HZ);
+    const phaseIncrement = Math.round(
+      (freqHz * (SYSTEM_CLOCK_HZ / TWO_POW_N_2)) / TWO_POW_N_2,
+    );
     const waveformId = WAVEFORM_MAP[selectedWaveform];
 
     this.addMessage(
       "TX",
-      `Starting Generator: ${selectedWaveform} @ ${freqHz} Hz`,
+      `Applying settings: ${selectedWaveform} @ ${freqHz} Hz`,
     );
     this.addMessage("INFO", `Calculated Phase Increment: ${phaseIncrement}`);
 
     await writeCSR(REGS.WAVE_SEL.toString(16), waveformId.toString(16));
     await writeCSR(REGS.FREQ_CONTROL.toString(16), phaseIncrement.toString(16));
-    await writeCSR(REGS.ENABLE.toString(16), "1");
 
-    this.addMessage("INFO", "Start pulse sent to hardware.");
-  };
-
-  stopGenerator = async () => {
-    const { writeCSR } = this.context;
-    this.addMessage("TX", "Stopping Waveform Generator...");
-    await writeCSR(REGS.ENABLE.toString(16), "0");
-    this.addMessage("INFO", "Stop pulse sent to hardware.");
+    this.addMessage("INFO", "Settings applied to hardware.");
   };
 
   render() {
@@ -135,14 +134,9 @@ export class WaveSelTerminal extends Component<
         <div className="control-panel">
           <div className="section">
             <label>Master Control</label>
-            <div className="buttons-2col">
-              <button onClick={this.startGenerator} className="btn-primary">
-                Start Generator
-              </button>
-              <button onClick={this.stopGenerator} className="btn-danger">
-                Stop Generator
-              </button>
-            </div>
+            <button onClick={this.handleEnableToggle} className="btn-primary">
+              Generate Waveform
+            </button>
           </div>
 
           <div className="section">
@@ -170,6 +164,12 @@ export class WaveSelTerminal extends Component<
               />
               <span>Hz</span>
             </div>
+          </div>
+
+          <div className="section">
+            <button className="btn-special" onClick={this.applySettings}>
+              Apply Settings
+            </button>
           </div>
 
           <div className="section">
