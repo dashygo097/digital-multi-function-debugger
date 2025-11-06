@@ -400,7 +400,7 @@ export class SerialProvider extends React.Component<
     }
   };
 
-  serialSendHex = async (hex: string) => {
+  serialSendHex = async (hex: string, info = true) => {
     if (!this.writer || !hex) return;
     try {
       const hexValues = hex
@@ -416,9 +416,13 @@ export class SerialProvider extends React.Component<
       const hexDisplay = hexValues
         .map((b) => `0x${b.toString(16).padStart(2, "0")}`)
         .join(" ");
-      this.addSerialMessage("TX", `[HEX] ${hexDisplay}`);
+      if (info) {
+        this.addSerialMessage("TX", `[HEX] ${hexDisplay}`);
+      }
     } catch (error: any) {
-      this.addSerialMessage("ERROR", `Hex send failed: ${error.message}`);
+      if (info) {
+        this.addSerialMessage("ERROR", `Hex send failed: ${error.message}`);
+      }
     }
   };
 
@@ -450,7 +454,7 @@ export class SerialProvider extends React.Component<
       return;
     }
 
-    this.serialSendHex(cmdHex);
+    this.serialSendHex(cmdHex, false);
 
     const response = await this.waitForResponse();
     let finalValue = NaN;
@@ -484,7 +488,7 @@ export class SerialProvider extends React.Component<
       return;
     }
 
-    this.serialSendHex(cmdHex);
+    this.serialSendHex(cmdHex, false);
     const responseHex = await this.waitForResponse();
   };
 
