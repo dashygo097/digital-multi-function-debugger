@@ -5,6 +5,9 @@
 @import "./components/udpterminal.css";
 @import "./components/pwmterminal.css";
 @import "./components/signalterminal.css";
+@import "./components/spiterminal.css";
+
+@import "./components/i2cterminal.css";
 
 .main-page {
   position: relative;
