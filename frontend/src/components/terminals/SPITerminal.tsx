@@ -16,7 +16,7 @@ const REGS = {
   SPI_FIFO_STATUS: BASE_ADDR + 0x3c,
   SPI_PIN_STATUS: BASE_ADDR + 0x40,
 };
-const SYSTEM_CLOCK_HZ = 50_000_000; // Assuming a 125MHz system clock
+const SYSTEM_CLOCK_HZ = 50_000_000;
 
 interface SpiTerminalProps {
   className?: string;
@@ -26,16 +26,13 @@ interface SpiTerminalState {
   messages: Message[];
   stats: { errors: number };
   autoScroll: boolean;
-
   clkDiv: string;
   spiMode: number;
   msbFirst: boolean;
   isEnabled: boolean;
-
   txData: string;
   rxData: number[];
   bytesToRead: string;
-
   isBusy: boolean;
   txFifoCount: number;
   rxFifoCount: number;
@@ -49,7 +46,6 @@ export class SpiTerminal extends Component<SpiTerminalProps, SpiTerminalState> {
   context!: React.ContextType<typeof ProtocolContext>;
 
   private terminalEndRef: RefObject<HTMLDivElement>;
-  private pollInterval: number | null = null;
 
   constructor(props: SpiTerminalProps) {
     super(props);
@@ -76,11 +72,8 @@ export class SpiTerminal extends Component<SpiTerminalProps, SpiTerminalState> {
 
   componentDidMount() {
     this.applyConfig(false);
-    this.pollInterval = window.setInterval(this.pollStatus, 1000);
-  }
-
-  componentWillUnmount() {
-    if (this.pollInterval) clearInterval(this.pollInterval);
+    // Fetch initial status on load
+    this.refreshStatus();
   }
 
   componentDidUpdate(_: {}, prevState: SpiTerminalState) {
@@ -113,8 +106,9 @@ export class SpiTerminal extends Component<SpiTerminalProps, SpiTerminalState> {
     }));
   };
 
-  pollStatus = async () => {
+  refreshStatus = async () => {
     const { readCSR } = this.context;
+    this.addMessage("INFO", "Refreshing status from hardware...");
     try {
       const [status, fifoStatus, pinStatus, txCount, rxCount] =
         await Promise.all([
@@ -143,9 +137,10 @@ export class SpiTerminal extends Component<SpiTerminalProps, SpiTerminalState> {
           txTotalCount: txCount ?? this.state.txTotalCount,
           rxTotalCount: rxCount ?? this.state.rxTotalCount,
         });
+        this.addMessage("INFO", "Status updated.");
       }
     } catch (e) {
-      /* Fail silently */
+      this.addMessage("ERROR", "Failed to read status from hardware.");
     }
   };
 
@@ -171,7 +166,6 @@ export class SpiTerminal extends Component<SpiTerminalProps, SpiTerminalState> {
   sendData = async () => {
     const { writeCSR } = this.context;
     const { txData } = this.state;
-
     const bytes = txData.startsWith("0x")
       ? txData.split(/\s+/).map((hex) => parseInt(hex))
       : txData.split("").map((char) => char.charCodeAt(0));
@@ -180,7 +174,6 @@ export class SpiTerminal extends Component<SpiTerminalProps, SpiTerminalState> {
       this.addMessage("ERROR", "Invalid hex format in TX data.");
       return;
     }
-
     this.addMessage(
       "TX",
       `Queueing ${bytes.length} bytes: [${bytes.map((b) => "0x" + b.toString(16).padStart(2, "0")).join(" ")}]`,
@@ -201,7 +194,6 @@ export class SpiTerminal extends Component<SpiTerminalProps, SpiTerminalState> {
       this.addMessage("ERROR", "Invalid number of bytes to read.");
       return;
     }
-
     this.addMessage("TX", `Requesting ${byteCount} bytes from SPI bus...`);
     this.setState({ rxData: [] });
 
@@ -227,11 +219,10 @@ export class SpiTerminal extends Component<SpiTerminalProps, SpiTerminalState> {
     );
     const receivedBytes: number[] = [];
     for (let i = 0; i < byteCount; i++) {
-      await writeCSR(REGS.SPI_RX_CTRL.toString(16), "1"); // Pulse rx_fifo_rd_en
+      await writeCSR(REGS.SPI_RX_CTRL.toString(16), "1");
       const data = await readCSR(REGS.SPI_RX_DATA.toString(16));
       if (data !== undefined) receivedBytes.push(data);
     }
-
     this.setState({ rxData: receivedBytes });
     this.addMessage(
       "RX",
@@ -271,6 +262,9 @@ export class SpiTerminal extends Component<SpiTerminalProps, SpiTerminalState> {
               className={isEnabled ? "btn-danger" : "btn-primary"}
             >
               {isEnabled ? "Disable SPI" : "Enable SPI"}
+            </button>
+            <button onClick={this.refreshStatus} className="btn-info">
+              Refresh Status
             </button>
           </div>
           <div className="section">
@@ -352,7 +346,6 @@ export class SpiTerminal extends Component<SpiTerminalProps, SpiTerminalState> {
           </div>
         </div>
 
-        {/* Right Panel */}
         <div className="right-panel">
           <div className="status-panel">
             <div className={`status-item ${isBusy ? "busy" : ""}`}>

@@ -2,7 +2,7 @@ import React, { Component, RefObject } from "react";
 import { ProtocolContext } from "@contexts";
 import { Message } from "@utils";
 
-const BASE_ADDR = 0x18000;
+const BASE_ADDR = 0x10000;
 const REGS = {
   STATUS: BASE_ADDR + 0x04,
   CHANNEL_SEL: BASE_ADDR + 0x08,
@@ -10,7 +10,7 @@ const REGS = {
   ADC_SPEED: BASE_ADDR + 0x10,
   RESTART: BASE_ADDR + 0x14,
 };
-const NUM_CHANNELS = 2;
+const NUM_CHANNELS = 2; // Corrected to 2 as per user context
 const SYSTEM_CLOCK_HZ = 50_000_000;
 
 interface ACM2108TerminalProps {
@@ -40,14 +40,13 @@ export class ACM2108Terminal extends Component<
   context!: React.ContextType<typeof ProtocolContext>;
 
   private terminalRef: RefObject<HTMLDivElement>;
-  private pollInterval: number | null = null;
 
   constructor(props: ACM2108TerminalProps) {
     super(props);
     this.state = {
       messages: [],
       stats: { errors: 0 },
-      autoScroll: true,
+      autoScroll: false,
       isPllLocked: false,
       isDdrInit: false,
       channelSelMask: Array(NUM_CHANNELS).fill(false),
@@ -58,11 +57,8 @@ export class ACM2108Terminal extends Component<
   }
 
   componentDidMount() {
-    this.pollInterval = window.setInterval(this.pollStatus, 2000);
-  }
-
-  componentWillUnmount() {
-    if (this.pollInterval) clearInterval(this.pollInterval);
+    // Fetch the initial status once when the component loads.
+    this.pollStatus();
   }
 
   componentDidUpdate(_: {}, prevState: ACM2108TerminalState) {
@@ -97,6 +93,7 @@ export class ACM2108Terminal extends Component<
 
   pollStatus = async () => {
     const { readCSR } = this.context;
+    this.addMessage("INFO", "Refreshing status from hardware...");
     try {
       const status = await readCSR(REGS.STATUS.toString(16));
       if (status !== undefined) {
@@ -104,9 +101,12 @@ export class ACM2108Terminal extends Component<
           isPllLocked: (status & 0x1) !== 0,
           isDdrInit: (status & 0x2) !== 0,
         });
+        this.addMessage("INFO", "Status updated successfully.");
+      } else {
+        this.addMessage("ERROR", "Failed to read status from hardware.");
       }
     } catch (e) {
-      /* Fail silently during polling */
+      this.addMessage("ERROR", "An error occurred while fetching status.");
     }
   };
 
@@ -141,7 +141,7 @@ export class ACM2108Terminal extends Component<
     await writeCSR(REGS.ADC_SPEED.toString(16), adcSpeedValue.toString(16));
     this.addMessage(
       "INFO",
-      `Config Sent: Channels=0b${maskValue.toString(2).padStart(8, "0")}, Samples=${dataNumValue}, Divider=${adcSpeedValue}`,
+      `Config Sent: Channels=0b${maskValue.toString(2).padStart(NUM_CHANNELS, "0")}, Samples=${dataNumValue}, Divider=${adcSpeedValue}`,
     );
   };
 

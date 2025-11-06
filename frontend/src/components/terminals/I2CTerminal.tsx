@@ -26,17 +26,14 @@ interface I2cTerminalState {
   messages: Message[];
   stats: { errors: number; acks: number; nacks: number };
   autoScroll: boolean;
-
   clkDiv: string;
   isEnabled: boolean;
   isMaster: boolean;
   use10BitAddr: boolean;
-
   devAddr: string;
   txData: string;
   rxCount: string;
   rxData: number[];
-
   isBusy: boolean;
   isDone: boolean;
   ackError: boolean;
@@ -49,7 +46,6 @@ export class I2cTerminal extends Component<I2cTerminalProps, I2cTerminalState> {
   context!: React.ContextType<typeof ProtocolContext>;
 
   private terminalEndRef: RefObject<HTMLDivElement>;
-  private pollInterval: number | null = null;
 
   constructor(props: I2cTerminalProps) {
     super(props);
@@ -57,7 +53,7 @@ export class I2cTerminal extends Component<I2cTerminalProps, I2cTerminalState> {
       messages: [],
       stats: { errors: 0, acks: 0, nacks: 0 },
       autoScroll: false,
-      clkDiv: "500", // Default for 100kHz
+      clkDiv: "500",
       isEnabled: false,
       isMaster: true,
       use10BitAddr: false,
@@ -76,11 +72,7 @@ export class I2cTerminal extends Component<I2cTerminalProps, I2cTerminalState> {
 
   componentDidMount() {
     this.applyConfig(false);
-    this.pollInterval = window.setInterval(this.pollStatus, 500);
-  }
-
-  componentWillUnmount() {
-    if (this.pollInterval) clearInterval(this.pollInterval);
+    this.refreshStatus();
   }
 
   componentDidUpdate(_: {}, prevState: I2cTerminalState) {
@@ -116,8 +108,9 @@ export class I2cTerminal extends Component<I2cTerminalProps, I2cTerminalState> {
     }));
   };
 
-  pollStatus = async () => {
+  refreshStatus = async () => {
     const { readCSR } = this.context;
+    this.addMessage("INFO", "Refreshing status from hardware...");
     try {
       const [status, fifoStatus] = await Promise.all([
         readCSR(REGS.I2C_STATUS.toString(16)),
@@ -149,7 +142,7 @@ export class I2cTerminal extends Component<I2cTerminalProps, I2cTerminalState> {
         });
       }
     } catch (e) {
-      /* Fail silently */
+      this.addMessage("ERROR", "Failed to read status from hardware.");
     }
   };
 
@@ -180,20 +173,17 @@ export class I2cTerminal extends Component<I2cTerminalProps, I2cTerminalState> {
   startTransaction = async (type: "write" | "read" | "write-read") => {
     const { writeCSR } = this.context;
     const { devAddr, txData, rxCount } = this.state;
-
     const deviceAddress = parseInt(devAddr);
     if (isNaN(deviceAddress)) {
       this.addMessage("ERROR", "Invalid Device Address.");
       return;
     }
-
     const bytesToWrite =
       type === "write" || type === "write-read"
         ? this.parseHexData(txData)
         : [];
     const bytesToRead =
       type === "read" || type === "write-read" ? parseInt(rxCount) : 0;
-
     if (bytesToWrite.some(isNaN)) {
       this.addMessage("ERROR", "Invalid Hex format in TX Data.");
       return;
@@ -212,35 +202,38 @@ export class I2cTerminal extends Component<I2cTerminalProps, I2cTerminalState> {
       this.addMessage("TX", `Expecting ${bytesToRead} byte(s) in response.`);
 
     await writeCSR(REGS.I2C_DEV_ADDR.toString(16), deviceAddress.toString(16));
-
     for (const byte of bytesToWrite) {
       await writeCSR(REGS.I2C_TX_DATA.toString(16), byte.toString(16));
-      await writeCSR(REGS.I2C_TX_CTRL.toString(16), "1"); // Pulse tx_fifo_wr_en
+      await writeCSR(REGS.I2C_TX_CTRL.toString(16), "1");
     }
-
-    const txCountVal = bytesToWrite.length;
-    const rxCountVal = bytesToRead;
-    const startBit = type === "read" ? 1 << 31 : 1 << 30;
-    const transCfgValue = startBit | (rxCountVal << 8) | txCountVal;
-
+    const transCfgValue =
+      (type === "read" ? 1 << 31 : 1 << 30) |
+      (bytesToRead << 8) |
+      bytesToWrite.length;
     await writeCSR(REGS.I2C_TRANS_CFG.toString(16), transCfgValue.toString(16));
 
-    if (bytesToRead > 0) {
-      setTimeout(() => this.readRxFifo(bytesToRead), 2000);
-    }
+    this.addMessage(
+      "INFO",
+      "Transaction started. Use Refresh to check status and Read RX to get data.",
+    );
   };
 
-  readRxFifo = async (count: number) => {
+  readRxFifo = async () => {
     const { readCSR, writeCSR } = this.context;
-    const poll = async (resolve: any) => {
-      const status = await readCSR(REGS.I2C_STATUS.toString(16));
-      if (status !== undefined && (status & 0x1) === 0) resolve();
-      else setTimeout(() => poll(resolve), 100);
-    };
-    await new Promise(poll);
+    const { rxFifoCount } = this.state;
 
+    if (rxFifoCount === 0) {
+      this.addMessage(
+        "INFO",
+        "RX FIFO is empty. Refresh status to check again.",
+      );
+      await this.refreshStatus();
+      return;
+    }
+
+    this.addMessage("INFO", `Reading ${rxFifoCount} byte(s) from RX FIFO...`);
     const received: number[] = [];
-    for (let i = 0; i < count; i++) {
+    for (let i = 0; i < rxFifoCount; i++) {
       await writeCSR(REGS.I2C_RX_CTRL.toString(16), "1");
       const data = await readCSR(REGS.I2C_RX_DATA.toString(16));
       if (data !== undefined) received.push(data);
@@ -250,6 +243,7 @@ export class I2cTerminal extends Component<I2cTerminalProps, I2cTerminalState> {
       "RX",
       `[${received.map((b) => "0x" + b.toString(16).padStart(2, "0")).join(" ")}]`,
     );
+    await this.refreshStatus(); // Refresh status after reading
   };
 
   render() {
@@ -349,6 +343,14 @@ export class I2cTerminal extends Component<I2cTerminalProps, I2cTerminalState> {
           </div>
           <div className="section rx-display">
             <label>Received Data</label>
+            <div className="buttons-2col">
+              <button onClick={this.refreshStatus} className="btn-info">
+                Refresh
+              </button>
+              <button onClick={this.readRxFifo} className="btn-success">
+                Read RX
+              </button>
+            </div>
             <div>
               <label>Hex:</label>
               <pre>
