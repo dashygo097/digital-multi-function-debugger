@@ -4,7 +4,7 @@ import { Message } from "@utils";
 
 const N = 32;
 const SYSTEM_CLOCK_HZ = 50_000_000;
-const TWO_POW_N_2 = Math.pow(2, N / 2);
+const TWO_POW_N = Math.pow(2, N);
 
 const REGS = {
   ENABLE: 0x18018,
@@ -107,9 +107,7 @@ export class WaveSelTerminal extends Component<
       return;
     }
 
-    const phaseIncrement = Math.round(
-      freqHz * (TWO_POW_N_2 / SYSTEM_CLOCK_HZ) * TWO_POW_N_2,
-    );
+    const phaseIncrement = Math.round(freqHz * (TWO_POW_N / SYSTEM_CLOCK_HZ));
     const waveformId = WAVEFORM_MAP[selectedWaveform];
 
     this.addMessage(
