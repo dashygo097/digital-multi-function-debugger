@@ -412,7 +412,9 @@ export class SerialProvider extends React.Component<
         return;
       }
       const data = new Uint8Array(hexValues);
-      await this.writer.write(data);
+      if (info) {
+        await this.writer.write(data);
+      }
       const hexDisplay = hexValues
         .map((b) => `0x${b.toString(16).padStart(2, "0")}`)
         .join(" ");
@@ -470,7 +472,7 @@ export class SerialProvider extends React.Component<
       const status = parseInt(hexParts[0], 16);
       if (status === 0x00) {
         finalValue = 0;
-        for (let i = 0; i < 4; i ++) {
+        for (let i = 0; i < 4; i++) {
           finalValue += Math.pow(256, i) * Number(hexParts[4 - i]);
         }
       }
