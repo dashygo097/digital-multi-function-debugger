@@ -16,6 +16,7 @@
   grid-template-columns: 320px 1fr;
   gap: 16px;
   height: 540px;
+  /* Use fixed height for predictability */
   color: white;
 }
 
@@ -74,7 +75,7 @@
   box-shadow: 0 0 8px rgba(72, 187, 120, 0.5);
 }
 
-/* Checkboxes */
+/* Checkboxes & Inputs */
 .main-bitseqterminal .checkbox-label {
   display: flex;
   align-items: center;
@@ -91,7 +92,6 @@
   accent-color: #667eea;
 }
 
-/* Inputs and Selects */
 .main-bitseqterminal input[type="number"],
 .main-bitseqterminal select {
   background: rgba(255, 255, 255, 0.9);
@@ -101,8 +101,7 @@
   color: #2d3748;
   font-size: 13px;
   outline: none;
-  width: 90%;
-  /* Changed from 90% to 100% for better alignment */
+  width: 100%;
 }
 
 .main-bitseqterminal input[type="number"]:focus,
@@ -111,19 +110,18 @@
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
 }
 
-/* --- Right Panel (Editor + Terminal) --- */
+/* --- Right Panel (Corrected Flexbox Layout) --- */
 .main-bitseqterminal .right-panel {
-  position: relative;
-  /* Establish a positioning context */
   display: flex;
   flex-direction: column;
+  gap: 16px;
+  min-height: 0;
+  /* Crucial fix for nested flex/grid scrolling */
 }
 
 .main-bitseqterminal .sequence-editor {
-  /* This will have a calculated height based on its content */
   flex-shrink: 0;
-  padding-bottom: 16px;
-  /* This becomes the gap between editor and terminal */
+  /* Ensures this panel does not shrink */
 }
 
 .main-bitseqterminal .sequence-editor textarea {
@@ -141,14 +139,10 @@
 }
 
 .main-bitseqterminal .terminal {
-  /* Removed from flex flow and positioned absolutely */
-  position: absolute;
-  top: 190px;
-  /* Approximate height of editor + padding + button */
-  left: 0;
-  right: 0;
-  bottom: 0;
-
+  flex: 1;
+  /* This makes the terminal grow to fill remaining space */
+  min-height: 0;
+  /* Allows the terminal to shrink and enables scrolling */
   background: rgba(0, 0, 0, 0.5);
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 16px;
