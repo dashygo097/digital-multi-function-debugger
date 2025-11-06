@@ -30,24 +30,6 @@ npm install # 安装必要的modules
 npm run make # will make a zip distributable for your platform.
 ```
 
-### Run AutoTestBench Script with Verilator and Gtkwave
-
-##### For regular autotest impled in verilog:
-
-- gtkwave (waveform visualization)
-- verilator (generating executable files for testbench)
-- fzf(optional)
-- Only tested under unix-like os
-
-In shell env:
-
-```bash
-cd scripts
-bash tb.sh # or the corresponding script using fzf (tb_fzf.sh)
-```
-
-##### NOTE: You should put your testbenchs under testbenchs/ (or you might want to change the shell scirpts of $TB_DIR)
-
 ### README!!!
 
 > You should put documents under docs/ <br/>
