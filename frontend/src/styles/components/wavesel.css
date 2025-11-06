@@ -1,0 +1,207 @@
+.main-wavesel {
+  width: 95%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family:
+    "Segoe UI",
+    system-ui,
+    -apple-system,
+    sans-serif;
+  background: linear-gradient(135deg, #1f1f1f 0%, #4a4a4a 100%);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 16px;
+  height: 500px;
+  color: white;
+}
+
+/* --- Left Control Panel --- */
+.main-wavesel .control-panel {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+}
+
+.main-wavesel .section {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.main-wavesel .section > label {
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.9);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  padding-bottom: 4px;
+  margin-bottom: 4px;
+}
+
+.main-wavesel .status-indicator {
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.2);
+  text-align: center;
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
+.main-wavesel .status-indicator.connected {
+  color: #c6f6d5;
+}
+
+.main-wavesel .status-indicator.disconnected {
+  color: #fed7d7;
+}
+
+.main-wavesel .checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+/* Waveform Buttons */
+.main-wavesel .waveform-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.main-wavesel .waveform-buttons button {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  padding: 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.main-wavesel .waveform-buttons button.active {
+  background: #667eea;
+  border-color: #667eea;
+  font-weight: bold;
+}
+
+/* Frequency Input */
+.main-wavesel .freq-input {
+  display: flex;
+  align-items: center;
+}
+
+.main-wavesel .freq-input input {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px 0 0 8px;
+  padding: 8px 10px;
+  color: #e2e8f0;
+  font-size: 14px;
+  outline: none;
+  width: 100%;
+  font-family: "Consolas", monospace;
+  -moz-appearance: textfield;
+  /* Firefox */
+}
+
+.main-wavesel .freq-input input::-webkit-outer-spin-button,
+.main-wavesel .freq-input input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+  /* Chrome, Safari, Edge, Opera */
+}
+
+.main-wavesel .freq-input span {
+  background: rgba(0, 0, 0, 0.5);
+  padding: 8px 12px;
+  border-radius: 0 8px 8px 0;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-left: none;
+  font-weight: bold;
+}
+
+/* --- Right Terminal Panel --- */
+.main-wavesel .terminal {
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 16px;
+  padding: 16px;
+  overflow-y: auto;
+  font-family: "Consolas", monospace;
+  font-size: 12px;
+}
+
+.main-wavesel .message {
+  margin-bottom: 6px;
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+}
+
+.main-wavesel .timestamp {
+  color: #888;
+}
+
+.main-wavesel .direction {
+  font-weight: bold;
+}
+
+.main-wavesel .cmd .direction {
+  color: #4299e1;
+}
+
+.main-wavesel .info .direction {
+  color: #ed8936;
+}
+
+.main-wavesel .error .direction {
+  color: #f56565;
+}
+
+.main-wavesel .data {
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+/* General Buttons */
+.main-wavesel button {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 10px;
+  padding: 10px;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.main-wavesel button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+}
+
+.main-wavesel .btn-primary {
+  background-color: #48bb78;
+}
+
+.main-wavesel .btn-danger {
+  background-color: #f56565;
+}
+
+.main-wavesel .btn-special {
+  background-color: #9f7aea;
+}

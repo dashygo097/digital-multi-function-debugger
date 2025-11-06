@@ -110,7 +110,6 @@ export class UartTerminal extends Component<
     }));
   };
 
-  // Renamed from pollStatusAndData to reflect its new manual trigger
   updateStatusAndData = async () => {
     const { readCSR, writeCSR } = this.context;
     this.addMessage("INFO", "Refreshing status from hardware...");
