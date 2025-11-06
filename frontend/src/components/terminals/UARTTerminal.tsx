@@ -26,17 +26,14 @@ interface UartTerminalState {
   messages: Message[];
   stats: { errors: number };
   autoScroll: boolean;
-
   // Config
   baudRate: string;
   dataBits: number;
   stopBits: number;
   parity: "None" | "Even" | "Odd";
-
   // TX/RX
   txData: string;
   rxData: number[];
-
   // Status
   txBusy: boolean;
   rxBusy: boolean;
@@ -111,7 +108,7 @@ export class UartTerminal extends Component<
   };
 
   updateStatusAndData = async () => {
-    const { readCSR, writeCSR } = this.context;
+    const { readCSR } = this.context;
     this.addMessage("INFO", "Refreshing status from hardware...");
     try {
       const [status, fifoStatus] = await Promise.all([
@@ -130,29 +127,45 @@ export class UartTerminal extends Component<
         });
       }
       if (fifoStatus !== undefined) {
-        const rxFifoCount = (fifoStatus >> 16) & 0x7ff;
-        this.setState({ txFifoCount: fifoStatus & 0x7ff, rxFifoCount });
-
-        if (rxFifoCount > 0) {
-          const receivedBytes: number[] = [];
-          for (let i = 0; i < rxFifoCount; i++) {
-            await writeCSR(REGS.UART_RX_CTRL.toString(16), "1");
-            const data = await readCSR(REGS.UART_RX_DATA.toString(16));
-            if (data !== undefined) receivedBytes.push(data);
-          }
-          if (receivedBytes.length > 0) {
-            this.setState((p) => ({ rxData: [...p.rxData, ...receivedBytes] }));
-            const ascii = String.fromCharCode(...receivedBytes);
-            this.addMessage(
-              "RX",
-              `[${receivedBytes.map((b) => "0x" + b.toString(16).padStart(2, "0")).join(" ")}] "${ascii}"`,
-            );
-          }
-        }
+        this.setState({
+          txFifoCount: fifoStatus & 0x7ff,
+          rxFifoCount: (fifoStatus >> 16) & 0x7ff,
+        });
       }
     } catch (e) {
       this.addMessage("ERROR", "Failed to read status from hardware.");
     }
+  };
+
+  readRxFifo = async () => {
+    const { readCSR, writeCSR } = this.context;
+    const { rxFifoCount } = this.state;
+
+    if (rxFifoCount === 0) {
+      this.addMessage("INFO", "RX FIFO is empty. Nothing to read.");
+      // We can also refresh status here to be sure
+      await this.updateStatusAndData();
+      return;
+    }
+
+    this.addMessage("INFO", `Reading ${rxFifoCount} byte(s) from RX FIFO...`);
+    const receivedBytes: number[] = [];
+    for (let i = 0; i < rxFifoCount; i++) {
+      await writeCSR(REGS.UART_RX_CTRL.toString(16), "1");
+      const data = await readCSR(REGS.UART_RX_DATA.toString(16));
+      if (data !== undefined) receivedBytes.push(data);
+    }
+
+    if (receivedBytes.length > 0) {
+      this.setState((p) => ({ rxData: [...p.rxData, ...receivedBytes] }));
+      const ascii = String.fromCharCode(...receivedBytes);
+      this.addMessage(
+        "RX",
+        `[${receivedBytes.map((b) => "0x" + b.toString(16).padStart(2, "0")).join(" ")}] "${ascii}"`,
+      );
+    }
+
+    await this.updateStatusAndData();
   };
 
   applyConfig = async (log = true) => {
@@ -164,7 +177,7 @@ export class UartTerminal extends Component<
         `Applying Config: ${baudRate}, ${dataBits}N${stopBits}`,
       );
 
-    const clkDiv = Math.round(SYSTEM_CLOCK_HZ / 8 / Number(baudRate)) - 1;
+    const clkDiv = Math.round(SYSTEM_CLOCK_HZ / Number(baudRate)) - 1;
     await writeCSR(REGS.UART_CONFIG.toString(16), clkDiv.toString(16));
 
     const parityEn = parity !== "None" ? 1 : 0;
@@ -298,12 +311,22 @@ export class UartTerminal extends Component<
             <pre>{rxString.slice(-200)}</pre>
           </div>
           <div className="section">
-            <div className="buttons-2col">
+            <div className="buttons-3col">
               <button onClick={this.updateStatusAndData} className="btn-info">
                 Refresh
               </button>
+              <button onClick={this.readRxFifo} className="btn-success">
+                Read
+              </button>
               <button
-                onClick={() => this.setState({ rxData: [] })}
+                onClick={() =>
+                  this.setState({
+                    rxData: [],
+                    messages: this.state.messages.filter(
+                      (m) => m.direction !== "RX",
+                    ),
+                  })
+                }
                 className="btn-danger"
               >
                 Clear RX
