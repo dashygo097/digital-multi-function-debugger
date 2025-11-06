@@ -10,7 +10,7 @@ const REGS = {
   ADC_SPEED: BASE_ADDR + 0x10,
   RESTART: BASE_ADDR + 0x14,
 };
-const NUM_CHANNELS = 2; // Corrected to 2 as per user context
+const NUM_CHANNELS = 2;
 const SYSTEM_CLOCK_HZ = 50_000_000;
 
 interface ACM2108TerminalProps {
@@ -223,19 +223,25 @@ export class ACM2108Terminal extends Component<
           </div>
 
           <div className="section">
-            <button onClick={() => this.setState({ messages: [] })}>
-              Clear Log
-            </button>
-            <label className="checkbox-label">
-              <input
-                type="checkbox"
-                checked={autoScroll}
-                onChange={(e) =>
-                  this.setState({ autoScroll: e.target.checked })
+            <div className="buttons-2col">
+              <button
+                onClick={() =>
+                  this.setState({ messages: [], stats: { errors: 0 } })
                 }
-              />
-              Auto-scroll
-            </label>
+              >
+                Clear Log
+              </button>
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={autoScroll}
+                  onChange={(e) =>
+                    this.setState({ autoScroll: e.target.checked })
+                  }
+                />
+                Auto-scroll
+              </label>
+            </div>
           </div>
         </div>
 
@@ -250,6 +256,7 @@ export class ACM2108Terminal extends Component<
               <span className="data">{msg.data}</span>
             </div>
           ))}
+          {/* Correctly assign the ref for auto-scrolling */}
           <div ref={this.terminalRef} />
         </div>
       </div>
