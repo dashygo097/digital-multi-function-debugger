@@ -12,6 +12,7 @@ import {
   SpiTerminal,
   I2cTerminal,
   UartTerminal,
+  WaveSelTerminal,
 } from "@components";
 import "@styles/main.css";
 import { DrawingPanel } from "./DrawingPanel";
@@ -65,6 +66,10 @@ class MainPage extends React.Component<WithRouterProps, MainPageState> {
 
             <CollapsiblePanel title="UART Terminal">
               <UartTerminal className="main-uartterminal" />
+            </CollapsiblePanel>
+
+            <CollapsiblePanel title="WaveSel Terminal">
+              <WaveSelTerminal className="main-wavesel" />
             </CollapsiblePanel>
 
             <CollapsiblePanel title="Custom Waveform Drawer">

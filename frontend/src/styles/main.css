@@ -8,6 +8,7 @@
 @import "./components/spiterminal.css";
 @import "./components/uartterminal.css";
 @import "./components/i2cterminal.css";
+@import "./components/wavesel.css";
 
 .main-page {
   position: relative;
