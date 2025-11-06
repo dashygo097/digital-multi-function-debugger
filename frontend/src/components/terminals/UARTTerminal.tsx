@@ -78,7 +78,7 @@ export class UartTerminal extends Component<
 
   componentDidMount() {
     this.applyConfig(false);
-    this.pollInterval = window.setInterval(this.pollStatusAndData, 100);
+    this.pollInterval = window.setInterval(this.pollStatusAndData, 2000);
   }
 
   componentWillUnmount() {

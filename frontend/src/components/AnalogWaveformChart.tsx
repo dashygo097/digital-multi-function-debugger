@@ -33,7 +33,6 @@ interface AnalogWaveformChartProps {
 
 export class AnalogWaveformChart extends React.Component<AnalogWaveformChartProps> {
   render() {
-    // Recharts needs an array of objects, so we map the number array
     const chartData = this.props.data.map((value, index) => ({ index, value }));
     const yMin = Math.min(...this.props.data);
     const yMax = Math.max(...this.props.data);
