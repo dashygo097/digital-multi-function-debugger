@@ -77,6 +77,14 @@ class MainPage extends React.Component<WithRouterProps, MainPageState> {
               <ACM2108Terminal className="main-acm2108" />
             </CollapsiblePanel>
 
+            <CollapsiblePanel title="SPI Terminal">
+              <SpiTerminal className="main-spiterminal" />
+            </CollapsiblePanel>
+
+            <CollapsiblePanel title="I2C Terminal">
+              <I2cTerminal className="main-i2cterminal" />
+            </CollapsiblePanel>
+
             <CollapsiblePanel title="Custom Waveform Drawer">
               <DrawingPanel
                 className="main-drawingpanel"
