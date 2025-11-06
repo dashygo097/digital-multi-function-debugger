@@ -7,7 +7,7 @@ const SYSTEM_CLOCK_HZ = 50_000_000;
 const TWO_POW_N_2 = Math.pow(2, N / 2);
 
 const REGS = {
-  ENABLE: 0x18000,
+  ENABLE: 0x18018,
   WAVE_SEL: 0x1801c,
   FREQ_CONTROL: 0x18020,
 };
