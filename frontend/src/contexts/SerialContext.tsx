@@ -469,8 +469,10 @@ export class SerialProvider extends React.Component<
       const hexParts = responseHex.split(" ");
       const status = parseInt(hexParts[0], 16);
       if (status === 0x00) {
-        const valueHex = hexParts.slice(1, 5).join("");
-        finalValue = parseInt(valueHex, 16);
+        finalValue = 0;
+        for (let i = 0; i < 4; i ++) {
+          finalValue += Math.pow(256, i) * Number(hexParts[4 - i]);
+        }
       }
     }
 
