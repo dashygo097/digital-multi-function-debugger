@@ -454,7 +454,7 @@ export class SerialProvider extends React.Component<
       return;
     }
 
-    this.serialSendHex(cmdHex, true);
+    this.serialSendHex(cmdHex, false);
 
     const response = await this.waitForResponse();
     let finalValue = NaN;
@@ -488,7 +488,7 @@ export class SerialProvider extends React.Component<
       return;
     }
 
-    this.serialSendHex(cmdHex, true);
+    this.serialSendHex(cmdHex, false);
     const responseHex = await this.waitForResponse();
   };
 

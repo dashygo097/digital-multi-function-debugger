@@ -2,7 +2,7 @@ import React, { Component, RefObject } from "react";
 import { ProtocolContext } from "@contexts";
 import { Message } from "@utils";
 
-const BASE_ADDR = 0x82000;
+const BASE_ADDR = 0x24000;
 const REGS = {
   UART_CONFIG: BASE_ADDR + 0x00,
   UART_PARITY_CFG: BASE_ADDR + 0x04,
