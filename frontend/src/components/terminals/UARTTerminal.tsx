@@ -111,10 +111,8 @@ export class UartTerminal extends Component<
     const { readCSR } = this.context;
     this.addMessage("INFO", "Refreshing status from hardware...");
     try {
-      const [status, fifoStatus] = await Promise.all([
-        readCSR(REGS.UART_STATUS.toString(16)),
-        readCSR(REGS.UART_FIFO_STATUS.toString(16)),
-      ]);
+      const status = await readCSR(REGS.UART_STATUS.toString(16));
+      const fifoStatus = await readCSR(REGS.UART_FIFO_STATUS.toString(16));
 
       if (status !== undefined) {
         const rxError = (status & 0x4) !== 0;
@@ -309,7 +307,7 @@ export class UartTerminal extends Component<
             <label>Received Data Preview</label>
             <pre>{rxString.slice(-200)}</pre>
           </div>
-          <div className="section">
+          <div className="section"> 
             <div className="buttons-3col">
               <button onClick={this.updateStatusAndData} className="btn-info">
                 Refresh

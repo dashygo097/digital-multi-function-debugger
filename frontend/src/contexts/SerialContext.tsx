@@ -494,7 +494,7 @@ export class SerialProvider extends React.Component<
     const responseHex = await this.waitForResponse();
   };
 
-  private waitForResponse = (timeout = 100): Promise<string | null> => {
+  private waitForResponse = (timeout = 5000): Promise<string | null> => {
     return new Promise((resolve) => {
       this.cmdResolver = resolve;
       setTimeout(() => {
