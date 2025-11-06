@@ -53,7 +53,6 @@ export class UartTerminal extends Component<
   context!: React.ContextType<typeof ProtocolContext>;
 
   private terminalEndRef: RefObject<HTMLDivElement>;
-  private pollInterval: number | null = null;
 
   constructor(props: UartTerminalProps) {
     super(props);
@@ -78,11 +77,7 @@ export class UartTerminal extends Component<
 
   componentDidMount() {
     this.applyConfig(false);
-    this.pollInterval = window.setInterval(this.pollStatusAndData, 2000);
-  }
-
-  componentWillUnmount() {
-    if (this.pollInterval) clearInterval(this.pollInterval);
+    this.updateStatusAndData();
   }
 
   componentDidUpdate(_: {}, prevState: UartTerminalState) {
@@ -115,8 +110,10 @@ export class UartTerminal extends Component<
     }));
   };
 
-  pollStatusAndData = async () => {
+  // Renamed from pollStatusAndData to reflect its new manual trigger
+  updateStatusAndData = async () => {
     const { readCSR, writeCSR } = this.context;
+    this.addMessage("INFO", "Refreshing status from hardware...");
     try {
       const [status, fifoStatus] = await Promise.all([
         readCSR(REGS.UART_STATUS.toString(16)),
@@ -155,7 +152,7 @@ export class UartTerminal extends Component<
         }
       }
     } catch (e) {
-      /* Fail silently during polling */
+      this.addMessage("ERROR", "Failed to read status from hardware.");
     }
   };
 
@@ -171,13 +168,11 @@ export class UartTerminal extends Component<
     const clkDiv = Math.round(SYSTEM_CLOCK_HZ / 8 / Number(baudRate)) - 1;
     await writeCSR(REGS.UART_CONFIG.toString(16), clkDiv.toString(16));
 
-    // Parity
     const parityEn = parity !== "None" ? 1 : 0;
     const parityType = parity === "Odd" ? 1 : parity === "Even" ? 2 : 0;
     const parityValue = (parityType << 1) | parityEn;
     await writeCSR(REGS.UART_PARITY_CFG.toString(16), parityValue.toString(16));
 
-    // Frame
     const dataBitMap = { 5: 0, 6: 1, 7: 2, 8: 3 };
     const stopBitMap = { 1: 0, 2: 1 };
     const dataBitVal = dataBitMap[dataBits as keyof typeof dataBitMap] ?? 3;
@@ -304,12 +299,17 @@ export class UartTerminal extends Component<
             <pre>{rxString.slice(-200)}</pre>
           </div>
           <div className="section">
-            <button
-              onClick={() => this.setState({ rxData: [] })}
-              className="btn-danger"
-            >
-              Clear RX Buffer
-            </button>
+            <div className="buttons-2col">
+              <button onClick={this.updateStatusAndData} className="btn-info">
+                Refresh
+              </button>
+              <button
+                onClick={() => this.setState({ rxData: [] })}
+                className="btn-danger"
+              >
+                Clear RX
+              </button>
+            </div>
           </div>
         </div>
 

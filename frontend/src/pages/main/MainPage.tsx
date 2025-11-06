@@ -63,6 +63,10 @@ class MainPage extends React.Component<WithRouterProps, MainPageState> {
               <BitseqLooperTerminal className="main-bitseqterminal" />
             </CollapsiblePanel>
 
+            <CollapsiblePanel title="UART Terminal">
+              <UartTerminal className="main-uartterminal" />
+            </CollapsiblePanel>
+
             <CollapsiblePanel title="Custom Waveform Drawer">
               <DrawingPanel
                 className="main-drawingpanel"
