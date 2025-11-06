@@ -40,6 +40,10 @@ export class PWMTerminal extends Component<PWMTerminalProps, PWMTerminalState> {
     this.terminalEndRef = React.createRef<HTMLDivElement>();
   }
 
+  componentDidMount() {
+    this.updatePWMState();
+  }
+
   componentDidUpdate(_: PWMTerminalProps, prevState: PWMTerminalState) {
     if (
       this.state.autoScroll &&
@@ -48,6 +52,30 @@ export class PWMTerminal extends Component<PWMTerminalProps, PWMTerminalState> {
       this.terminalEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
   }
+
+  updatePWMState = async () => {
+    const { readCSR } = this.context;
+    this.addMessage("INFO", "Refreshing PWM status from hardware...");
+    try {
+      const controlReg = (await readCSR("0x2C000")) as unknown as number;
+
+      if (controlReg === undefined) {
+        this.addMessage("ERROR", "Failed to read PWM state from hardware.");
+        return;
+      }
+
+      const isEnabled = (controlReg & 0x1) !== 0;
+      const channelEnablesValue = (controlReg >> 1) & 0xff;
+      const newChannelEnables = Array(8)
+        .fill(false)
+        .map((_, i) => (channelEnablesValue & (1 << i)) !== 0);
+
+      this.setState({ isEnabled, channelEnables: newChannelEnables });
+      this.addMessage("INFO", "Status updated successfully.");
+    } catch (error) {
+      this.addMessage("ERROR", "An error occurred while updating PWM state.");
+    }
+  };
 
   addMessage = (direction: "TX" | "INFO" | "ERROR", data: string) => {
     const newMessage: Message = {
@@ -134,9 +162,7 @@ export class PWMTerminal extends Component<PWMTerminalProps, PWMTerminalState> {
     const { writeCSR } = this.context;
     let concatEnables = 0;
     enables.forEach((enabled, index) => {
-      if (enabled) {
-        concatEnables |= 1 << index;
-      }
+      if (enabled) concatEnables |= 1 << index;
     });
 
     const masterEnable = concatEnables > 0 ? 1 : 0;
@@ -190,6 +216,9 @@ export class PWMTerminal extends Component<PWMTerminalProps, PWMTerminalState> {
             >
               {isEnabled ? "● PWM Enabled" : "○ PWM Disabled"}
             </span>
+            <button onClick={this.updatePWMState} className="btn-info small">
+              Refresh
+            </button>
           </div>
 
           <div className="section">
