@@ -1,0 +1,234 @@
+.main-uartterminal {
+  width: 95%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family:
+    "Segoe UI",
+    system-ui,
+    -apple-system,
+    sans-serif;
+  background: linear-gradient(135deg, #1f1f1f 0%, #4a4a4a 100%);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: 16px;
+  height: 600px;
+  color: white;
+}
+
+/* --- Left Control Panel --- */
+.main-uartterminal .control-panel {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+}
+
+.main-uartterminal .section {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.main-uartterminal .section > label {
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.9);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  padding-bottom: 4px;
+  margin-bottom: 4px;
+}
+
+.main-uartterminal .sub-label {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.main-uartterminal .config-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+/* Inputs, Selects, Textareas */
+.main-uartterminal input,
+.main-uartterminal select,
+.main-uartterminal textarea {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: #e2e8f0;
+  font-size: 13px;
+  outline: none;
+  width: 90%;
+  font-family: "Consolas", monospace;
+}
+
+.main-uartterminal input:focus,
+.main-uartterminal select:focus,
+.main-uartterminal textarea:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+}
+
+.main-uartterminal textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+/* --- Right Panel (Status + Terminal) --- */
+.main-uartterminal .right-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 0;
+}
+
+.main-uartterminal .status-panel {
+  flex-shrink: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+  gap: 12px;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.main-uartterminal .status-item {
+  text-align: center;
+}
+
+.main-uartterminal .status-item label {
+  font-size: 11px;
+  color: #a0aec0;
+  text-transform: uppercase;
+}
+
+.main-uartterminal .status-item span {
+  display: block;
+  font-size: 16px;
+  font-weight: bold;
+  color: #f7fafc;
+}
+
+.main-uartterminal .status-item.busy span {
+  color: #fbd38d;
+}
+
+.main-uartterminal .status-item.error span {
+  color: #feb2b2;
+}
+
+/* Terminal */
+.main-uartterminal .terminal {
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 16px;
+  padding: 16px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+  font-family: "Consolas", monospace;
+  font-size: 12px;
+}
+
+.main-uartterminal .message {
+  margin-bottom: 6px;
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+}
+
+.main-uartterminal .timestamp {
+  color: #888;
+}
+
+.main-uartterminal .direction {
+  font-weight: bold;
+}
+
+.main-uartterminal .cmd .direction {
+  color: #4299e1;
+}
+
+.main-uartterminal .tx .direction {
+  color: #9f7aea;
+}
+
+.main-uartterminal .rx .direction {
+  color: #48bb78;
+}
+
+.main-uartterminal .info .direction {
+  color: #ed8936;
+}
+
+.main-uartterminal .error .direction {
+  color: #f56565;
+}
+
+.main-uartterminal .data {
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+/* RX Display */
+.main-uartterminal .rx-display pre {
+  margin: 0;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+  font-size: 11px;
+  color: #c6f6d5;
+  white-space: pre-wrap;
+  word-break: break-all;
+  min-height: 50px;
+}
+
+/* Buttons */
+.main-uartterminal button {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 10px;
+  padding: 10px;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.main-uartterminal button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+}
+
+.main-uartterminal button:disabled {
+  background: rgba(255, 255, 255, 0.1);
+  color: #a0aec0;
+  cursor: not-allowed;
+}
+
+.main-uartterminal .btn-secondary {
+  background-color: #4299e1;
+}
+
+.main-uartterminal .btn-danger {
+  background-color: #f56565;
+}
+
+.main-uartterminal .btn-special {
+  background-color: #9f7aea;
+}

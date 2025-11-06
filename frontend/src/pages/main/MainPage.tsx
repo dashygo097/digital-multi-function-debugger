@@ -11,6 +11,7 @@ import {
   BitseqLooperTerminal,
   SpiTerminal,
   I2cTerminal,
+  UartTerminal,
 } from "@components";
 import "@styles/main.css";
 import { DrawingPanel } from "./DrawingPanel";
@@ -32,7 +33,6 @@ class MainPage extends React.Component<WithRouterProps, MainPageState> {
   render() {
     return (
       <div className="main-page">
-        {/* Main Content */}
         <div className="main-content">
           <div className="main-header fade-in">
             <h1 className="main-title">Control Panel</h1>
@@ -40,7 +40,7 @@ class MainPage extends React.Component<WithRouterProps, MainPageState> {
           </div>
 
           <div className="terminals-wrapper slide-up">
-            <CollapsiblePanel title="Serial Terminal">
+            <CollapsiblePanel title="MAIN Terminal">
               <SerialTerminal className="main-serialterminal" />
             </CollapsiblePanel>
 
@@ -61,6 +61,10 @@ class MainPage extends React.Component<WithRouterProps, MainPageState> {
 
             <CollapsiblePanel title="Bit Sequence Terminal">
               <BitseqLooperTerminal className="main-bitseqterminal" />
+            </CollapsiblePanel>
+
+            <CollapsiblePanel title="UART Terminal">
+              <UartTerminal className="main-uartterminal" />
             </CollapsiblePanel>
 
             <CollapsiblePanel title="SPI Terminal">

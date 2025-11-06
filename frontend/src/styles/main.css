@@ -6,7 +6,7 @@
 @import "./components/pwmterminal.css";
 @import "./components/signalterminal.css";
 @import "./components/spiterminal.css";
-
+@import "./components/uartterminal.css";
 @import "./components/i2cterminal.css";
 
 .main-page {
