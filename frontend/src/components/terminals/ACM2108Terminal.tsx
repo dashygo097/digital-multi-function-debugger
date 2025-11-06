@@ -57,7 +57,6 @@ export class ACM2108Terminal extends Component<
   }
 
   componentDidMount() {
-    // Fetch the initial status once when the component loads.
     this.pollStatus();
   }
 
