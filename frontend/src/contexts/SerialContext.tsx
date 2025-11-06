@@ -412,9 +412,7 @@ export class SerialProvider extends React.Component<
         return;
       }
       const data = new Uint8Array(hexValues);
-      if (info) {
-        await this.writer.write(data);
-      }
+      await this.writer.write(data);
       const hexDisplay = hexValues
         .map((b) => `0x${b.toString(16).padStart(2, "0")}`)
         .join(" ");
