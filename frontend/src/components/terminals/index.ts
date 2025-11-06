@@ -8,3 +8,4 @@ export * from "./BitSeqTerminal";
 export * from "./I2CTerminal";
 export * from "./UARTTerminal";
 export * from "./WaveSelTerminal";
+export * from "./ACM2108Terminal";
