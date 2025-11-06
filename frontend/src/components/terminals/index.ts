@@ -6,3 +6,4 @@ export * from "./SignalMeasureTerminal";
 export * from "./SPITerminal";
 export * from "./BitSeqTerminal";
 export * from "./I2CTerminal";
+export * from "./UARTTerminal";
