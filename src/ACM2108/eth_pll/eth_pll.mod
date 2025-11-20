@@ -7,7 +7,7 @@
 
 -mod_name eth_pll_MOD
 -file_name eth_pll_mod
--path C:/Users/24165/Desktop/acg525_acm2108_ddr3_udp/acm2108_ddr3_udp/src/eth_pll/
+-path D:/Base/FPGA_Gowin/digital-multi-function-debugger/src/ACM2108/eth_pll/
 -type PLL_ADV
 -file_type vlg
 -ssc false

@@ -12,17 +12,17 @@ module spi_engine (
 
     // fifo transmit 
     input  wire [7:0] tx_fifo_data,
-    input  wire       tx_fifo_wr_en,    // è„‰å†²å†™å…¥FIFOï¼ˆå†™å…¥ä¸€å­—èŠ‚ï¼‰
-    input  wire       tx_start_pulse,   // è„‰å†²å¯åŠ¨SPIä¼ è¾“ï¼ˆå‘é€FIFOä¸­å…¨éƒ¨æ•°æ®ï¼‰
+    input  wire       tx_fifo_wr_en,
+    input  wire       tx_start_pulse,
     output wire       tx_fifo_full,
-    output wire       tx_busy,          // å‘é€è¿›è¡Œä¸­
+    output wire       tx_busy,
     
     // fifo receive 
     output wire [7:0] rx_fifo_data,
-    input  wire       rx_fifo_rd_en,    // è„‰å†²è¯»å–FIFOï¼ˆè¯»å–ä¸€å­—èŠ‚ï¼‰
-    input  wire       rx_start_pulse,   // è„‰å†²å¯åŠ¨è¿ç»­è¯»å–ï¼ˆè¯»å–å…¨éƒ¨æ•°æ®ï¼‰
+    input  wire       rx_fifo_rd_en,
+    input  wire       rx_start_pulse,
     output wire       rx_fifo_empty,
-    output wire       rx_data_ready,    // RX FIFOä¸­æœ‰æ•°æ®å¯ç”¨
+    output wire       rx_data_ready,
 
     // physics pin
     output reg  spi_sck,
@@ -36,77 +36,67 @@ module spi_engine (
     output wire [15:0] spi_tx_count,
     output wire [15:0] spi_rx_count,
     
-    // fifoçŠ¶æ€æŒ‡ç¤º
-    output wire [10:0] tx_fifo_data_count,  // TX FIFOæ•°æ®è®¡æ•°
-    output wire [10:0] rx_fifo_data_count   // RX FIFOæ•°æ®è®¡æ•°
+    // fifo×´Ì¬Ö¸Ê¾
+    output wire [10:0] tx_fifo_data_count,
+    output wire [10:0] rx_fifo_data_count
 );
 
-  // FIFOæ·±åº¦å‚æ•°
+  // FIFOÉî¶È²ÎÊı
   localparam FIFO_DEPTH = 1024;
   localparam ADDR_WIDTH = 10;
 
   // fsm state define
-  localparam [2:0] IDLE = 3'b000;
-  localparam [2:0] REQ_DATA = 3'b001;
-  localparam [2:0] LOAD_DATA = 3'b010;
-  localparam [2:0] START = 3'b011;
-  localparam [2:0] ACTIVE = 3'b100;
-  localparam [2:0] COMPLETE = 3'b101;
+  localparam [1:0] IDLE     = 2'b00;
+  localparam [1:0] ACTIVE   = 2'b01;
+  localparam [1:0] COMPLETE = 2'b10;
 
   // internal registers
-  reg [2:0] state;
+  reg [1:0] state;
   reg [7:0] tx_shift_reg;
   reg [7:0] rx_shift_reg;
-  reg [2:0] bit_counter;
+  reg [3:0] bit_counter;
   reg [31:0] clk_counter;
   reg tx_fifo_rd_en;
   reg rx_fifo_wr_en;
   reg [7:0] rx_data_reg;
   reg [15:0] tx_byte_counter;
   reg [15:0] rx_byte_counter;
-  
-  // æ§åˆ¶æ ‡å¿—
-  reg tx_continuous_mode;
-  reg rx_continuous_mode;
+  reg tx_fifo_rd_en_reg;
+  // ¿ØÖÆ±êÖ¾
+  reg tx_active;
 
   // FIFO signals
   wire [7:0] tx_fifo_rd_data;
   wire tx_fifo_empty;
-  wire tx_fifo_rd_en_actual;
   
   wire rx_fifo_full;
-  wire rx_fifo_wr_en_actual;
-  wire rx_fifo_rd_en_actual;
 
   // spi mode configuration
   wire cpol = spi_mode[1];
   wire cpha = spi_mode[0];
 
-  // è¾¹æ²¿æ£€æµ‹é€»è¾‘
-  reg tx_fifo_wr_en_prev, tx_start_pulse_prev, rx_fifo_rd_en_prev, rx_start_pulse_prev;
+  // ±ßÑØ¼ì²â
+  reg tx_start_pulse_prev;
+  reg rx_fifo_rd_en_prev;
+  reg tx_fifo_wr_en_prev;
   
   always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
-      tx_fifo_wr_en_prev <= 1'b0;
       tx_start_pulse_prev <= 1'b0;
-      rx_fifo_rd_en_prev <= 1'b0;
-      rx_start_pulse_prev <= 1'b0;
+      rx_fifo_rd_en_prev  <= 1'b0;
+      tx_start_pulse_prev <= 1'b0;
     end else begin
-      // æ­£ç¡®çš„è¾¹æ²¿æ£€æµ‹ï¼šå…ˆä¿å­˜å½“å‰å€¼ï¼Œç„¶ååœ¨ä¸‹ä¸ªå‘¨æœŸæ¯”è¾ƒ
-      tx_fifo_wr_en_prev <= tx_fifo_wr_en;
       tx_start_pulse_prev <= tx_start_pulse;
-      rx_fifo_rd_en_prev <= rx_fifo_rd_en;
-      rx_start_pulse_prev <= rx_start_pulse;
+      rx_fifo_rd_en_prev  <= rx_fifo_rd_en;
+      tx_fifo_wr_en_prev  <= tx_fifo_wr_en;
     end
   end
 
-  // è¾¹æ²¿æ£€æµ‹ä¿¡å·
-  wire tx_fifo_wr_en_rise = tx_fifo_wr_en && !tx_fifo_wr_en_prev;
   wire tx_start_pulse_rise = tx_start_pulse && !tx_start_pulse_prev;
+  wire tx_fifo_wr_en_rise = tx_fifo_wr_en && !tx_fifo_wr_en_prev;
   wire rx_fifo_rd_en_rise = rx_fifo_rd_en && !rx_fifo_rd_en_prev;
-  wire rx_start_pulse_rise = rx_start_pulse && !rx_start_pulse_prev;
 
-  // TX FIFOå®ä¾‹åŒ–
+  // TX FIFOÀı»¯
   bram_fifo #(
     .DATA_WIDTH(8),
     .FIFO_DEPTH(FIFO_DEPTH)
@@ -117,12 +107,12 @@ module spi_engine (
     .wr_en(tx_fifo_wr_en_rise),
     .full(tx_fifo_full),
     .rd_data(tx_fifo_rd_data),
-    .rd_en(tx_fifo_rd_en_actual),
+    .rd_en(tx_fifo_rd_en),
     .empty(tx_fifo_empty),
     .data_count(tx_fifo_data_count)
   );
 
-  // RX FIFOå®ä¾‹åŒ–
+  // RX FIFOÀı»¯
   bram_fifo #(
     .DATA_WIDTH(8),
     .FIFO_DEPTH(FIFO_DEPTH)
@@ -130,54 +120,78 @@ module spi_engine (
     .clk(clk),
     .rst_n(rst_n),
     .wr_data(rx_data_reg),
-    .wr_en(rx_fifo_wr_en_actual),
+    .wr_en(rx_fifo_wr_en),
     .full(rx_fifo_full),
     .rd_data(rx_fifo_data),
-    .rd_en(rx_fifo_rd_en_actual),
+    .rd_en(rx_fifo_rd_en_rise),
     .empty(rx_fifo_empty),
     .data_count(rx_fifo_data_count)
   );
 
-  // æ§åˆ¶é€»è¾‘
+  // ¿ØÖÆÂß¼­
   always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
-      tx_continuous_mode <= 1'b0;
-      rx_continuous_mode <= 1'b0;
+      tx_active <= 1'b0;
     end else begin
-      // TXå¯åŠ¨è„‰å†²ï¼šè¿›å…¥è¿ç»­å‘é€æ¨¡å¼
       if (tx_start_pulse_rise) begin
-        tx_continuous_mode <= 1'b1;
+        tx_active <= 1'b1;
       end else if (state == IDLE && tx_fifo_empty) begin
-        tx_continuous_mode <= 1'b0;
-      end
-      
-      // RXå¯åŠ¨è„‰å†²ï¼šè¿›å…¥è¿ç»­è¯»å–æ¨¡å¼
-      if (rx_start_pulse_rise) begin
-        rx_continuous_mode <= 1'b1;
-      end else if (rx_fifo_empty) begin
-        rx_continuous_mode <= 1'b0;
+        tx_active <= 1'b0;
       end
     end
   end
 
-  // FIFOæ§åˆ¶ä¿¡å·
-  assign tx_fifo_rd_en_actual = tx_fifo_rd_en && !tx_fifo_empty;
-  assign rx_fifo_wr_en_actual = rx_fifo_wr_en && !rx_fifo_full;
-  
-  //FIFOè¯»ä½¿èƒ½æ£€æµ‹ä¿¡å·
-  assign rx_fifo_rd_en_actual = rx_fifo_rd_en_rise;
+always @(posedge clk or negedge rst_n) begin
+    if(!rst_n)
+        spi_sck <= cpol;
+    else begin
+        case (state)
+        IDLE:
+            spi_sck <= cpol;
+        ACTIVE: begin
+        if (clk_counter < (clk_div >> 1)) begin
+            spi_sck <= cpol;
+          end else begin
+            spi_sck <= ~cpol;
+          end
+        end
+        COMPLETE:
+            spi_sck <= cpol;
+        endcase
+    end
+end
 
-  //SPIçŠ¶æ€æœº
+    always @(posedge clk or negedge rst_n) begin
+        if(!rst_n) 
+            tx_fifo_rd_en_reg <= 1'b0;
+        else 
+            tx_fifo_rd_en_reg <= tx_fifo_rd_en;
+    end
+
+// Ê±ÖÓ¼ÆÊıÆ÷
+    always @(posedge clk or negedge rst_n) begin
+        if(!rst_n)
+            clk_counter <= 0;
+        else if(state==ACTIVE) begin
+          if (clk_counter < clk_div) begin
+            clk_counter <= clk_counter + 1;
+          end else begin
+            clk_counter <= 0;
+          end
+        end 
+        else
+            clk_counter <= 0;
+    end
+
+  // SPI×´Ì¬»ú
   always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
       state <= IDLE;
-      spi_sck <= cpol;
       spi_cs <= 1'b1;
       spi_mosi <= 1'b0;
       spi_mosi_oe <= 1'b0;
       tx_fifo_rd_en <= 1'b0;
       rx_fifo_wr_en <= 1'b0;
-      clk_counter <= 0;
       bit_counter <= 0;
       tx_shift_reg <= 8'h00;
       rx_shift_reg <= 8'h00;
@@ -185,142 +199,121 @@ module spi_engine (
       tx_byte_counter <= 0;
       rx_byte_counter <= 0;
     end else begin
-      // é»˜è®¤å€¼
-      tx_fifo_rd_en <= 1'b0;
-      rx_fifo_wr_en <= 1'b0;
-
       case (state)
         IDLE: begin
-          spi_sck <= cpol;
-          spi_cs <= 1'b1;
-          spi_mosi <= 1'b0;
-          spi_mosi_oe <= 1'b0;
-          clk_counter <= 0;
-          bit_counter <= 0;
-          rx_shift_reg <= 8'h00;
-
-          if (!tx_fifo_empty && spi_enable && tx_continuous_mode) begin
-            state <= REQ_DATA;
-            tx_fifo_rd_en <= 1'b1;
-          end
-        end
-
-        REQ_DATA: begin
-          state <= LOAD_DATA;
-          spi_cs <= 1'b0;
-          spi_mosi_oe <= 1'b1;
-        end
-
-        LOAD_DATA: begin
-          state <= START;
-          tx_shift_reg <= tx_fifo_rd_data;
-          tx_byte_counter <= tx_byte_counter + 16'ds1;
-          
-          // è®¾ç½®ç¬¬ä¸€ä½æ•°æ®
-          if (cpha == 1'b0) begin
-            if (spi_msb_first) begin
-              spi_mosi <= tx_fifo_rd_data[7];
-            end else begin
-              spi_mosi <= tx_fifo_rd_data[0];
-            end
-          end
-        end
-
-        START: begin
-          spi_cs <= 1'b0;
-          spi_mosi_oe <= 1'b1;
-
-          if (clk_counter >= (clk_div >> 1)) begin
-            clk_counter <= 0;
+          if (!tx_fifo_empty && spi_enable && tx_active) begin
             state <= ACTIVE;
-
-            if (cpha == 1'b1) begin
-              if (spi_msb_first) begin
-                spi_mosi <= tx_shift_reg[7];
-              end else begin
-                spi_mosi <= tx_shift_reg[0];
-              end
-            end
-          end else begin
-            clk_counter <= clk_counter + 1;
+            spi_cs <= 1'b0;
+            spi_mosi_oe <= 1'b1;
+            tx_fifo_rd_en <= 1'b1;
           end
         end
 
         ACTIVE: begin
-          spi_cs <= 1'b0;
-          spi_mosi_oe <= 1'b1;
-
-          if (clk_counter < (clk_div >> 1)) begin
-            // First half of clock period
-            spi_sck <= cpol ^ cpha;
-            clk_counter <= clk_counter + 1;
-
-            // CPHA=1: åœ¨æ—¶é’Ÿå‰åŠæ®µé‡‡æ ·
-            if (cpha == 1'b1) begin
-              if (clk_counter == ((clk_div >> 2) - 1)) begin
-                if (spi_msb_first) begin
-                  rx_shift_reg <= {rx_shift_reg[6:0], spi_miso};
-                end else begin
-                  rx_shift_reg <= {spi_miso, rx_shift_reg[7:1]};
-                end
-              end
-            end
-          end else if (clk_counter < clk_div) begin
-            // Second half of clock period
-            spi_sck <= ~cpol ^ cpha;
-            clk_counter <= clk_counter + 1;
-
-            // CPHA=0: åœ¨æ—¶é’ŸååŠæ®µé‡‡æ ·
+            tx_fifo_rd_en <= 1'b0;
+          if (tx_fifo_rd_en_reg) begin
+            tx_shift_reg <= tx_fifo_rd_data;
+            tx_byte_counter <= tx_byte_counter + 1;
+           
+            // Á¢¼´ÉèÖÃµÚÒ»Î»Êı¾İ - ¶ÔÓÚCPHA=0Ä£Ê½
             if (cpha == 1'b0) begin
-              if (clk_counter == ((clk_div >> 1) + (clk_div >> 2) + 5)) begin
-                if (spi_msb_first) begin
-                  rx_shift_reg <= {rx_shift_reg[6:0], spi_miso};
-                end else begin
-                  rx_shift_reg <= {spi_miso, rx_shift_reg[7:1]};
-                end
-              end
-            end
-
-            // Setup next data bit at end of clock period
-            if (clk_counter == clk_div - 1) begin
-              if (bit_counter < 7) begin
-                bit_counter <= bit_counter + 16'd1;
-                if (spi_msb_first) begin
-                  tx_shift_reg <= {tx_shift_reg[6:0], 1'b0};
-                  spi_mosi <= tx_shift_reg[6];
-                end else begin
-                  tx_shift_reg <= {1'b0, tx_shift_reg[7:1]};
-                  spi_mosi <= tx_shift_reg[1];
-                end
+              if (spi_msb_first) begin
+                spi_mosi <= tx_fifo_rd_data[7];
               end else begin
-                state <= COMPLETE;
-                bit_counter <= 0;
+                spi_mosi <= tx_fifo_rd_data[0];
               end
             end
-          end else begin
-            clk_counter <= 0;
           end
+
+if (cpha == 1'b0) begin
+    // SPIÄ£Ê½0 , 2: CPHA=0 µÚÒ»¸ö±ßÑØ²ÉÑùMISO, µÚ¶ş¸ö±ßÑØÒÆÎ»MOSI
+
+    if (clk_counter == (clk_div >> 1)) begin
+        if (spi_msb_first) begin
+            rx_shift_reg <= {rx_shift_reg[6:0], spi_miso};
+        end else begin
+            rx_shift_reg <= {spi_miso, rx_shift_reg[7:1]};
+        end
+    end
+
+    if (clk_counter == clk_div) begin
+        if (bit_counter < 7) begin
+            bit_counter <= bit_counter + 1;
+            if (spi_msb_first) begin
+                tx_shift_reg <= {tx_shift_reg[6:0], 1'b0};
+                spi_mosi <= tx_shift_reg[6];
+            end else begin
+                tx_shift_reg <= {1'b0, tx_shift_reg[7:1]};
+                spi_mosi <= tx_shift_reg[1];
+            end
+        end else begin
+            state <= COMPLETE;
+            rx_data_reg <= rx_shift_reg; 
+            rx_fifo_wr_en <= 1'b1;
+            bit_counter <= 0;
+        end
+    end
+end else begin
+              // SPIÄ£Ê½1 £¬ 3£º CPHA=1 µÚ¶ş¸ö±ßÑØ²ÉÑùMISO, µÚÒ»¸ö±ßÑØÒÆÎ»MOSI
+
+              if (clk_counter == 0) begin
+                if (bit_counter > 0) begin
+                  if (spi_msb_first) begin
+                    rx_shift_reg <= {rx_shift_reg[6:0], spi_miso};
+                  end else begin
+                    rx_shift_reg <= {spi_miso, rx_shift_reg[7:1]};
+                  end
+                end
+              end
+
+              if (clk_counter == (clk_div >> 1)) begin
+                if (bit_counter == 0) begin
+                  if (spi_msb_first) begin
+                    spi_mosi <= tx_shift_reg[7];
+                  end else begin
+                    spi_mosi <= tx_shift_reg[0];
+                  end
+                  bit_counter <= bit_counter + 1;
+                end else if (bit_counter < 8) begin
+                  if (spi_msb_first) begin
+                    tx_shift_reg <= {tx_shift_reg[6:0], 1'b0};
+                    spi_mosi <= tx_shift_reg[6];
+                  end else begin
+                    tx_shift_reg <= {1'b0, tx_shift_reg[7:1]};
+                    spi_mosi <= tx_shift_reg[1];
+                  end
+                    bit_counter <= bit_counter + 1;
+                end else begin
+                  // bit_counter == 8£¬ËùÓĞ8¸öbitÒÑÍê³É´«ÊäºÍ²ÉÑù
+                  state <= COMPLETE;
+                  rx_data_reg <= rx_shift_reg;
+                  rx_fifo_wr_en <= 1'b1;
+                  bit_counter <= 0;
+                end
+              end
+            end
         end
 
         COMPLETE: begin
-          spi_sck <= cpol;
-          rx_data_reg <= rx_shift_reg;
-          rx_fifo_wr_en <= 1'b1;      
-          if (rx_fifo_wr_en_actual) begin
-            rx_byte_counter <= rx_byte_counter + 16'd1;
+          if (rx_fifo_wr_en) begin
+            rx_byte_counter <= rx_byte_counter + 1;
+            rx_fifo_wr_en <= 1'b0;
           end
-          // å‡†å¤‡ä¸‹ä¸€ä¸ªä¼ è¾“æˆ–è¿”å›IDLE
-          if (!tx_fifo_empty && spi_enable && tx_continuous_mode) begin
-            state <= REQ_DATA;
+          // ¾ö¶¨ÏÂÒ»¸ö×´Ì¬
+          if (!tx_fifo_empty && spi_enable && tx_active) begin
+            // ¼ÌĞø´«ÊäÏÂÒ»¸ö×Ö½Ú
+            state <= ACTIVE;
             tx_fifo_rd_en <= 1'b1;
-            rx_shift_reg <= 8'h00;
           end else begin
+            // ·µ»Ø¿ÕÏĞ×´Ì¬
             state <= IDLE;
             spi_cs <= 1'b1;
             spi_mosi_oe <= 1'b0;
           end
         end
-        default: state <= IDLE;
+        default: begin
+          state <= IDLE;
+        end
       endcase
     end
   end
