@@ -5,7 +5,7 @@
 //Part Number: GW5A-LV25UG324C2/I1
 //Device: GW5A-25
 //Device Version: A
-//Created Time: Mon Oct 20 11:48:22 2025
+//Created Time: Thu Nov 13 19:37:28 2025
 
 module Gowin_PLL_MOD (lock, clkout0, clkout2, clkout3, mdrdo, clkin, reset, mdclk, mdopc, mdainc, mdwdi);
 

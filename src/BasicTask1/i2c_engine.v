@@ -1,34 +1,35 @@
 `timescale 1ns / 1ps
 
 module i2c_engine (
-    input wire        clk,
-    input wire        rst_n,
-    input wire [31:0] clk_div,
+    input  wire        clk,
+    input  wire        rst_n,
+    input  wire [31:0] clk_div,
 
     // fifo transmit 
-    input  wire [7:0] tx_fifo_data,
-    input  wire       tx_fifo_wr_en,   // 自动清零的脉冲写入信号
-    input  wire       tx_start_pulse,  // 自动清零的脉冲启动发送信号
-    output wire       tx_fifo_full,
-    output wire       tx_busy,         // 发送进行中
+    input  wire [7:0]  tx_fifo_data,
+    input  wire        tx_fifo_wr_en,   //wr data
+    input  wire        tx_start_pulse,  //start iic wr
+    output wire        tx_fifo_full,
+    output wire        tx_busy,      
 
     // fifo receive 
-    output wire [7:0] rx_fifo_data,
-    input  wire       rx_fifo_rd_en,   // 自动清零的脉冲读取信号
-    input  wire       rx_start_pulse,  // 自动清零的脉冲启动读取信号
-    output wire       rx_fifo_empty,
-    output wire       rx_data_ready,   // RX FIFO中有数据可用
+    output wire [7:0]  rx_fifo_data,
+    input  wire        rx_fifo_rd_en,   //rd data
+    input  wire        rx_start_pulse,  //srart iic rd
+    output wire        rx_fifo_empty,
+    output wire        rx_data_ready,  
 
     // config register
-    input wire       i2c_enable,
-    input wire       i2c_master_mode,
-    input wire       i2c_10bit_addr,
-    input wire [9:0] i2c_dev_addr,
-    input wire       i2c_restart,
-    input wire [7:0] i2c_tx_count,
-    input wire [7:0] i2c_rx_count,
+    input  wire       i2c_enable,
+    input  wire       i2c_master_mode,  
+    input  wire       i2c_10bit_addr,
+    input  wire [9:0] i2c_dev_addr,
+    input  wire [15:0] i2c_reg_addr,
+    input  wire       i2c_reg_addr_len,
+    input  wire [7:0] i2c_tx_count,
+    input  wire [7:0] i2c_rx_count,
 
-    // physics pin
+    // physical pins (open-drain)
     output wire i2c_scl,
     inout  wire i2c_sda,
 
@@ -39,570 +40,323 @@ module i2c_engine (
     output wire [7:0] i2c_tx_count_rem,
     output wire [7:0] i2c_rx_count_rem,
 
-    // fifo状态指示
-    output wire [10:0] tx_fifo_data_count,  // TX FIFO数据计数
-    output wire [10:0] rx_fifo_data_count   // RX FIFO数据计数
+    // fifo status
+    output wire [10:0] tx_fifo_data_count,
+    output wire [10:0] rx_fifo_data_count
 );
 
-  // FIFO参数定义
   localparam FIFO_DEPTH = 1024;
-  localparam ADDR_WIDTH = 10;
 
-  // FIFO接口信号
+  // FIFO signals
   wire [7:0] tx_fifo_rd_data;
-  wire tx_fifo_rd_en;
-  wire tx_fifo_empty;
+  reg        tx_fifo_rd_en;
+  wire       tx_fifo_empty;
+  reg  [7:0] rx_fifo_wr_data;
+  reg        rx_fifo_wr_en;
+  wire       rx_fifo_full;
+  wire [10:0] tx_fifo_data_count_int;
+  wire [10:0] rx_fifo_data_count_int;
 
-  wire [7:0] rx_fifo_wr_data;
-  wire rx_fifo_wr_en;
-  wire rx_fifo_full;
+  // 边沿检测
+  reg tx_start_prev, rx_start_prev;
+  always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      tx_start_prev <= 1'b0;
+      rx_start_prev <= 1'b0;
+    end else begin
+      tx_start_prev <= tx_start_pulse;
+      rx_start_prev <= rx_start_pulse;
+    end
+  end
+  wire tx_start = tx_start_pulse && !tx_start_prev;
+  wire rx_start = rx_start_pulse && !rx_start_prev;
 
-  // 脉冲检测寄存器
-  reg tx_fifo_wr_en_dly;
-  reg tx_start_pulse_dly;
-  reg rx_fifo_rd_en_dly;
-  reg rx_start_pulse_dly;
+  // 状态定义
+  localparam [2:0]
+    IDLE   = 3'd0,
+    START  = 3'd1,
+    TX     = 3'd2,
+    RX     = 3'd3,
+    ACK    = 3'd4,
+    STOP   = 3'd5,
+    LOAD_DATA=3'd6;
 
-  // 边沿检测信号
-  wire tx_fifo_wr_en_edge;
-  wire tx_start_pulse_edge;
-  wire rx_fifo_rd_en_edge;
-  wire rx_start_pulse_edge;
-
-  // 连续读取控制
-  reg rx_continuous_read;
-  reg [7:0] rx_read_count;
-  reg [7:0] rx_read_target;
-
-  // FSM状态定义
-  localparam [3:0]
-    IDLE           = 4'd0,
-    START          = 4'd1,
-    TX_ADDR_FIRST  = 4'd2,
-    RX_ACK1        = 4'd3,
-    TX_ADDR_SECOND = 4'd4,
-    RX_ACK2        = 4'd5,
-    TX_DATA        = 4'd6,
-    RX_ACK3        = 4'd7,
-    RX_DATA        = 4'd8,
-    TX_ACK         = 4'd9,
-    RESTART        = 4'd10,
-    STOP           = 4'd11;
-
-  // Internal signals
-  reg [ 3:0] state;
+  reg [2:0] state;
   reg [31:0] clk_counter;
-  reg scl_oe, sda_oe;
-  reg scl_out, sda_out;
-  reg sda_in;
+
+  // I2C物理层控制
+  reg scl_drive, sda_drive;
+
+  // SDA输入同步
+  reg [1:0] sda_sync;
+  wire sda_in = sda_sync[1];
+  always @(posedge clk or negedge rst_n) begin
+    if(!rst_n) sda_sync <= 2'b11;
+    else sda_sync <= {sda_sync[0], i2c_sda};
+  end
+
+  // 传输控制
   reg [7:0] shift_reg;
-  reg [2:0] bit_counter;
-  reg ack_error;
-  reg done;
-  reg busy;
-  reg [7:0] tx_bytes_remaining;
-  reg [7:0] rx_bytes_remaining;
+  reg [2:0] bit_cnt;
+  reg ack_err, done, busy;
+  reg [7:0] tx_remain, rx_remain;
   reg read_mode;
   reg [9:0] dev_addr;
-  reg data_loaded;
-  reg ten_bit_mode;
-  reg second_addr_byte;
-  reg restart_pending;
+  reg [15:0] reg_addr;
+  reg addr_len;
+  reg [1:0] phase; // 阶段: 0=设备地址, 1=寄存器地址, 2=数据
+  reg dev_addr_len;
+  reg ack_flag;
+  reg tx_fifo_rd_en_reg;
 
   // 时钟分频
-  wire scl_pos_edge = (clk_counter == (clk_div >> 1));
-  wire scl_neg_edge = (clk_counter == 0);
-  wire clk_tick = (clk_counter == clk_div);
+  wire [31:0] quarter = (clk_div < 4) ? 1 : (clk_div >> 2);
+  wire [31:0] half = (clk_div < 2) ? 1 : (clk_div >> 1);
+  wire [31:0] three_quarter = half + quarter;
+  
+  wire quarter_pt = (clk_counter == quarter);
+  wire half_pt    = (clk_counter == half);
+  wire three_quarter_pt = (clk_counter == three_quarter);
+  wire full_pt    = (clk_counter == clk_div);
 
-  // SDA输入同步寄存器
-  reg [1:0] sda_sync;
-
-  // 脉冲边沿检测
+  // 时钟计数器
   always @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
-      tx_fifo_wr_en_dly <= 0;
-      tx_start_pulse_dly <= 0;
-      rx_fifo_rd_en_dly <= 0;
-      rx_start_pulse_dly <= 0;
-      sda_sync <= 2'b11;
-    end else begin
-      tx_fifo_wr_en_dly <= tx_fifo_wr_en;
-      tx_start_pulse_dly <= tx_start_pulse;
-      rx_fifo_rd_en_dly <= rx_fifo_rd_en;
-      rx_start_pulse_dly <= rx_start_pulse;
-      sda_sync <= {sda_sync[0], i2c_sda};  // SDA输入同步
-    end
-  end
-
-  assign tx_fifo_wr_en_edge  = tx_fifo_wr_en && !tx_fifo_wr_en_dly;
-  assign tx_start_pulse_edge = tx_start_pulse && !tx_start_pulse_dly;
-  assign rx_fifo_rd_en_edge  = rx_fifo_rd_en && !rx_fifo_rd_en_dly;
-  assign rx_start_pulse_edge = rx_start_pulse && !rx_start_pulse_dly;
-
-  // 连续读取控制逻辑 - 合并到一个always块中
-  always @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
-      rx_continuous_read <= 0;
-      rx_read_count <= 0;
-      rx_read_target <= 0;
-    end else begin
-      if (rx_start_pulse_edge) begin
-        rx_continuous_read <= 1;
-        rx_read_count <= 0;
-        rx_read_target <= i2c_rx_count;  // 使用配置的接收计数作为目标
-      end else if (rx_continuous_read) begin
-        if (rx_fifo_rd_en_edge) begin
-          if (rx_read_count < rx_read_target) begin
-            rx_read_count <= rx_read_count + 1;
-          end
-        end
-        // 检查是否达到目标，如果达到则停止连续读取
-        if (rx_read_count >= rx_read_target) begin
-          rx_continuous_read <= 0;
-        end
-      end else begin
-        rx_read_count <= 0;  // 非连续读取模式时，计数器清零
-      end
-    end
-  end
-
-  // 时钟分频计数器
-  always @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
-      clk_counter <= 0;
-    end else if (state != IDLE) begin
-      if (clk_counter >= clk_div) begin
-        clk_counter <= 0;
-      end else begin
-        clk_counter <= clk_counter + 1;
-      end
+    if(!rst_n) clk_counter <= 0;
+    else if (state != IDLE) begin
+      if (full_pt) clk_counter <= 0;
+      else clk_counter <= clk_counter + 1;
     end else begin
       clk_counter <= 0;
     end
   end
 
-  // 主状态机
+  // 构造地址字节
+  function [7:0] build_addr_byte;
+    input [9:0] addr;
+    input rw_bit;
+    input ten_bit;
+    begin
+      if (ten_bit) 
+        build_addr_byte = {5'b11110, addr[9:8], rw_bit};
+      else
+        build_addr_byte = {addr[6:0], rw_bit};
+    end
+  endfunction
+
   always @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
+    if(!rst_n) begin
+      tx_fifo_rd_en_reg <= 1'b0;
+    end else begin
+      tx_fifo_rd_en_reg <= tx_fifo_rd_en;
+    end
+  end
+
+  // 主状态机 
+  always @(posedge clk or negedge rst_n) begin
+    if(!rst_n) begin
       state <= IDLE;
-      shift_reg <= 0;
-      bit_counter <= 0;
-      ack_error <= 0;
-      done <= 0;
-      busy <= 0;
-      tx_bytes_remaining <= 0;
-      rx_bytes_remaining <= 0;
-      read_mode <= 0;
-      dev_addr <= 0;
-      data_loaded <= 0;
-      ten_bit_mode <= 0;
-      second_addr_byte <= 0;
-      restart_pending <= 0;
+      {scl_drive, sda_drive} <= 2'b00;
+      {shift_reg, bit_cnt, ack_err, done, busy} <= 0;
+      {tx_remain, rx_remain, read_mode} <= 0;
+      {dev_addr, reg_addr, addr_len, phase} <= 0;
+      {rx_fifo_wr_data, rx_fifo_wr_en, tx_fifo_rd_en,ack_flag} <= 0;
     end else begin
       done <= 0;
       busy <= (state != IDLE);
+      rx_fifo_wr_en <= 0;
 
       case (state)
         IDLE: begin
-          if (tx_start_pulse_edge && i2c_enable) begin
-            read_mode <= 0;  // 写模式
+          {scl_drive, sda_drive, ack_err, bit_cnt, phase,ack_flag} <= 0;
+          
+          if ((tx_start || rx_start) && i2c_enable) begin
+            read_mode <= rx_start;
             dev_addr <= i2c_dev_addr;
-            tx_bytes_remaining <= i2c_tx_count;
-            rx_bytes_remaining <= 0;
-            ten_bit_mode <= i2c_10bit_addr;
-            data_loaded <= 0;
-            second_addr_byte <= 0;
-            restart_pending <= 0;
-
-            if (i2c_10bit_addr) begin
-              shift_reg <= {3'b111, i2c_dev_addr[9:8], 1'b0};
-            end else begin
-              shift_reg <= {i2c_dev_addr[6:0], 1'b0};
-            end
-
+            reg_addr <= i2c_reg_addr;
+            addr_len <= i2c_reg_addr_len;
+            dev_addr_len <= i2c_10bit_addr;
+            tx_remain <= tx_start ? i2c_tx_count : 0;
+            rx_remain <= rx_start ? i2c_rx_count : 0;
+            
+            shift_reg <= build_addr_byte(i2c_dev_addr, 1'b0, dev_addr_len);
             state <= START;
-            bit_counter <= 0;
-            ack_error <= 0;
-          end else if (rx_start_pulse_edge && i2c_enable) begin
-            read_mode <= 1;  // 读模式
-            dev_addr <= i2c_dev_addr;
-            tx_bytes_remaining <= 0;
-            rx_bytes_remaining <= i2c_rx_count;
-            ten_bit_mode <= i2c_10bit_addr;
-            data_loaded <= 0;
-            second_addr_byte <= 0;
-            restart_pending <= i2c_restart && i2c_10bit_addr;
-
-            if (i2c_10bit_addr) begin
-              shift_reg <= {3'b111, i2c_dev_addr[9:8], 1'b0};
-            end else begin
-              shift_reg <= {i2c_dev_addr[6:0], 1'b1};
-            end
-
-            state <= START;
-            bit_counter <= 0;
-            ack_error <= 0;
           end
         end
 
         START: begin
-          if (clk_tick) begin
-            state <= TX_ADDR_FIRST;
+          if (clk_counter == 0) begin
+            scl_drive <= 1'b0;
+            sda_drive <= 1'b0;
+          end else if (half_pt) begin
+            sda_drive <= 1'b1;
+          end else if (full_pt) begin
+            scl_drive <= 1'b1;
+            bit_cnt <= 3'd0;
+            state <= TX;
           end
         end
 
-        TX_ADDR_FIRST: begin
-          if (clk_tick) begin
-            if (bit_counter == 3'd7) begin
-              state <= RX_ACK1;
-              bit_counter <= 0;
+        TX: begin
+          sda_drive <= ~shift_reg[7];
+          
+          if (half_pt) begin
+            scl_drive <= 1'b0;
+          end else if (full_pt) begin
+            scl_drive <= 1'b1;
+            shift_reg <= {shift_reg[6:0], 1'b0};
+            
+            if (bit_cnt == 3'd7) begin
+              bit_cnt <= 3'd0;
+              state <= ACK;
             end else begin
-              shift_reg   <= {shift_reg[6:0], 1'b0};
-              bit_counter <= bit_counter + 3'd1;
+              bit_cnt <= bit_cnt + 3'd1;
             end
           end
         end
 
-        RX_ACK1: begin
-          if (scl_pos_edge) begin
-            if (sda_in) begin
-              ack_error <= 1;
-              state <= STOP;
+        RX: begin
+            sda_drive <= 1'b0;
+          if (half_pt) begin
+            scl_drive <= 1'b0;
+          end else if (three_quarter_pt) begin
+            shift_reg <= {shift_reg[6:0], sda_in};
+          end else if (full_pt) begin
+            scl_drive <= 1'b1;
+            
+            if (bit_cnt == 3'd7) begin
+              bit_cnt <= 3'd0;
+              rx_fifo_wr_data <= shift_reg;
+              rx_fifo_wr_en <= 1'b1;
+              state <= ACK;
             end else begin
-              if (ten_bit_mode && !second_addr_byte) begin
-                state <= TX_ADDR_SECOND;
-                shift_reg <= dev_addr[7:0];
-                bit_counter <= 0;
-                second_addr_byte <= 1;
-              end else begin
-                if (read_mode) begin
-                  if (ten_bit_mode && restart_pending) begin
-                    state <= RESTART;
-                    restart_pending <= 0;
-                  end else if (rx_bytes_remaining > 0) begin
-                    state <= RX_DATA;
-                    shift_reg <= 0;
-                    bit_counter <= 0;
-                  end else begin
-                    state <= STOP;
-                  end
-                end else begin
-                  // 写模式：检查是否有数据要发送
-                  if (tx_bytes_remaining > 0) begin
-                    state <= TX_DATA;
-                    bit_counter <= 0;
-                    data_loaded <= 0;  // 准备加载数据
-                  end else begin
-                    state <= STOP;
-                  end
-                end
-              end
+              bit_cnt <= bit_cnt + 3'd1;
             end
           end
         end
 
-        TX_ADDR_SECOND: begin
-          if (clk_tick) begin
-            if (bit_counter == 3'd7) begin
-              state <= RX_ACK2;
-              bit_counter <= 0;
-            end else begin
-              shift_reg   <= {shift_reg[6:0], 1'b0};
-              bit_counter <= bit_counter + 3'd1;
-            end
+ACK: begin
+  if (quarter_pt) begin
+    if(read_mode && ack_flag && rx_remain > 1) begin
+    sda_drive <= 1'b1;
+    rx_remain <= rx_remain - 1;
+    end else begin
+    sda_drive <= 1'b0;
+    end
+  end else if (half_pt) begin
+    scl_drive <= 1'b0;
+  end else if (three_quarter_pt) begin
+     ack_err <= sda_in;
+  end else if (full_pt) begin
+    scl_drive <= 1'b1;
+    
+    if (ack_err) begin
+      state <= STOP;
+    end else begin
+      case (phase)
+        2'd0: begin 
+        if(dev_addr_len) begin
+          shift_reg <= build_addr_byte(i2c_dev_addr, 1'b0, 1'b0);
+          state <= TX;
+        end else begin
+          phase <= addr_len ? 2'd1 : 2'd2;
+          shift_reg <= addr_len ? reg_addr[15:8] : reg_addr[7:0];
+          state <= TX;
           end
         end
-
-        RX_ACK2: begin
-          if (scl_pos_edge) begin
-            if (sda_in) begin
-              ack_error <= 1;
-              state <= STOP;
-            end else begin
-              if (read_mode && restart_pending) begin
-                state <= RESTART;
-              end else if (read_mode) begin
-                if (rx_bytes_remaining > 0) begin
-                  state <= RX_DATA;
-                  shift_reg <= 0;
-                  bit_counter <= 0;
-                end else begin
-                  state <= STOP;
-                end
-              end else begin
-                // 写模式：检查是否有数据要发送
-                if (tx_bytes_remaining > 0) begin
-                  state <= TX_DATA;
-                  bit_counter <= 0;
-                  data_loaded <= 0;  // 准备加载数据
-                end else begin
-                  state <= STOP;
-                end
-              end
-            end
+        2'd1: begin // 寄存器高字节完成
+          phase <= 2'd2;
+          shift_reg <= reg_addr[7:0];
+          state <= TX;
+        end
+        2'd2: begin // 寄存器地址完成
+          phase <= 2'd3;
+          if (read_mode) begin
+            shift_reg <= build_addr_byte(dev_addr, 1'b1, dev_addr_len);
+            state <= START;
+          end else if (tx_remain > 0 && !tx_fifo_empty) begin
+            tx_fifo_rd_en <= 1'b1;
+            state <= LOAD_DATA;
+          end else begin
+            state <= STOP;
           end
         end
-
-        RESTART: begin
-          if (clk_tick) begin
-            state <= TX_ADDR_FIRST;
-            shift_reg <= {3'b111, dev_addr[9:8], 1'b1};
-            bit_counter <= 0;
-            second_addr_byte <= 0;
+        2'd3: begin // 数据阶段
+          if (read_mode) begin
+            state <= (rx_remain > 0) ? RX : STOP;
+            ack_flag <= 1'b1;
+          end else if (tx_remain > 0 && !tx_fifo_empty) begin
+            tx_fifo_rd_en <= 1'b1;
+            state <= LOAD_DATA;
+          end else begin
+            state <= STOP;
           end
         end
-
-        TX_DATA: begin
-          if (!data_loaded && !tx_fifo_empty) begin
-            // 加载数据
-            shift_reg   <= tx_fifo_rd_data;
-            data_loaded <= 1;
-            bit_counter <= 0;
-          end else if (data_loaded && clk_tick) begin
-            // 在时钟节拍时移位数据
-            if (bit_counter < 3'd7) begin
-              shift_reg   <= {shift_reg[6:0], 1'b0};
-              bit_counter <= bit_counter + 3'd1;
-            end else begin
-              // 发送完一个字节
-              state <= RX_ACK3;
-              bit_counter <= 0;
-              data_loaded <= 0;
-              if (tx_bytes_remaining > 0) begin
-                tx_bytes_remaining <= tx_bytes_remaining - 8'd1;
-              end
-            end
+      endcase
+    end
+  end
+end
+        LOAD_DATA: begin
+          tx_fifo_rd_en <= 1'b0;
+          if(tx_fifo_rd_en_reg) begin
+            shift_reg <= tx_fifo_rd_data;
+            tx_remain <= tx_remain - 1;
+            state <= TX;
           end
         end
-
-        RX_ACK3: begin
-          if (scl_pos_edge) begin
-            if (sda_in) begin
-              ack_error <= 1;
-              state <= STOP;
-            end else if (tx_bytes_remaining > 0) begin
-              state <= TX_DATA;
-              bit_counter <= 0;
-              data_loaded <= 0;  // 准备加载下一个数据
-            end else begin
-              state <= STOP;
-            end
-          end
-        end
-
-        RX_DATA: begin
-          if (scl_pos_edge) begin
-            shift_reg   <= {shift_reg[6:0], sda_in};
-            bit_counter <= bit_counter + 3'd1;
-            if (bit_counter == 3'd7) begin
-              state <= TX_ACK;
-              bit_counter <= 0;
-            end
-          end
-        end
-
-        TX_ACK: begin
-          if (clk_tick) begin
-            if (rx_bytes_remaining > 1) begin
-              if (rx_bytes_remaining > 0) begin
-                rx_bytes_remaining <= rx_bytes_remaining - 8'd1;
-              end
-              state <= RX_DATA;
-              shift_reg <= 0;
-              bit_counter <= 0;
-            end else begin
-              if (rx_bytes_remaining > 0) begin
-                rx_bytes_remaining <= rx_bytes_remaining - 8'd1;
-              end
-              state <= STOP;
-            end
-          end
-        end
-
         STOP: begin
-          if (clk_tick) begin
+          if (clk_counter == 0) begin
+            scl_drive <= 1'b1;
+            sda_drive <= 1'b1;
+          end else if (half_pt) begin
+            scl_drive <= 1'b0;
+          end else if (full_pt) begin
+            sda_drive <= 1'b0;
             state <= IDLE;
-            done  <= 1;
+            done <= 1'b1;
           end
         end
 
-        default: begin
-          state <= IDLE;  // 安全保护
-        end
+        default: state <= IDLE;
       endcase
     end
   end
 
-  // SDA输入同步 
-  always @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
-      sda_in <= 1;
-    end else begin
-      sda_in <= sda_sync[1];  // 使用同步后的SDA值
-    end
-  end
-
-  // SCL控制
-  always @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
-      scl_out <= 1;
-      scl_oe  <= 0;
-    end else begin
-      case (state)
-        IDLE: begin
-          scl_out <= 1;
-          scl_oe  <= 0;
-        end
-        START, STOP, RESTART: begin
-          scl_out <= 1;
-          scl_oe  <= 1;
-        end
-        default: begin
-          scl_oe <= 1;
-          if (clk_counter < (clk_div >> 1)) begin
-            scl_out <= 0;
-          end else begin
-            scl_out <= 1;
-          end
-        end
-      endcase
-    end
-  end
-
-  // SDA控制 
-  always @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
-      sda_out <= 1;
-      sda_oe  <= 0;
-    end else begin
-      case (state)
-        IDLE: begin
-          sda_out <= 1;
-          sda_oe  <= 0;
-        end
-        START: begin
-          sda_oe <= 1;
-          if (clk_counter < (clk_div >> 2)) begin
-            sda_out <= 1;
-          end else begin
-            sda_out <= 0;
-          end
-        end
-        RESTART: begin
-          sda_oe <= 1;
-          if (clk_counter < (clk_div >> 2)) begin
-            sda_out <= 1;
-          end else if (clk_counter < (clk_div >> 1)) begin
-            sda_out <= 0;
-          end else begin
-            sda_out <= 0;
-          end
-        end
-        STOP: begin
-          sda_oe <= 1;
-          if (clk_counter < (clk_div >> 2)) begin
-            sda_out <= 0;
-          end else begin
-            sda_out <= 1;
-          end
-        end
-        TX_ADDR_FIRST, TX_ADDR_SECOND, TX_DATA: begin
-          sda_oe  <= 1;
-          sda_out <= shift_reg[7];
-        end
-        RX_ACK1, RX_ACK2, RX_ACK3, RX_DATA: begin
-          sda_oe  <= 0;  // 完全释放总线
-          sda_out <= 1;  // 内部输出保持确定值
-        end
-        TX_ACK: begin
-          sda_oe  <= 1;
-          sda_out <= (rx_bytes_remaining > 1) ? 1'b0 : 1'b1;
-        end
-        default: begin
-          sda_oe  <= 0;
-          sda_out <= 1;
-        end
-      endcase
-    end
-  end
-
-  // TX FIFO控制
-  assign tx_fifo_rd_en = (state == TX_DATA) && !data_loaded && !tx_fifo_empty;
-
-
-  // RX数据捕获和FIFO写入
-  reg [7:0] rx_data_reg;
-  reg rx_valid_reg;
-  reg [7:0] rx_data_pipeline[0:1];
-  reg [1:0] valid_pipeline;
-
-  always @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
-      rx_data_reg <= 0;
-      rx_valid_reg <= 0;
-      rx_data_pipeline[0] <= 0;
-      rx_data_pipeline[1] <= 0;
-      valid_pipeline <= 0;
-    end else begin
-      // 捕获RX数据
-      if (state == RX_DATA && scl_pos_edge && bit_counter == 3'd7) begin
-        rx_data_reg  <= {shift_reg[6:0], sda_in};
-        rx_valid_reg <= 1;
-      end else begin
-        rx_valid_reg <= 0;
-      end
-      rx_data_pipeline[0] <= rx_data_reg;
-      rx_data_pipeline[1] <= rx_data_pipeline[0];
-      valid_pipeline <= {valid_pipeline[0], rx_valid_reg};
-    end
-  end
-
-  // FIFO写入信号
-  assign rx_fifo_wr_data = rx_data_pipeline[1];
-  assign rx_fifo_wr_en   = valid_pipeline[1];
-
-
+  // FIFO实例化
   bram_fifo #(
       .DATA_WIDTH(8),
       .FIFO_DEPTH(FIFO_DEPTH)
   ) tx_fifo_inst (
-      .clk(clk),
-      .rst_n(rst_n),
-      .wr_data(tx_fifo_data),
-      .wr_en(tx_fifo_wr_en_edge),
-      .full(tx_fifo_full),
-      .rd_data(tx_fifo_rd_data),
-      .rd_en(tx_fifo_rd_en),
-      .empty(tx_fifo_empty),
-      .data_count(tx_fifo_data_count)
+      .clk(clk), .rst_n(rst_n),
+      .wr_data(tx_fifo_data), .wr_en(tx_fifo_wr_en),
+      .full(tx_fifo_full), .rd_data(tx_fifo_rd_data),
+      .rd_en(tx_fifo_rd_en), .empty(tx_fifo_empty),
+      .data_count(tx_fifo_data_count_int)  
   );
 
   bram_fifo #(
       .DATA_WIDTH(8),
       .FIFO_DEPTH(FIFO_DEPTH)
   ) rx_fifo_inst (
-      .clk(clk),
-      .rst_n(rst_n),
-      .wr_data(rx_fifo_wr_data),
-      .wr_en(rx_fifo_wr_en),
-      .full(rx_fifo_full),
-      .rd_data(rx_fifo_data),
-      .rd_en(rx_fifo_rd_en_edge),
-      .empty(rx_fifo_empty),
-      .data_count(rx_fifo_data_count)
+      .clk(clk), .rst_n(rst_n),
+      .wr_data(rx_fifo_wr_data), .wr_en(rx_fifo_wr_en),
+      .full(rx_fifo_full), .rd_data(rx_fifo_data),
+      .rd_en(rx_fifo_rd_en), .empty(rx_fifo_empty),
+      .data_count(rx_fifo_data_count_int) 
   );
 
-  // 输出分配
-  assign rx_data_ready = !rx_fifo_empty;
-  assign tx_busy = busy && !read_mode;
-  assign i2c_busy = busy;
-  assign i2c_done = done;
-  assign i2c_ack_error = ack_error;
-  assign i2c_tx_count_rem = tx_bytes_remaining;
-  assign i2c_rx_count_rem = rx_bytes_remaining;
+  // 输出信号
+  assign rx_data_ready    = !rx_fifo_empty;
+  assign tx_busy          = busy && !read_mode;
+  assign i2c_busy         = busy;
+  assign i2c_done         = done;
+  assign i2c_ack_error    = ack_err;
+  assign i2c_tx_count_rem = tx_remain;
+  assign i2c_rx_count_rem = rx_remain;
+  assign tx_fifo_data_count = tx_fifo_data_count_int;
+  assign rx_fifo_data_count = rx_fifo_data_count_int;
 
-  // 三态输出 - 确保在任何时刻都有确定的值
-  assign i2c_scl = scl_oe ? scl_out : 1'bz;
-  assign i2c_sda = sda_oe ? sda_out : 1'bz;
+  // 开漏输出
+  assign i2c_scl = scl_drive ? 1'b0 : 1'bz;
+  assign i2c_sda = sda_drive ? 1'b0 : 1'bz;
 
 endmodule

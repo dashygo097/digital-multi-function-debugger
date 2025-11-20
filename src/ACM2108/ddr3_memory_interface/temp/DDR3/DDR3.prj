@@ -4,14 +4,14 @@
     <Version>beta</Version>
     <Device id="GW5A-25A" package="UBGA324" speed="2" partNumber="GW5A-LV25UG324C2/I1"/>
     <FileList>
-        <File path="D:/Gowin/Gowin_V1.9.12_x64/IDE/ipcore/DDR3/data/ddr3_1_4code_hs/ddr3_1_4code_hs.v" type="verilog"/>
-        <File path="D:/Gowin/Gowin_V1.9.12_x64/IDE/ipcore/DDR3/data/ddr3_1_4code_hs/DDR3_TOP.v" type="verilog"/>
+        <File path="E:/SoftWares/Gowin/Gowin_V1.9.12_x64/IDE/ipcore/DDR3/data/ddr3_1_4code_hs/ddr3_1_4code_hs.v" type="verilog"/>
+        <File path="E:/SoftWares/Gowin/Gowin_V1.9.12_x64/IDE/ipcore/DDR3/data/ddr3_1_4code_hs/DDR3_TOP.v" type="verilog"/>
     </FileList>
     <OptionList>
         <Option type="disable_insert_pad" value="1"/>
         <Option type="enable_dsrm" value="0"/>
-        <Option type="include_path" value="D:/Gowin/Gowin_V1.9.12_x64/IDE/ipcore/DDR3/data/ddr3_1_4code_hs"/>
-        <Option type="include_path" value="C:/Users/24165/Desktop/acg525_acm2108_ddr3_udp/acm2108_ddr3_udp/src/ddr3_memory_interface/temp/DDR3"/>
+        <Option type="include_path" value="E:/SoftWares/Gowin/Gowin_V1.9.12_x64/IDE/ipcore/DDR3/data/ddr3_1_4code_hs"/>
+        <Option type="include_path" value="D:/Base/FPGA_Gowin/digital-multi-function-debugger/src/ACM2108/ddr3_memory_interface/temp/DDR3"/>
         <Option type="output_file" value="ddr3_memory_interface.vg"/>
         <Option type="output_template" value="ddr3_memory_interface_tmp.v"/>
         <Option type="ram_balance" value="1"/>

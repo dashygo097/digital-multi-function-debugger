@@ -7,7 +7,7 @@
 
 -mod_name ddr_pll_MOD
 -file_name ddr_pll_mod
--path C:/Users/24165/Desktop/acg525_acm2108_ddr3_udp/acm2108_ddr3_udp/src/ddr_pll/
+-path D:/Base/FPGA_Gowin/digital-multi-function-debugger/src/ACM2108/ddr_pll/
 -type PLL_ADV
 -file_type vlg
 -ssc false
