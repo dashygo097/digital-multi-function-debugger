@@ -2,7 +2,7 @@ import React, { Component, RefObject } from "react";
 import { ProtocolContext } from "@contexts";
 import { Message } from "@utils";
 
-const BASE_ADDR = 0x83000;
+const BASE_ADDR = 0x28000;
 const REGS = {
   SPI_CONFIG: BASE_ADDR + 0x00,
   SPI_CONTROL: BASE_ADDR + 0x04,
