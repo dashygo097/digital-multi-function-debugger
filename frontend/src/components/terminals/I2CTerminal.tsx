@@ -31,7 +31,9 @@ interface I2cTerminalState {
   isEnabled: boolean;
   isMaster: boolean;
   use10BitAddr: boolean;
+  regAddrLen: number;
   devAddr: string;
+  regAddr: string;
   txData: string;
   rxCount: string;
   rxData: number[];
@@ -58,7 +60,9 @@ export class I2cTerminal extends Component<I2cTerminalProps, I2cTerminalState> {
       isEnabled: false,
       isMaster: true,
       use10BitAddr: false,
-      devAddr: "0x5A",
+      regAddrLen: 0,
+      devAddr: "0x50",
+      regAddr: "0x00",
       txData: "0x01 0xAA 0xBB",
       rxCount: "2",
       rxData: [],
@@ -144,7 +148,8 @@ export class I2cTerminal extends Component<I2cTerminalProps, I2cTerminalState> {
 
   applyConfig = async (log = true) => {
     const { writeCSR } = this.context;
-    const { isEnabled, isMaster, use10BitAddr, clkDiv } = this.state;
+    const { isEnabled, isMaster, use10BitAddr, regAddrLen, clkDiv } =
+      this.state;
     if (log)
       this.addMessage(
         "TX",
@@ -155,7 +160,8 @@ export class I2cTerminal extends Component<I2cTerminalProps, I2cTerminalState> {
     const controlValue =
       (isEnabled ? 1 : 0) |
       (isMaster ? 1 << 1 : 0) |
-      (use10BitAddr ? 1 << 2 : 0);
+      (use10BitAddr ? 1 << 2 : 0) |
+      (regAddrLen == 2 ? 1 << 3 : 0);
     await writeCSR(REGS.I2C_CONTROL.toString(16), controlValue.toString(16));
   };
 
@@ -166,20 +172,17 @@ export class I2cTerminal extends Component<I2cTerminalProps, I2cTerminalState> {
       .filter((n) => !isNaN(n));
   };
 
-  startTransaction = async (type: "write" | "read" | "write-read") => {
+  startTransaction = async (type: "write" | "read") => {
     const { writeCSR } = this.context;
-    const { devAddr, txData, rxCount } = this.state;
+    const { devAddr, regAddr, txData, rxCount } = this.state;
     const deviceAddress = parseInt(devAddr);
+    const regAddress = parseInt(regAddr);
     if (isNaN(deviceAddress)) {
       this.addMessage("ERROR", "Invalid Device Address.");
       return;
     }
-    const bytesToWrite =
-      type === "write" || type === "write-read"
-        ? this.parseHexData(txData)
-        : [];
-    const bytesToRead =
-      type === "read" || type === "write-read" ? parseInt(rxCount) : 0;
+    const bytesToWrite = type === "write" ? this.parseHexData(txData) : [];
+    const bytesToRead = type === "read" ? parseInt(rxCount) : 0;
     if (bytesToWrite.some(isNaN)) {
       this.addMessage("ERROR", "Invalid Hex format in TX Data.");
       return;
@@ -198,6 +201,7 @@ export class I2cTerminal extends Component<I2cTerminalProps, I2cTerminalState> {
       this.addMessage("TX", `Expecting ${bytesToRead} byte(s) in response.`);
 
     await writeCSR(REGS.I2C_DEV_ADDR.toString(16), deviceAddress.toString(16));
+    await writeCSR(REGS.I2C_REG_ADDR.toString(16), regAddress.toString(16));
     for (const byte of bytesToWrite) {
       await writeCSR(REGS.I2C_TX_DATA.toString(16), byte.toString(16));
       await writeCSR(REGS.I2C_TX_CTRL.toString(16), "1");
@@ -216,9 +220,10 @@ export class I2cTerminal extends Component<I2cTerminalProps, I2cTerminalState> {
 
   readRxFifo = async () => {
     const { readCSR, writeCSR } = this.context;
-    const { rxFifoCount } = this.state;
+    const { rxCount } = this.state;
+    const rxCountNum = parseInt(rxCount);
 
-    if (rxFifoCount === 0) {
+    if (rxCountNum === 0) {
       this.addMessage(
         "INFO",
         "RX FIFO is empty. Refresh status to check again.",
@@ -227,9 +232,9 @@ export class I2cTerminal extends Component<I2cTerminalProps, I2cTerminalState> {
       return;
     }
 
-    this.addMessage("INFO", `Reading ${rxFifoCount} byte(s) from RX FIFO...`);
+    this.addMessage("INFO", `Reading ${rxCountNum} byte(s) from RX FIFO...`);
     const received: number[] = [];
-    for (let i = 0; i < rxFifoCount; i++) {
+    for (let i = 0; i < rxCountNum; i++) {
       await writeCSR(REGS.I2C_RX_CTRL.toString(16), "1");
       const data = await readCSR(REGS.I2C_RX_DATA.toString(16));
       if (data !== undefined) received.push(data);
@@ -289,6 +294,16 @@ export class I2cTerminal extends Component<I2cTerminalProps, I2cTerminalState> {
               value={clkDiv}
               onChange={(e) => this.setState({ clkDiv: e.target.value })}
             />
+            <label className="sub-label">
+              Register Address Length(1 or 2) :
+            </label>
+            <input
+              type="number"
+              value={this.state.regAddrLen}
+              onChange={(e) =>
+                this.setState({ regAddrLen: Number(e.target.value) })
+              }
+            ></input>
             <button
               className="btn-secondary"
               onClick={() => this.applyConfig()}
@@ -303,6 +318,12 @@ export class I2cTerminal extends Component<I2cTerminalProps, I2cTerminalState> {
               value={devAddr}
               onChange={(e) => this.setState({ devAddr: e.target.value })}
               placeholder="e.g. 0x5A"
+            />
+            <label className="sub-label">Register Address (Optional):</label>
+            <input
+              value={this.state.regAddr}
+              onChange={(e) => this.setState({ regAddr: e.target.value })}
+              placeholder="e.g. 0x00"
             />
             <label className="sub-label">Data to Write (Hex Bytes):</label>
             <textarea
@@ -328,12 +349,6 @@ export class I2cTerminal extends Component<I2cTerminalProps, I2cTerminalState> {
                 disabled={isBusy || !isEnabled}
               >
                 Read
-              </button>
-              <button
-                onClick={() => this.startTransaction("write-read")}
-                disabled={isBusy || !isEnabled}
-              >
-                Write-Read
               </button>
             </div>
           </div>
