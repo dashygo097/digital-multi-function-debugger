@@ -30,9 +30,6 @@ interface ACM2108TerminalState {
   channelSelMask: boolean[];
   dataNum: string;
   adcSpeedDiv: string;
-
-  // Streaming
-  isStreaming: boolean;
 }
 
 export class ACM2108Terminal extends Component<
@@ -165,7 +162,6 @@ export class ACM2108Terminal extends Component<
       adcSpeedDiv,
       messages,
       autoScroll,
-      isStreaming,
     } = this.state;
     const samplingRate = SYSTEM_CLOCK_HZ / (parseInt(adcSpeedDiv) || 1);
 
