@@ -498,20 +498,26 @@
     "section": "i2c_engine"
   },
   {
-    "name": "I2C_TRANS_CFG",
+    "name": "I2C_REG_ADDR",
     "address": "0x3000C",
+    "description": "[15:0] i2c_reg_addr",
+    "section": "i2c_engine"
+  },
+  {
+    "name": "I2C_TRANS_CFG",
+    "address": "0x30010",
     "description": "[7:0] tx_count, [15:8] rx_count, [30] tx_start_pulse, [31] rx_start_pulse",
     "section": "i2c_engine"
   },
   {
     "name": "I2C_TX_DATA",
-    "address": "0x30010",
+    "address": "0x30014",
     "description": "[7:0] Data for TX FIFO",
     "section": "i2c_engine"
   },
   {
     "name": "I2C_TX_CTRL",
-    "address": "0x30014",
+    "address": "0x30018",
     "description": "[0] tx_fifo_wr_en (pulse)",
     "section": "i2c_engine"
   },
