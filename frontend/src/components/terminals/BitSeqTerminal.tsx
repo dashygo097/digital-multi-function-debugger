@@ -21,7 +21,6 @@ interface BitseqTerminalProps {
 }
 
 interface ChannelConfig {
-  length: string;
   rateDiv: string;
   phaseOff: string;
   sequence: string;
@@ -62,7 +61,6 @@ export class BitseqLooperTerminal extends Component<
       channelConfigs: Array(NUM_CHANNELS)
         .fill(0)
         .map(() => ({
-          length: "16",
           rateDiv: "1000",
           phaseOff: "0",
           sequence: "0",
@@ -169,15 +167,39 @@ export class BitseqLooperTerminal extends Component<
     this.setState({ channelConfigs: newConfigs });
   };
 
+  getSequenceLength = (channel: number): number => {
+    const sequence = this.state.channelConfigs[channel].sequence.replace(
+      /[^01]/g,
+      "",
+    );
+    return sequence.length;
+  };
+
   applyChannelConfig = async () => {
     const { writeCSR } = this.context;
     const { selectedChannel, channelConfigs } = this.state;
     const config = channelConfigs[selectedChannel];
 
-    this.addMessage("TX", `Applying config to Channel ${selectedChannel}`);
+    // Get actual sequence length
+    const sequenceLength = this.getSequenceLength(selectedChannel);
+
+    if (sequenceLength === 0) {
+      this.addMessage(
+        "ERROR",
+        "Sequence is empty. Please enter a valid bit sequence.",
+      );
+      return;
+    }
+
+    this.addMessage(
+      "TX",
+      `Applying config to Channel ${selectedChannel} (Length: ${sequenceLength})`,
+    );
+
+    // Write length based on actual sequence
     await writeCSR(
       (REGS.LEN_BASE + selectedChannel * 4).toString(16),
-      Number(config.length).toString(16),
+      sequenceLength.toString(16),
     );
     await writeCSR(
       (REGS.RATE_DIV_BASE + selectedChannel * 4).toString(16),
@@ -196,12 +218,11 @@ export class BitseqLooperTerminal extends Component<
       /[^01]/g,
       "",
     );
-    const sequenceLength = Number(channelConfigs[selectedChannel].length);
 
-    if (sequence.length > sequenceLength) {
+    if (sequence.length === 0) {
       this.addMessage(
         "ERROR",
-        `Sequence length (${sequence.length}) exceeds configured length (${sequenceLength}).`,
+        "Sequence is empty. Please enter a valid bit sequence.",
       );
       return;
     }
@@ -227,11 +248,17 @@ export class BitseqLooperTerminal extends Component<
     );
   };
 
+  applyAndWriteSequence = async () => {
+    await this.applyChannelConfig();
+    await this.writeSequenceToBRAM();
+  };
+
   render() {
     const { className } = this.props;
     const { armMask, playingStatus, selectedChannel, channelConfigs } =
       this.state;
     const currentConfig = channelConfigs[selectedChannel];
+    const currentLength = this.getSequenceLength(selectedChannel);
 
     return (
       <div className={className}>
@@ -279,14 +306,7 @@ export class BitseqLooperTerminal extends Component<
                 </option>
               ))}
             </select>
-            <label>Length:</label>
-            <input
-              type="number"
-              value={currentConfig.length}
-              onChange={(e) =>
-                this.handleChannelConfigChange("length", e.target.value)
-              }
-            />
+            <label>Sequence Length: {currentLength} bits</label>
             <label>Rate Divider:</label>
             <input
               type="number"
@@ -303,9 +323,6 @@ export class BitseqLooperTerminal extends Component<
                 this.handleChannelConfigChange("phaseOff", e.target.value)
               }
             />
-            <button className="btn-secondary" onClick={this.applyChannelConfig}>
-              Apply Config
-            </button>
           </div>
         </div>
 
@@ -319,8 +336,11 @@ export class BitseqLooperTerminal extends Component<
               }
               placeholder="Enter bit sequence (e.g., 11001100...)"
             />
-            <button className="btn-special" onClick={this.writeSequenceToBRAM}>
-              Write Sequence to BRAM
+            <button
+              className="btn-special"
+              onClick={this.applyAndWriteSequence}
+            >
+              Apply Config & Write to BRAM
             </button>
           </div>
           <div className="terminal">
