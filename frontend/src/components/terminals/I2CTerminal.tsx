@@ -64,7 +64,7 @@ export class I2cTerminal extends Component<I2cTerminalProps, I2cTerminalState> {
       devAddr: "0x50",
       regAddr: "0x00",
       txData: "0x01 0xAA 0xBB",
-      rxCount: "2",
+      rxCount: "3",
       rxData: [],
       isBusy: false,
       isDone: false,
