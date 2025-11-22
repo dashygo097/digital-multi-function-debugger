@@ -30,6 +30,9 @@ interface ACM2108TerminalState {
   channelSelMask: boolean[];
   dataNum: string;
   adcSpeedDiv: string;
+
+  // Streaming
+  isStreaming: boolean;
 }
 
 export class ACM2108Terminal extends Component<
@@ -40,6 +43,7 @@ export class ACM2108Terminal extends Component<
   context!: React.ContextType<typeof ProtocolContext>;
 
   private terminalRef: RefObject<HTMLDivElement>;
+  private streamingInterval: NodeJS.Timeout | null = null;
 
   constructor(props: ACM2108TerminalProps) {
     super(props);
@@ -52,12 +56,19 @@ export class ACM2108Terminal extends Component<
       channelSelMask: Array(NUM_CHANNELS).fill(true),
       dataNum: "2048",
       adcSpeedDiv: "10",
+      isStreaming: false,
     };
     this.terminalRef = React.createRef<HTMLDivElement>();
   }
 
   componentDidMount() {
     this.pollStatus();
+  }
+
+  componentWillUnmount() {
+    if (this.streamingInterval) {
+      clearInterval(this.streamingInterval);
+    }
   }
 
   componentDidUpdate(_: {}, prevState: ACM2108TerminalState) {
@@ -152,6 +163,29 @@ export class ACM2108Terminal extends Component<
     this.addMessage("INFO", "Start pulse sent to hardware.");
   };
 
+  toggleStreaming = () => {
+    const newStreamingState = !this.state.isStreaming;
+    this.setState({ isStreaming: newStreamingState });
+
+    if (newStreamingState) {
+      this.addMessage(
+        "INFO",
+        "Streaming mode ENABLED - Continuous acquisition started",
+      );
+      this.startAcquisition();
+
+      this.streamingInterval = setInterval(() => {
+        this.startAcquisition();
+      }, 500);
+    } else {
+      this.addMessage("INFO", "Streaming mode DISABLED");
+      if (this.streamingInterval) {
+        clearInterval(this.streamingInterval);
+        this.streamingInterval = null;
+      }
+    }
+  };
+
   render() {
     const { className } = this.props;
     const {
@@ -162,6 +196,7 @@ export class ACM2108Terminal extends Component<
       adcSpeedDiv,
       messages,
       autoScroll,
+      isStreaming,
     } = this.state;
     const samplingRate = SYSTEM_CLOCK_HZ / (parseInt(adcSpeedDiv) || 1);
 
@@ -220,6 +255,14 @@ export class ACM2108Terminal extends Component<
             <button className="btn-special" onClick={this.startAcquisition}>
               Start Acquisition
             </button>
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                checked={isStreaming}
+                onChange={this.toggleStreaming}
+              />
+              Streaming Mode (Continuous)
+            </label>
           </div>
 
           <div className="section">
