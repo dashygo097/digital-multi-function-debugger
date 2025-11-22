@@ -71,11 +71,6 @@ export class I2cTerminal extends Component<I2cTerminalProps, I2cTerminalState> {
     this.terminalEndRef = React.createRef<HTMLDivElement>();
   }
 
-  componentDidMount() {
-    this.applyConfig(false);
-    this.refreshStatus();
-  }
-
   componentDidUpdate(_: {}, prevState: I2cTerminalState) {
     if (
       this.state.autoScroll &&
