@@ -70,12 +70,6 @@ export class SpiTerminal extends Component<SpiTerminalProps, SpiTerminalState> {
     this.terminalEndRef = React.createRef<HTMLDivElement>();
   }
 
-  componentDidMount() {
-    this.applyConfig(false);
-    // Fetch initial status on load
-    this.refreshStatus();
-  }
-
   componentDidUpdate(_: {}, prevState: SpiTerminalState) {
     if (
       this.state.autoScroll &&
