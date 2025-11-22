@@ -488,7 +488,7 @@
   {
     "name": "I2C_CONTROL",
     "address": "0x30004",
-    "description": "[0] i2c_enable, [1] i2c_master_mode, [2] i2c_10bit_addr, [3] i2c_restart",
+    "description": "[0] i2c_enable, [1] i2c_master_mode, [2] i2c_10bit_addr, [3] i2c_reg_addr_len",
     "section": "i2c_engine"
   },
   {
