@@ -129,6 +129,10 @@ export class BitseqLooperTerminal extends Component<
       REGS.START_CH.toString(16),
       maskValue.toString(16),
     );
+    await this.context.writeCSR(
+      REGS.STOP_CH.toString(16),
+      (~maskValue).toString(16),
+    );
 
     const newPlayingStatus = armMask.map((armed) => armed);
     this.setState({ playingStatus: newPlayingStatus });
