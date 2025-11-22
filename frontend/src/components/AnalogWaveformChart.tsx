@@ -66,6 +66,7 @@ export class AnalogWaveformChart extends React.Component<AnalogWaveformChartProp
             stroke={this.props.color || "#8884d8"}
             strokeWidth={2}
             dot={false}
+            isAnimationActive={false}
           />
         </LineChart>
       </ResponsiveContainer>
