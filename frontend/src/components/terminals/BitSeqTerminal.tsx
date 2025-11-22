@@ -4,9 +4,7 @@ import { Message } from "@utils";
 
 const BASE_ADDR = 0x20000;
 const REGS = {
-  CONTROL: BASE_ADDR + 0x00,
   STATUS: BASE_ADDR + 0x04,
-  ARM_MASK: BASE_ADDR + 0x08,
   START_CH: BASE_ADDR + 0x0c,
   STOP_CH: BASE_ADDR + 0x10,
   WR_CONTROL: BASE_ADDR + 0x14,
@@ -104,31 +102,6 @@ export class BitseqLooperTerminal extends Component<
     }));
   };
 
-  handleGlobalControlWrite = async (bit: 0 | 1 | 2, enable?: boolean) => {
-    const { writeCSR } = this.context;
-    const value = enable !== undefined ? (enable ? 1 : 0) : 1 << bit;
-    let regValue = 0;
-    if (bit === 0 && enable !== undefined) {
-      regValue = enable ? 1 : 0;
-    } else {
-      regValue = 1 << bit;
-    }
-    await writeCSR(REGS.CONTROL.toString(16), regValue.toString(16));
-    const action =
-      bit === 1
-        ? "Arm Load"
-        : bit === 2
-          ? "Group Start"
-          : `Sync Enable: ${enable}`;
-    this.addMessage("TX", `Global Control: ${action}`);
-
-    if (bit === 2) {
-      const { armMask, playingStatus } = this.state;
-      const newPlayingStatus = playingStatus.map((p, i) => armMask[i] || p);
-      this.setState({ playingStatus: newPlayingStatus });
-    }
-  };
-
   handleArmMaskChange = async (index: number) => {
     const newArmMask = [...this.state.armMask];
     newArmMask[index] = !newArmMask[index];
@@ -138,13 +111,32 @@ export class BitseqLooperTerminal extends Component<
       (acc, val, i) => acc | (val ? 1 << i : 0),
       0,
     );
-    await this.context.writeCSR(
-      REGS.ARM_MASK.toString(16),
-      maskValue.toString(16),
-    );
     this.addMessage(
       "TX",
       `Set Arm Mask to 0b${maskValue.toString(2).padStart(8, "0")}`,
+    );
+  };
+
+  handleStartChannels = async () => {
+    const armMask = [...this.state.armMask];
+
+    const maskValue = armMask.reduce(
+      (acc, val, i) => acc | (val ? 1 << i : 0),
+      0,
+    );
+
+    await this.context.writeCSR(
+      REGS.START_CH.toString(16),
+      maskValue.toString(16),
+    );
+
+    const newPlayingStatus = armMask.map((armed) => armed);
+    this.setState({ playingStatus: newPlayingStatus });
+
+    this.addMessage(
+      "TX",
+      "Starting Channels with Arm Mask 0b" +
+        maskValue.toString(2).padStart(8, "0"),
     );
   };
 
@@ -236,13 +228,8 @@ export class BitseqLooperTerminal extends Component<
 
   render() {
     const { className } = this.props;
-    const {
-      syncEnable,
-      armMask,
-      playingStatus,
-      selectedChannel,
-      channelConfigs,
-    } = this.state;
+    const { armMask, playingStatus, selectedChannel, channelConfigs } =
+      this.state;
     const currentConfig = channelConfigs[selectedChannel];
 
     return (
@@ -259,28 +246,6 @@ export class BitseqLooperTerminal extends Component<
             </div>
           </div>
           <div className="section">
-            <label>Global Control</label>
-            <div className="checkbox-label">
-              <input
-                type="checkbox"
-                checked={syncEnable}
-                onChange={(e) => {
-                  this.setState({ syncEnable: e.target.checked });
-                  this.handleGlobalControlWrite(0, e.target.checked);
-                }}
-              />
-              Sync Enable
-            </div>
-            <div className="buttons-2col">
-              <button onClick={() => this.handleGlobalControlWrite(1)}>
-                Arm Load
-              </button>
-              <button onClick={() => this.handleGlobalControlWrite(2)}>
-                Group Start
-              </button>
-            </div>
-          </div>
-          <div className="section">
             <label>Arm Mask</label>
             <div className="status-grid">
               {armMask.map((armed, i) => (
@@ -294,6 +259,10 @@ export class BitseqLooperTerminal extends Component<
                 </label>
               ))}
             </div>
+            <label> Start </label>
+            <button className="btn-primary" onClick={this.handleStartChannels}>
+              Start Channels
+            </button>
           </div>
           <div className="section">
             <label>Channel Config (CH{selectedChannel})</label>
@@ -336,27 +305,6 @@ export class BitseqLooperTerminal extends Component<
             <button className="btn-secondary" onClick={this.applyChannelConfig}>
               Apply Config
             </button>
-          </div>
-          <div className="section">
-            <label>Channel Control (CH{selectedChannel})</label>
-            <div className="buttons-2col">
-              <button
-                className="btn-primary"
-                onClick={() =>
-                  this.handleChannelControl("START_CH", selectedChannel)
-                }
-              >
-                Start CH{selectedChannel}
-              </button>
-              <button
-                className="btn-danger"
-                onClick={() =>
-                  this.handleChannelControl("STOP_CH", selectedChannel)
-                }
-              >
-                Stop CH{selectedChannel}
-              </button>
-            </div>
           </div>
         </div>
 
