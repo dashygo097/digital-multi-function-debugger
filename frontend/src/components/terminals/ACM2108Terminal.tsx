@@ -30,6 +30,9 @@ interface ACM2108TerminalState {
   channelSelMask: boolean[];
   dataNum: string;
   adcSpeedDiv: string;
+
+  // Streaming
+  isStreaming: boolean;
 }
 
 export class ACM2108Terminal extends Component<
@@ -152,6 +155,14 @@ export class ACM2108Terminal extends Component<
     );
   };
 
+  startAcquisition = async () => {
+    const { writeCSR } = this.context;
+    this.addMessage("TX", "Sending Start Acquisition pulse...");
+    await this.applyConfiguration();
+    await writeCSR(REGS.RESTART.toString(16), "1");
+    this.addMessage("INFO", "Start pulse sent to hardware.");
+  };
+
   render() {
     const { className } = this.props;
     const {
@@ -162,6 +173,7 @@ export class ACM2108Terminal extends Component<
       adcSpeedDiv,
       messages,
       autoScroll,
+      isStreaming,
     } = this.state;
     const samplingRate = SYSTEM_CLOCK_HZ / (parseInt(adcSpeedDiv) || 1);
 
@@ -214,6 +226,12 @@ export class ACM2108Terminal extends Component<
               value={adcSpeedDiv}
               onChange={(e) => this.setState({ adcSpeedDiv: e.target.value })}
             />
+          </div>
+
+          <div className="section">
+            <button className="btn-special" onClick={this.startAcquisition}>
+              Start Acquisition
+            </button>
           </div>
 
           <div className="section">
