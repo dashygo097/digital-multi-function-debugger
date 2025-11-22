@@ -34,8 +34,8 @@ interface AnalogWaveformChartProps {
 export class AnalogWaveformChart extends React.Component<AnalogWaveformChartProps> {
   render() {
     const chartData = this.props.data.map((value, index) => ({ index, value }));
-    const yMin = Math.min(...this.props.data);
-    const yMax = Math.max(...this.props.data);
+    const yMin = -5;
+    const yMax = 5;
 
     return (
       <ResponsiveContainer width="100%" height={280}>
