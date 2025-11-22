@@ -146,6 +146,62 @@ export class I2cTerminal extends Component<I2cTerminalProps, I2cTerminalState> {
     }
   };
 
+  startTransaction = async (type: "write" | "read") => {
+    const { writeCSR } = this.context;
+    const { devAddr, regAddr, txData, rxCount } = this.state;
+    const deviceAddress = parseInt(devAddr);
+    const regAddress = parseInt(regAddr);
+
+    if (isNaN(deviceAddress)) {
+      this.addMessage("ERROR", "Invalid Device Address.");
+      return;
+    }
+
+    const bytesToWrite = type === "write" ? this.parseHexData(txData) : [];
+    const bytesToRead = type === "read" ? parseInt(rxCount) : 0;
+
+    if (type === "write" && bytesToWrite.some(isNaN)) {
+      this.addMessage("ERROR", "Invalid Hex format in TX Data.");
+      return;
+    }
+
+    this.addMessage(
+      "TX",
+      `Starting ${type.toUpperCase()} transaction with DevAddr ${devAddr}, RegAddr ${regAddr}`,
+    );
+
+    await writeCSR(REGS.I2C_DEV_ADDR.toString(16), deviceAddress.toString(16));
+    await writeCSR(REGS.I2C_REG_ADDR.toString(16), regAddress.toString(16));
+    if (type === "write" && bytesToWrite.length > 0) {
+      this.addMessage(
+        "TX",
+        `Writing data: [${bytesToWrite.map((b) => "0x" + b.toString(16).padStart(2, "0")).join(" ")}]`,
+      );
+      for (const byte of bytesToWrite) {
+        await writeCSR(REGS.I2C_TX_DATA.toString(16), byte.toString(16));
+        await writeCSR(REGS.I2C_TX_CTRL.toString(16), "1");
+      }
+    }
+
+    if (type === "read" && bytesToRead > 0) {
+      this.addMessage("TX", `Expecting ${bytesToRead} byte(s) in response.`);
+    }
+
+    const transCfgValue =
+      (type === "read" ? 1 << 31 : 1 << 30) |
+      (bytesToRead << 8) |
+      bytesToWrite.length;
+
+    await writeCSR(REGS.I2C_TRANS_CFG.toString(16), transCfgValue.toString(16));
+
+    this.addMessage(
+      "INFO",
+      "Transaction started. Use Refresh to check status and Read RX to get data.",
+    );
+
+    this.setState({ isBusy: true, isDone: false });
+  };
+
   applyConfig = async (log = true) => {
     const { writeCSR } = this.context;
     const { isEnabled, isMaster, use10BitAddr, regAddrLen, clkDiv } =
@@ -170,52 +226,6 @@ export class I2cTerminal extends Component<I2cTerminalProps, I2cTerminalState> {
       .split(/\s+/)
       .map((hex) => parseInt(hex))
       .filter((n) => !isNaN(n));
-  };
-
-  startTransaction = async (type: "write" | "read") => {
-    const { writeCSR } = this.context;
-    const { devAddr, regAddr, txData, rxCount } = this.state;
-    const deviceAddress = parseInt(devAddr);
-    const regAddress = parseInt(regAddr);
-    if (isNaN(deviceAddress)) {
-      this.addMessage("ERROR", "Invalid Device Address.");
-      return;
-    }
-    const bytesToWrite = type === "write" ? this.parseHexData(txData) : [];
-    const bytesToRead = type === "read" ? parseInt(rxCount) : 0;
-    if (bytesToWrite.some(isNaN)) {
-      this.addMessage("ERROR", "Invalid Hex format in TX Data.");
-      return;
-    }
-
-    this.addMessage(
-      "TX",
-      `Starting ${type.toUpperCase()} transaction with DevAddr ${devAddr}`,
-    );
-    if (bytesToWrite.length > 0)
-      this.addMessage(
-        "TX",
-        `[${bytesToWrite.map((b) => "0x" + b.toString(16).padStart(2, "0")).join(" ")}]`,
-      );
-    if (bytesToRead > 0)
-      this.addMessage("TX", `Expecting ${bytesToRead} byte(s) in response.`);
-
-    await writeCSR(REGS.I2C_DEV_ADDR.toString(16), deviceAddress.toString(16));
-    await writeCSR(REGS.I2C_REG_ADDR.toString(16), regAddress.toString(16));
-    for (const byte of bytesToWrite) {
-      await writeCSR(REGS.I2C_TX_DATA.toString(16), byte.toString(16));
-      await writeCSR(REGS.I2C_TX_CTRL.toString(16), "1");
-    }
-    const transCfgValue =
-      (type === "read" ? 1 << 31 : 1 << 30) |
-      (bytesToRead << 8) |
-      bytesToWrite.length;
-    await writeCSR(REGS.I2C_TRANS_CFG.toString(16), transCfgValue.toString(16));
-
-    this.addMessage(
-      "INFO",
-      "Transaction started. Use Refresh to check status and Read RX to get data.",
-    );
   };
 
   readRxFifo = async () => {
