@@ -4300,15 +4300,17 @@ module i2c_engine_wrapper (
                       ? {24'h0, _i2cEngine_rx_fifo_data}
                       : _raddr_T == 32'h10
                           ? {16'h0, regRxCount, regTxCount}
-                          : _raddr_T == 32'h8
-                              ? {22'h0, regDevAddr}
-                              : _raddr_T == 32'h4
-                                  ? {28'h0,
-                                     regAddrLen,
-                                     reg10BitAddr,
-                                     regMasterMode,
-                                     regEnable}
-                                  : _raddr_T == 32'h0 ? regClkDiv : 32'h0;
+                          : _raddr_T == 32'hC
+                              ? {16'h0, regAddr}
+                              : _raddr_T == 32'h8
+                                  ? {22'h0, regDevAddr}
+                                  : _raddr_T == 32'h4
+                                      ? {28'h0,
+                                         regAddrLen,
+                                         reg10BitAddr,
+                                         regMasterMode,
+                                         regEnable}
+                                      : _raddr_T == 32'h0 ? regClkDiv : 32'h0;
       axi_rvalid <=
         axi_arready & S_AXI_ARVALID & ~axi_rvalid | ~(axi_rvalid & S_AXI_RREADY)
         & axi_rvalid;
