@@ -197,12 +197,6 @@ export class SpiTerminal extends Component<SpiTerminalProps, SpiTerminalState> {
     this.addMessage("TX", `Requesting ${byteCount} bytes from SPI bus...`);
     this.setState({ rxData: [] });
 
-    await writeCSR(REGS.SPI_TX_DATA.toString(16), "0");
-    for (let i = 0; i < byteCount; i++) {
-      await writeCSR(REGS.SPI_TX_CTRL.toString(16), "1");
-    }
-    await writeCSR(REGS.SPI_TX_CTRL.toString(16), "2");
-
     const poll = async (resolve: any) => {
       const status = await readCSR(REGS.SPI_STATUS.toString(16));
       if (status !== undefined && (status & 0x1) === 0) {
