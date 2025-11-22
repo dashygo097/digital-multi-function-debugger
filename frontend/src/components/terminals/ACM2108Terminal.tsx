@@ -155,37 +155,6 @@ export class ACM2108Terminal extends Component<
     );
   };
 
-  startAcquisition = async () => {
-    const { writeCSR } = this.context;
-    this.addMessage("TX", "Sending Start Acquisition pulse...");
-    await this.applyConfiguration();
-    await writeCSR(REGS.RESTART.toString(16), "1");
-    this.addMessage("INFO", "Start pulse sent to hardware.");
-  };
-
-  toggleStreaming = () => {
-    const newStreamingState = !this.state.isStreaming;
-    this.setState({ isStreaming: newStreamingState });
-
-    if (newStreamingState) {
-      this.addMessage(
-        "INFO",
-        "Streaming mode ENABLED - Continuous acquisition started",
-      );
-      this.startAcquisition();
-
-      this.streamingInterval = setInterval(() => {
-        this.startAcquisition();
-      }, 500);
-    } else {
-      this.addMessage("INFO", "Streaming mode DISABLED");
-      if (this.streamingInterval) {
-        clearInterval(this.streamingInterval);
-        this.streamingInterval = null;
-      }
-    }
-  };
-
   render() {
     const { className } = this.props;
     const {
@@ -249,20 +218,6 @@ export class ACM2108Terminal extends Component<
               value={adcSpeedDiv}
               onChange={(e) => this.setState({ adcSpeedDiv: e.target.value })}
             />
-          </div>
-
-          <div className="section">
-            <button className="btn-special" onClick={this.startAcquisition}>
-              Start Acquisition
-            </button>
-            <label className="checkbox-label">
-              <input
-                type="checkbox"
-                checked={isStreaming}
-                onChange={this.toggleStreaming}
-              />
-              Streaming Mode (Continuous)
-            </label>
           </div>
 
           <div className="section">
