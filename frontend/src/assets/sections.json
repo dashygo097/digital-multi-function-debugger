@@ -58,5 +58,11 @@
     "name": "DAC Engine",
     "startAddr": "0x34000",
     "endAddr": "0x38000"
+  },
+  {
+    "id": "ila",
+    "name": "ILA Engine",
+    "startAddr": "0x38000",
+    "endAddr": "0x3C000"
   }
 ]
