@@ -72,11 +72,6 @@ export class UartTerminal extends Component<
     this.terminalEndRef = React.createRef<HTMLDivElement>();
   }
 
-  componentDidMount() {
-    this.applyConfig(false);
-    this.updateStatusAndData();
-  }
-
   componentDidUpdate(_: {}, prevState: UartTerminalState) {
     if (
       this.state.autoScroll &&
@@ -307,7 +302,7 @@ export class UartTerminal extends Component<
             <label>Received Data Preview</label>
             <pre>{rxString.slice(-200)}</pre>
           </div>
-          <div className="section"> 
+          <div className="section">
             <div className="buttons-3col">
               <button onClick={this.updateStatusAndData} className="btn-info">
                 Refresh

@@ -5413,7 +5413,7 @@ module axi_cmd_test_module (
   wire        _master_M_AXI_RREADY;
   axilite_master_uart_cmd_32x32_b115200_f50000000 master (
       .clock        (clock),
-      .reset        (reset),
+      .reset        (!reset),
       .M_AXI_AWADDR (_master_M_AXI_AWADDR),
       .M_AXI_AWVALID(_master_M_AXI_AWVALID),
       .M_AXI_AWREADY(_interconnect_S_AXI_AWREADY),

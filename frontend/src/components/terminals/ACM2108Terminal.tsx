@@ -61,10 +61,6 @@ export class ACM2108Terminal extends Component<
     this.terminalRef = React.createRef<HTMLDivElement>();
   }
 
-  componentDidMount() {
-    this.pollStatus();
-  }
-
   componentWillUnmount() {
     if (this.streamingInterval) {
       clearInterval(this.streamingInterval);
