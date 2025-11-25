@@ -31,6 +31,9 @@ export const DigitalAnalyzer: React.FC<DigitalAnalyzerProps> = ({
       );
     }
 
+    for (const id of currentMessageIds) {
+      console.log("Clearing message ID:", id);
+    }
     clearDigitalData(currentMessageIds);
   };
 
