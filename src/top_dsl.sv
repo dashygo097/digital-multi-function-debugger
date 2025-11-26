@@ -4993,7 +4993,7 @@ module dac_engine_wrapper (
 endmodule
 
 // VCS coverage exclude_file
-module mem_256x4 (
+module fifoMem_256x4 (
     input  [7:0] R0_addr,
     input        R0_en,
     R0_clk,
@@ -5017,52 +5017,6 @@ module mem_256x4 (
   assign R0_data = _R0_en_d0 ? Memory[_R0_addr_d0] : 4'bx;
 endmodule
 
-module sync_fifo_256x4 (
-    input        clock,
-    reset,
-    S_FIFO_enq_valid,
-    input  [3:0] S_FIFO_enq_bits,
-    input        S_FIFO_deq_ready,
-    output [3:0] S_FIFO_deq_bits,
-    output       S_FIFO_empty,
-    S_FIFO_full,
-    output [7:0] S_FIFO_count
-);
-
-  reg  [8:0] enqPtr;
-  reg  [8:0] deqPtr;
-  reg        maybeFullReg;
-  wire       _full_T = enqPtr == deqPtr;
-  wire       empty = _full_T & ~maybeFullReg;
-  wire       full = _full_T & maybeFullReg;
-  wire       _maybeFullReg_T = ~full & S_FIFO_enq_valid;
-  wire       _GEN = S_FIFO_deq_ready & ~empty;
-  always @(posedge clock) begin
-    if (reset) begin
-      enqPtr <= 9'h0;
-      deqPtr <= 9'h0;
-      maybeFullReg <= 1'h0;
-    end else begin
-      if (_maybeFullReg_T) enqPtr <= enqPtr == 9'hFF ? 9'h0 : enqPtr + 9'h1;
-      if (_GEN) deqPtr <= deqPtr == 9'hFF ? 9'h0 : deqPtr + 9'h1;
-      if (_maybeFullReg_T != _GEN) maybeFullReg <= _maybeFullReg_T;
-    end
-  end  // always @(posedge)
-  mem_256x4 mem_ext (
-      .R0_addr(deqPtr[7:0]),
-      .R0_en  (1'h1),
-      .R0_clk (clock),
-      .R0_data(S_FIFO_deq_bits),
-      .W0_addr(enqPtr[7:0]),
-      .W0_en  (_maybeFullReg_T),
-      .W0_clk (clock),
-      .W0_data(S_FIFO_enq_bits)
-  );
-  assign S_FIFO_empty = empty;
-  assign S_FIFO_full  = full;
-  assign S_FIFO_count = enqPtr >= deqPtr ? enqPtr[7:0] - deqPtr[7:0] : enqPtr[7:0] - deqPtr[7:0];
-endmodule
-
 module axilite_ila_32x32_d256 (
     input         clock,
     reset,
@@ -5083,10 +5037,7 @@ module axilite_ila_32x32_d256 (
     input  [ 3:0] probes_0
 );
 
-  wire [ 3:0] _fifo_S_FIFO_deq_bits;
-  wire        _fifo_S_FIFO_empty;
-  wire        _fifo_S_FIFO_full;
-  wire [ 7:0] _fifo_S_FIFO_count;
+  wire [ 3:0] _fifoMem_ext_R0_data;
   reg         axi_awready;
   reg  [31:0] axi_awaddr;
   reg         axi_wready;
@@ -5095,16 +5046,26 @@ module axilite_ila_32x32_d256 (
   reg  [31:0] axi_araddr;
   reg  [31:0] axi_rdata;
   reg         axi_rvalid;
-  wire        axi_on_aread = axi_arready & S_AXI_ARVALID;
+  reg  [ 8:0] fifoEnqPtr;
+  reg  [ 8:0] fifoDeqPtr;
+  reg         fifoMaybeFull;
+  wire        _fifoFull_T = fifoEnqPtr == fifoDeqPtr;
+  wire        fifoFull = _fifoFull_T & fifoMaybeFull;
   reg         enableReg;
-  reg         clearReg;
   reg  [15:0] clockDivReg;
+  reg         clearReq;
+  reg         clearPrev;
+  wire        clearPulse = clearReq & ~clearPrev;
   reg  [15:0] clockDivCounter;
   wire        _GEN = clockDivCounter == clockDivReg - 16'h1;
-  wire        _read_from_fifo_T = axi_araddr == 32'h38000;
+  wire        capture_enabled = enableReg & _GEN & ~fifoFull & ~clearPulse;
   wire        axi_will_awrite = ~axi_awready & S_AXI_AWVALID;
   wire        axi_last_write = axi_wready & S_AXI_WVALID;
   wire        axi_will_aread = ~axi_arready & S_AXI_ARVALID;
+  wire        axi_on_aread = axi_arready & S_AXI_ARVALID;
+  wire        fifoEmpty = _fifoFull_T & ~fifoMaybeFull;
+  wire        _read_from_fifo_T = axi_araddr == 32'h38000;
+  wire        fifo_read_fire = axi_on_aread & _read_from_fifo_T & S_AXI_RREADY & ~fifoEmpty;
   always @(posedge clock) begin
     if (reset) begin
       axi_awready <= 1'h0;
@@ -5115,9 +5076,13 @@ module axilite_ila_32x32_d256 (
       axi_araddr <= 32'h0;
       axi_rdata <= 32'h0;
       axi_rvalid <= 1'h0;
+      fifoEnqPtr <= 9'h0;
+      fifoDeqPtr <= 9'h0;
+      fifoMaybeFull <= 1'h0;
       enableReg <= 1'h0;
-      clearReg <= 1'h0;
       clockDivReg <= 16'h1;
+      clearReq <= 1'h0;
+      clearPrev <= 1'h0;
       clockDivCounter <= 16'h0;
     end else begin
       axi_awready <= axi_will_awrite | ~(axi_awready & S_AXI_AWVALID) & axi_awready;
@@ -5129,33 +5094,47 @@ module axilite_ila_32x32_d256 (
       axi_arready <= axi_will_aread | ~axi_on_aread & axi_arready;
       if (axi_will_aread) axi_araddr <= S_AXI_ARADDR;
       if (axi_araddr == 32'h38010) axi_rdata <= {16'h0, clockDivReg};
-      else if (axi_araddr == 32'h3800C) axi_rdata <= {30'h0, clearReg, enableReg};
-      else if (axi_araddr == 32'h38008) axi_rdata <= {24'h0, _fifo_S_FIFO_count};
+      else if (axi_araddr == 32'h3800C) axi_rdata <= {30'h0, clearReq, enableReg};
+      else if (axi_araddr == 32'h38008)
+        axi_rdata <= {
+          23'h0,
+          fifoEnqPtr >= fifoDeqPtr ? fifoEnqPtr - fifoDeqPtr : fifoEnqPtr - 9'h100 - fifoDeqPtr
+        };
       else if (axi_araddr == 32'h38004)
-        axi_rdata <= {28'h0, _fifo_S_FIFO_empty, _fifo_S_FIFO_full, enableReg, clearReg};
-      else if (_read_from_fifo_T) axi_rdata <= {28'h0, _fifo_S_FIFO_deq_bits};
+        axi_rdata <= {28'h0, ~fifoEmpty, fifoFull, enableReg, clearReq};
+      else if (_read_from_fifo_T) axi_rdata <= {28'h0, _fifoMem_ext_R0_data};
       axi_rvalid <=
         ~axi_rvalid & axi_arready & S_AXI_ARVALID | ~(axi_rvalid & S_AXI_RREADY)
         & axi_rvalid;
+      if (clearPulse) begin
+        fifoEnqPtr <= 9'h0;
+        fifoDeqPtr <= 9'h0;
+      end else begin
+        if (capture_enabled) fifoEnqPtr <= fifoEnqPtr == 9'hFF ? 9'h0 : fifoEnqPtr + 9'h1;
+        if (fifo_read_fire) fifoDeqPtr <= fifoDeqPtr == 9'hFF ? 9'h0 : fifoDeqPtr + 9'h1;
+      end
+      fifoMaybeFull <=
+        ~clearPulse
+        & (capture_enabled == fifo_read_fire ? fifoMaybeFull : capture_enabled);
       if (axi_last_write & axi_awaddr == 32'h3800C) begin
         enableReg <= S_AXI_WDATA[0];
-        clearReg  <= S_AXI_WDATA[1];
+        clearReq  <= S_AXI_WDATA[1];
       end
       if (axi_last_write & axi_awaddr == 32'h38010)
         clockDivReg <= S_AXI_WDATA[15:0] == 16'h0 ? 16'h1 : S_AXI_WDATA[15:0];
+      clearPrev <= clearReq;
       clockDivCounter <= ~enableReg | _GEN ? 16'h0 : clockDivCounter + 16'h1;
     end
   end  // always @(posedge)
-  sync_fifo_256x4 fifo (
-      .clock           (clock),
-      .reset           (reset),
-      .S_FIFO_enq_valid(enableReg & _GEN & ~_fifo_S_FIFO_full),
-      .S_FIFO_enq_bits (probes_0),
-      .S_FIFO_deq_ready(axi_on_aread & _read_from_fifo_T & S_AXI_RREADY & ~_fifo_S_FIFO_empty),
-      .S_FIFO_deq_bits (_fifo_S_FIFO_deq_bits),
-      .S_FIFO_empty    (_fifo_S_FIFO_empty),
-      .S_FIFO_full     (_fifo_S_FIFO_full),
-      .S_FIFO_count    (_fifo_S_FIFO_count)
+  fifoMem_256x4 fifoMem_ext (
+      .R0_addr(fifoDeqPtr[7:0]),
+      .R0_en  (1'h1),
+      .R0_clk (clock),
+      .R0_data(_fifoMem_ext_R0_data),
+      .W0_addr(fifoEnqPtr[7:0]),
+      .W0_en  (capture_enabled),
+      .W0_clk (clock),
+      .W0_data(probes_0)
   );
   assign S_AXI_AWREADY = axi_awready;
   assign S_AXI_WREADY  = axi_wready;
