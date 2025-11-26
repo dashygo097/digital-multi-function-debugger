@@ -5063,7 +5063,7 @@ module sync_fifo_256x4 (
   assign S_FIFO_count = enqPtr >= deqPtr ? enqPtr[7:0] - deqPtr[7:0] : enqPtr[7:0] - deqPtr[7:0];
 endmodule
 
-module axilite_ila_32x32_d256_p4 (
+module axilite_ila_32x32_d256 (
     input         clock,
     reset,
     input  [31:0] S_AXI_AWADDR,
@@ -5080,13 +5080,13 @@ module axilite_ila_32x32_d256_p4 (
     output [31:0] S_AXI_RDATA,
     output        S_AXI_RVALID,
     input         S_AXI_RREADY,
-    input  [ 3:0] probe_data
+    input  [ 3:0] probes_0
 );
 
-  wire [ 3:0] _traceFIFO_S_FIFO_deq_bits;
-  wire        _traceFIFO_S_FIFO_empty;
-  wire        _traceFIFO_S_FIFO_full;
-  wire [ 7:0] _traceFIFO_S_FIFO_count;
+  wire [ 3:0] _fifo_S_FIFO_deq_bits;
+  wire        _fifo_S_FIFO_empty;
+  wire        _fifo_S_FIFO_full;
+  wire [ 7:0] _fifo_S_FIFO_count;
   reg         axi_awready;
   reg  [31:0] axi_awaddr;
   reg         axi_wready;
@@ -5096,16 +5096,14 @@ module axilite_ila_32x32_d256_p4 (
   reg  [31:0] axi_rdata;
   reg         axi_rvalid;
   wire        axi_on_aread = axi_arready & S_AXI_ARVALID;
-  reg         ctrl_enable;
-  reg  [ 1:0] ctrl_trigger_mode;
-  reg  [ 3:0] ctrl_trigger_mask;
-  reg  [31:0] clk_div;
-  reg         is_capturing;
-  reg  [31:0] div_counter;
-  wire        sample_tick = div_counter == clk_div;
-  wire        _axi_rresp_T = axi_araddr == 32'h38010;
+  reg         enableReg;
+  reg         clearReg;
+  reg  [15:0] clockDivReg;
+  reg  [15:0] clockDivCounter;
+  wire        _GEN = clockDivCounter == clockDivReg - 16'h1;
+  wire        _read_from_fifo_T = axi_araddr == 32'h38000;
   wire        axi_will_awrite = ~axi_awready & S_AXI_AWVALID;
-  wire        axi_on_awrite = axi_awready & S_AXI_AWVALID;
+  wire        axi_last_write = axi_wready & S_AXI_WVALID;
   wire        axi_will_aread = ~axi_arready & S_AXI_ARVALID;
   always @(posedge clock) begin
     if (reset) begin
@@ -5117,53 +5115,47 @@ module axilite_ila_32x32_d256_p4 (
       axi_araddr <= 32'h0;
       axi_rdata <= 32'h0;
       axi_rvalid <= 1'h0;
-      ctrl_enable <= 1'h0;
-      ctrl_trigger_mode <= 2'h0;
-      ctrl_trigger_mask <= 4'h0;
-      clk_div <= 32'h0;
-      is_capturing <= 1'h0;
-      div_counter <= 32'h0;
+      enableReg <= 1'h0;
+      clearReg <= 1'h0;
+      clockDivReg <= 16'h1;
+      clockDivCounter <= 16'h0;
     end else begin
-      axi_awready <= axi_will_awrite | ~axi_on_awrite & axi_awready;
+      axi_awready <= axi_will_awrite | ~(axi_awready & S_AXI_AWVALID) & axi_awready;
       if (axi_will_awrite) axi_awaddr <= S_AXI_AWADDR;
-      axi_wready <=
-        ~axi_wready & axi_awready & S_AXI_AWVALID | ~(axi_wready & S_AXI_WVALID)
-        & axi_wready;
+      axi_wready <= ~axi_wready & axi_awready & S_AXI_AWVALID | ~axi_last_write & axi_wready;
       axi_bvalid <=
         ~axi_bvalid & axi_wready & S_AXI_WVALID | ~(axi_bvalid & S_AXI_BREADY)
         & axi_bvalid;
       axi_arready <= axi_will_aread | ~axi_on_aread & axi_arready;
       if (axi_will_aread) axi_araddr <= S_AXI_ARADDR;
-      if (axi_araddr == 32'h38014) axi_rdata <= {24'h0, _traceFIFO_S_FIFO_count};
-      else if (_axi_rresp_T) axi_rdata <= {28'h0, _traceFIFO_S_FIFO_deq_bits};
-      else if (axi_araddr == 32'h38008)
-        axi_rdata <= {28'h0, _traceFIFO_S_FIFO_empty, _traceFIFO_S_FIFO_full, 1'h0, is_capturing};
-      else if (axi_araddr == 32'h38004) axi_rdata <= clk_div;
-      else if (axi_araddr == 32'h38000)
-        axi_rdata <= {25'h0, ctrl_trigger_mask, ctrl_trigger_mode, ctrl_enable};
+      if (axi_araddr == 32'h38010) axi_rdata <= {16'h0, clockDivReg};
+      else if (axi_araddr == 32'h3800C) axi_rdata <= {30'h0, clearReg, enableReg};
+      else if (axi_araddr == 32'h38008) axi_rdata <= {24'h0, _fifo_S_FIFO_count};
+      else if (axi_araddr == 32'h38004)
+        axi_rdata <= {28'h0, _fifo_S_FIFO_empty, _fifo_S_FIFO_full, enableReg, clearReg};
+      else if (_read_from_fifo_T) axi_rdata <= {28'h0, _fifo_S_FIFO_deq_bits};
       axi_rvalid <=
         ~axi_rvalid & axi_arready & S_AXI_ARVALID | ~(axi_rvalid & S_AXI_RREADY)
         & axi_rvalid;
-      if (axi_on_awrite & axi_awaddr == 32'h38000 & S_AXI_WVALID) begin
-        ctrl_enable <= S_AXI_WDATA[0];
-        ctrl_trigger_mode <= S_AXI_WDATA[2:1];
-        ctrl_trigger_mask <= S_AXI_WDATA[6:3];
+      if (axi_last_write & axi_awaddr == 32'h3800C) begin
+        enableReg <= S_AXI_WDATA[0];
+        clearReg  <= S_AXI_WDATA[1];
       end
-      if (axi_on_awrite & axi_awaddr == 32'h38004 & S_AXI_WVALID) clk_div <= S_AXI_WDATA;
-      is_capturing <= ctrl_enable & (sample_tick | is_capturing);
-      div_counter  <= ~ctrl_enable | sample_tick ? 32'h0 : div_counter + 32'h1;
+      if (axi_last_write & axi_awaddr == 32'h38010)
+        clockDivReg <= S_AXI_WDATA[15:0] == 16'h0 ? 16'h1 : S_AXI_WDATA[15:0];
+      clockDivCounter <= ~enableReg | _GEN ? 16'h0 : clockDivCounter + 16'h1;
     end
   end  // always @(posedge)
-  sync_fifo_256x4 traceFIFO (
+  sync_fifo_256x4 fifo (
       .clock           (clock),
       .reset           (reset),
-      .S_FIFO_enq_valid(ctrl_enable & sample_tick & ~_traceFIFO_S_FIFO_full),
-      .S_FIFO_enq_bits (probe_data),
-      .S_FIFO_deq_ready(axi_on_aread & _axi_rresp_T & S_AXI_RREADY & ~_traceFIFO_S_FIFO_empty),
-      .S_FIFO_deq_bits (_traceFIFO_S_FIFO_deq_bits),
-      .S_FIFO_empty    (_traceFIFO_S_FIFO_empty),
-      .S_FIFO_full     (_traceFIFO_S_FIFO_full),
-      .S_FIFO_count    (_traceFIFO_S_FIFO_count)
+      .S_FIFO_enq_valid(enableReg & _GEN & ~_fifo_S_FIFO_full),
+      .S_FIFO_enq_bits (probes_0),
+      .S_FIFO_deq_ready(axi_on_aread & _read_from_fifo_T & S_AXI_RREADY & ~_fifo_S_FIFO_empty),
+      .S_FIFO_deq_bits (_fifo_S_FIFO_deq_bits),
+      .S_FIFO_empty    (_fifo_S_FIFO_empty),
+      .S_FIFO_full     (_fifo_S_FIFO_full),
+      .S_FIFO_count    (_fifo_S_FIFO_count)
   );
   assign S_AXI_AWREADY = axi_awready;
   assign S_AXI_WREADY  = axi_wready;
@@ -5858,7 +5850,7 @@ module axi_cmd_test_module (
       .dac_clk      (dac_clk),
       .dac_out      (dac_out)
   );
-  axilite_ila_32x32_d256_p4 slave11 (
+  axilite_ila_32x32_d256 slave11 (
       .clock        (clock),
       .reset        (!reset),
       .S_AXI_AWADDR (_interconnect_M_AXI_10_AWADDR),
@@ -5875,7 +5867,7 @@ module axi_cmd_test_module (
       .S_AXI_RDATA  (_slave11_S_AXI_RDATA),
       .S_AXI_RVALID (_slave11_S_AXI_RVALID),
       .S_AXI_RREADY (_interconnect_M_AXI_10_RREADY),
-      .probe_data   (probe)
+      .probes_0     (probe)
   );
 endmodule
 
