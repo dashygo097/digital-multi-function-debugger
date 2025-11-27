@@ -223,7 +223,7 @@ export const AnalyzerProvider = ({ children }: { children: ReactNode }) => {
   const [state, dispatch] = useReducer(reducer, initialState);
 
   const { udpTerminal } = useUDPContext();
-  const { serialTerminal, readCSR } = useSerialContext();
+  const { serialTerminal, readCSR, writeCSR } = useSerialContext();
 
   const addAnalogSamples = (samples: number[], messageId: string) =>
     dispatch({ type: "ADD_ANALOG_SAMPLES", payload: { samples, messageId } });

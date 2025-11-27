@@ -1,8 +1,10 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import { AnalogWaveformChart, SpectrumChart } from "@components";
-import { useAnalyzer, useProtocolContext } from "@contexts";
+import { useAnalyzer, useProtocolContext, ProtocolContext } from "@contexts";
 
 const FFT_SIZE = 1024;
+const BASE_ADDR = 0x18000;
+const RESTART_REG = BASE_ADDR + 0x14;
 const defaultColors = ["#00ff00", "#ff00ff", "#00ffff", "#ffff00"];
 
 interface AnalogAnalyzerProps {
@@ -22,6 +24,8 @@ export const AnalogAnalyzer: React.FC<AnalogAnalyzerProps> = ({
     updateSampleRate,
   } = useAnalyzer();
   const { udpTerminal } = useProtocolContext();
+  const protocolContext = useContext(ProtocolContext);
+
   const {
     isRunning,
     channelData,
@@ -31,7 +35,43 @@ export const AnalogAnalyzer: React.FC<AnalogAnalyzerProps> = ({
     activeChannels,
   } = analog;
 
+  // Streaming state
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [streamInterval, setStreamInterval] = useState("1000");
+  const [streamCount, setStreamCount] = useState(0);
+
   const isSpectrumDisabled = channelData[0].length < FFT_SIZE;
+
+  // Streaming interval effect
+  useEffect(() => {
+    let intervalId: NodeJS.Timeout | null = null;
+
+    if (isStreaming) {
+      console.log(`[Streaming] Started with ${streamInterval}ms interval`);
+      setStreamCount(0);
+
+      // Send initial restart
+      sendRestartCSR();
+
+      // Set up interval for continuous restart requests
+      intervalId = setInterval(
+        () => {
+          sendRestartCSR();
+        },
+        parseInt(streamInterval) || 1000,
+      );
+    } else {
+      console.log("[Streaming] Stopped");
+    }
+
+    // Cleanup function
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+        console.log("[Streaming] Interval cleared");
+      }
+    };
+  }, [isStreaming, streamInterval]);
 
   useEffect(() => {
     const intervalId = setInterval(() => {
@@ -42,6 +82,30 @@ export const AnalogAnalyzer: React.FC<AnalogAnalyzerProps> = ({
       clearInterval(intervalId);
     };
   }, [updateSampleRate]);
+
+  const sendRestartCSR = async () => {
+    if (!protocolContext?.writeCSR) {
+      console.error("[Streaming] Protocol context not available");
+      return;
+    }
+
+    const { writeCSR } = protocolContext;
+
+    try {
+      // Send restart pulse to trigger acquisition
+      await writeCSR(RESTART_REG.toString(16), "1");
+
+      setStreamCount((prev) => prev + 1);
+      console.log(`[Streaming] Restart request #${streamCount + 1} sent`);
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : "Unknown error";
+      console.error("[Streaming] Error sending restart request:", errorMsg);
+    }
+  };
+
+  const toggleStreaming = () => {
+    setIsStreaming(!isStreaming);
+  };
 
   const handleClearData = () => {
     const currentMessageIds = new Set<string>(
@@ -110,6 +174,30 @@ export const AnalogAnalyzer: React.FC<AnalogAnalyzerProps> = ({
           >
             Show Spectrum
           </span>
+        </label>
+      </div>
+
+      {/* Streaming controls - only in Analog Analyzer */}
+      <div className="config-group streaming-controls">
+        <label className="streaming-checkbox">
+          <input
+            type="checkbox"
+            checked={isStreaming}
+            onChange={toggleStreaming}
+          />
+          <span>Enable Streaming Mode</span>
+        </label>
+        <label className="streaming-interval">
+          Interval (ms):
+          <input
+            type="number"
+            value={streamInterval}
+            onChange={(e) => setStreamInterval(e.target.value)}
+            disabled={!isStreaming}
+            min="100"
+            max="10000"
+            step="100"
+          />
         </label>
       </div>
 
@@ -184,6 +272,14 @@ export const AnalogAnalyzer: React.FC<AnalogAnalyzerProps> = ({
                 {showSpectrum && !isSpectrumDisabled ? "Visible" : "Hidden"}
               </strong>
             </p>
+            {isStreaming && (
+              <p>
+                Streaming:{" "}
+                <strong style={{ color: "#50fa7b" }}>
+                  ON ({streamInterval}ms, {streamCount} requests)
+                </strong>
+              </p>
+            )}
           </div>
         </div>
       </div>
