@@ -23,7 +23,7 @@ export const DigitalAnalyzer: React.FC<DigitalAnalyzerProps> = ({
       currentMessageIds = new Set<string>(
         udpTerminal.messages.map((msg) => msg.id).filter(Boolean) as string[],
       );
-    } else if (dataSource === "serial" && serialTerminal) {
+    } else if (dataSource === "ila" && serialTerminal) {
       currentMessageIds = new Set<string>(
         serialTerminal.messages
           .map((msg) => msg.id)
@@ -41,12 +41,6 @@ export const DigitalAnalyzer: React.FC<DigitalAnalyzerProps> = ({
     <div className={`digital-analyzer ${className || ""}`}>
       <div className="analyzer-controls">
         <div className="control-group">
-          <button
-            className={`control-button ${isRunning ? "active" : ""}`}
-            onClick={toggleDigitalCapture}
-          >
-            {isRunning ? "Stop Capture" : "Start Capture"}
-          </button>
           <button className="control-button" onClick={handleClearData}>
             Clear Data
           </button>

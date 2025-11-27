@@ -32,7 +32,7 @@ interface DigitalState {
 
 interface AnalyzerState {
   analyzerType: "analog" | "digital";
-  dataSource: "serial" | "udp";
+  dataSource: "ila" | "udp";
   analog: AnalogState;
   digital: DigitalState;
 }
@@ -40,7 +40,7 @@ interface AnalyzerState {
 // All possible actions that can be dispatched to the reducer
 type Action =
   | { type: "SET_ANALYZER_TYPE"; payload: "analog" | "digital" }
-  | { type: "SET_DATA_SOURCE"; payload: "serial" | "udp" }
+  | { type: "SET_DATA_SOURCE"; payload: "ila" | "udp" }
   | { type: "START_ANALOG_CAPTURE"; payload: Set<string> }
   | { type: "STOP_ANALOG_CAPTURE" }
   | {
@@ -60,7 +60,7 @@ type Action =
 // The shape of the context value provided to consumers
 export interface AnalyzerContextType extends AnalyzerState {
   setAnalyzerType: (type: "analog" | "digital") => void;
-  setDataSource: (source: "serial" | "udp") => void;
+  setDataSource: (source: "ila" | "udp") => void;
   toggleAnalogCapture: () => void;
   updateSampleRate: () => Promise<void>;
   clearAnalogData: (currentMessageIds: Set<string>) => void;
@@ -295,7 +295,7 @@ export const AnalyzerProvider = ({ children }: { children: ReactNode }) => {
     const messages =
       state.dataSource === "udp"
         ? udpTerminal.messages
-        : state.dataSource === "serial"
+        : state.dataSource === "ila"
           ? serialTerminal.messages
           : [];
     for (const msg of messages) {
