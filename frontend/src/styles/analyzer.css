@@ -610,3 +610,412 @@
     flex: none;
   }
 }
+
+/* --- Manual Trigger Button in Analyzer Page Config --- */
+.manual-trigger-btn {
+  padding: 0.6rem 1.5rem;
+  border: 1px solid rgba(124, 58, 237, 0.4);
+  border-radius: 10px;
+  background: rgba(124, 58, 237, 0.15);
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  font-size: 1rem;
+}
+
+.manual-trigger-btn:hover {
+  transform: translateY(-2px);
+  background: rgba(124, 58, 237, 0.25);
+  box-shadow: 0 4px 16px rgba(124, 58, 237, 0.3);
+  border-color: rgba(124, 58, 237, 0.6);
+}
+
+.manual-trigger-btn:active {
+  transform: translateY(0);
+}
+
+/* --- Streaming Controls Section (in Analog Analyzer) --- */
+.streaming-controls {
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+  padding: 1.25rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 10px;
+  border: 1px solid rgba(88, 166, 255, 0.2);
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+/* --- Streaming Checkbox --- */
+.streaming-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.streaming-checkbox input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(88, 166, 255, 0.5);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.streaming-checkbox input[type="checkbox"]:hover {
+  border-color: rgba(88, 166, 255, 0.8);
+  background: rgba(88, 166, 255, 0.1);
+}
+
+.streaming-checkbox input[type="checkbox"]:checked {
+  background: linear-gradient(135deg, #58a6ff 0%, #7c3aed 100%);
+  border-color: #58a6ff;
+  box-shadow: 0 0 12px rgba(88, 166, 255, 0.4);
+}
+
+.streaming-checkbox input[type="checkbox"]:checked::after {
+  content: "✓";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.streaming-checkbox span {
+  font-size: 1rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* --- Streaming Interval Input --- */
+.streaming-interval {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.streaming-interval input[type="number"] {
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.4);
+  color: white;
+  width: 120px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.streaming-interval input[type="number"]:hover:not(:disabled) {
+  border-color: rgba(88, 166, 255, 0.5);
+}
+
+.streaming-interval input[type="number"]:focus {
+  outline: none;
+  border-color: #58a6ff;
+  box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.2);
+}
+
+.streaming-interval input[type="number"]:disabled {
+  background: rgba(0, 0, 0, 0.2);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.4);
+  cursor: not-allowed;
+}
+
+/* Remove spinner arrows from number input */
+.streaming-interval input[type="number"]::-webkit-inner-spin-button,
+.streaming-interval input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.streaming-interval input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* --- Responsive adjustments --- */
+@media (max-width: 768px) {
+  .streaming-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+
+  .streaming-checkbox,
+  .streaming-interval {
+    justify-content: space-between;
+  }
+
+  .manual-trigger-btn {
+    width: 100%;
+  }
+}
+
+/* --- Digital Analyzer Container --- */
+.digital-analyzer {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  animation: fadeIn 0.6s ease-out;
+}
+
+/* --- Clock Divider Configuration Section (Combined with Controls) --- */
+.digital-analyzer .clock-config {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+  padding: 1.25rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 10px;
+  border: 1px solid rgba(88, 166, 255, 0.2);
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.digital-analyzer .clock-label {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.digital-analyzer .clock-input {
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.4);
+  color: white;
+  width: 120px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  font-family: "Courier New", monospace;
+}
+
+.digital-analyzer .clock-input:hover {
+  border-color: rgba(88, 166, 255, 0.5);
+}
+
+.digital-analyzer .clock-input:focus {
+  outline: none;
+  border-color: #58a6ff;
+  box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.2);
+}
+
+/* Remove spinner arrows from number input */
+.digital-analyzer .clock-input::-webkit-inner-spin-button,
+.digital-analyzer .clock-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.digital-analyzer .clock-input {
+  -moz-appearance: textfield;
+}
+
+.digital-analyzer .clock-freq {
+  padding: 0.6rem 1.2rem;
+  background: rgba(88, 166, 255, 0.1);
+  border-radius: 8px;
+  border: 1px solid rgba(88, 166, 255, 0.3);
+  color: #58a6ff;
+  font-weight: 600;
+  font-size: 0.95rem;
+  white-space: nowrap;
+  font-family: "Courier New", monospace;
+  letter-spacing: 0.5px;
+}
+
+.digital-analyzer .apply-btn {
+  padding: 0.6rem 1.5rem;
+  border: 1px solid rgba(80, 250, 123, 0.4);
+  border-radius: 10px;
+  background: rgba(80, 250, 123, 0.15);
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.digital-analyzer .apply-btn:hover {
+  transform: translateY(-2px);
+  background: rgba(80, 250, 123, 0.25);
+  box-shadow: 0 4px 16px rgba(80, 250, 123, 0.3);
+  border-color: rgba(80, 250, 123, 0.6);
+}
+
+.digital-analyzer .apply-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(80, 250, 123, 0.2);
+}
+
+.digital-analyzer .clear-btn {
+  padding: 0.6rem 1.5rem;
+  border: 1px solid rgba(245, 87, 108, 0.4);
+  border-radius: 10px;
+  background: rgba(245, 87, 108, 0.15);
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.digital-analyzer .clear-btn:hover {
+  transform: translateY(-2px);
+  background: rgba(245, 87, 108, 0.25);
+  box-shadow: 0 4px 16px rgba(245, 87, 108, 0.3);
+  border-color: rgba(245, 87, 108, 0.6);
+}
+
+.digital-analyzer .clear-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(245, 87, 108, 0.2);
+}
+
+.digital-analyzer .update-btn {
+  padding: 0.6rem 1.5rem;
+  border: 1px solid rgba(139, 92, 246, 0.4);
+  border-radius: 10px;
+  background: rgba(139, 92, 246, 0.15);
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.digital-analyzer .update-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  background: rgba(139, 92, 246, 0.25);
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.3);
+  border-color: rgba(139, 92, 246, 0.6);
+}
+
+.digital-analyzer .update-btn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.2);
+}
+
+.digital-analyzer .update-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: rgba(139, 92, 246, 0.1);
+}
+
+/* --- Waveform Container --- */
+.digital-analyzer .waveform-container {
+  display: grid;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.digital-analyzer .waveform-channel {
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 12px;
+  padding: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.3);
+  min-height: 400px;
+}
+
+/* --- Animations --- */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* --- Responsive Design --- */
+@media (max-width: 768px) {
+  .digital-analyzer {
+    padding: 1.5rem;
+  }
+
+  .digital-analyzer .analyzer-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .digital-analyzer .clock-config {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+
+  .digital-analyzer .clock-label {
+    justify-content: space-between;
+  }
+
+  .digital-analyzer .clock-input {
+    width: 100%;
+  }
+
+  .digital-analyzer .clock-freq {
+    text-align: center;
+  }
+
+  .digital-analyzer .apply-btn {
+    width: 100%;
+  }
+
+  .digital-analyzer .clear-btn {
+    width: 100%;
+  }
+
+  .digital-analyzer .update-btn {
+    width: 100%;
+  }
+
+  .digital-analyzer .control-button {
+    width: 100%;
+  }
+
+  .digital-analyzer .waveform-channel {
+    padding: 1rem;
+    min-height: 300px;
+  }
+}
+
+/* --- Tablet View --- */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .digital-analyzer .clock-config {
+    gap: 1rem;
+  }
+
+  .digital-analyzer .clock-freq {
+    font-size: 0.9rem;
+    padding: 0.6rem 1rem;
+  }
+}
