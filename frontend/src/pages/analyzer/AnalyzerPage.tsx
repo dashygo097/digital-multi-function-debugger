@@ -79,7 +79,7 @@ const AnalyzerPage: React.FC = () => {
   };
 
   const handleDataSourceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setDataSource(e.target.value as "serial" | "udp");
+    setDataSource(e.target.value as "ila" | "udp");
   };
 
   const toggleStreaming = () => {
@@ -129,7 +129,7 @@ const AnalyzerPage: React.FC = () => {
                 disabled={analyzerType === "analog"}
               >
                 <option value="udp">UDP</option>
-                <option value="serial">Serial</option>
+                <option value="ila">ILA</option>
               </select>
             </label>
           </div>
