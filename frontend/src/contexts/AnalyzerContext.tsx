@@ -307,7 +307,7 @@ export const AnalyzerProvider = ({ children }: { children: ReactNode }) => {
           .map((hp) => parseInt(hp, 16))
           .filter((n) => !isNaN(n));
         if (bytes.length > 0) {
-          addDigitalBytes(bytes, msg.id);
+          addDigitalBytes([bytes[-1]], msg.id);
         }
       }
     }

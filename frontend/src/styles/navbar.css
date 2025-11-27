@@ -5,11 +5,7 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 32px;
 
-  background: linear-gradient(
-    135deg,
-    rgba(15, 15, 15, 0.3),
-    rgba(35, 35, 35, 0.3)
-  );
+  background: linear-gradient(135deg, rgba(15, 15, 15, 1), rgba(35, 35, 35, 1));
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
