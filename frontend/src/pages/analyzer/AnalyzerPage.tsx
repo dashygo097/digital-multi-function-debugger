@@ -17,6 +17,7 @@ const AnalyzerPage: React.FC = () => {
     clearDigitalData,
   } = useAnalyzer();
   const protocolContext = useContext(ProtocolContext);
+  const { serialTerminal } = useSerialContext();
 
   const sendRestartCSR = async () => {
     if (!protocolContext?.writeCSR) {
@@ -24,7 +25,6 @@ const AnalyzerPage: React.FC = () => {
       return;
     }
 
-    const { serialTerminal } = useSerialContext();
     const { writeCSR, readCSR } = protocolContext;
 
     try {
