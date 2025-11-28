@@ -306,8 +306,16 @@ export const AnalyzerProvider = ({ children }: { children: ReactNode }) => {
           .split(/\s+/)
           .map((hp) => parseInt(hp, 16))
           .filter((n) => !isNaN(n));
+        const actualBytes = [];
+        let index = 0;
+        for (const b of bytes) {
+          if (index % 5 == 0) {
+            actualBytes[index / 5] = b;
+          }
+          index++;
+        }
         if (bytes.length > 0) {
-          addDigitalBytes([bytes[-1]], msg.id);
+          addDigitalBytes(actualBytes, msg.id);
         }
       }
     }
