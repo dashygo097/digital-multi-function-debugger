@@ -17,7 +17,7 @@ export class DigitalWaveformChart extends React.Component<DigitalWaveformChartPr
 
   static defaultProps = {
     width: 800,
-    height: 240,
+    height: 250,
     gridColor: "#334155",
     backgroundColor: "#1e293b",
     textColor: "#94a3b8",
@@ -67,7 +67,7 @@ export class DigitalWaveformChart extends React.Component<DigitalWaveformChartPr
     // Layout constants
     const labelWidth = 50;
     const chartWidth = width - labelWidth;
-    const bitRowHeight = 60;
+    const bitRowHeight = 52;
 
     // Clear canvas
     ctx.fillStyle = backgroundColor;
@@ -103,9 +103,9 @@ export class DigitalWaveformChart extends React.Component<DigitalWaveformChartPr
       const x = labelWidth + i * stepX;
       const centerX = x + stepX / 2;
 
-      // Draw 4 bit waveforms
+      // Draw 8 bit waveforms
       for (let bit = 0; bit < 4; bit++) {
-        const yOffset = (7 - bit) * bitRowHeight;
+        const yOffset = (3 - bit) * bitRowHeight;
         const yHigh = yOffset + bitRowHeight * 0.25;
         const yLow = yOffset + bitRowHeight * 0.75;
 
@@ -124,11 +124,6 @@ export class DigitalWaveformChart extends React.Component<DigitalWaveformChartPr
         ctx.lineTo(x + stepX, y2); // Horizontal line
         ctx.stroke();
       }
-
-      // Draw Hex value
-      ctx.fillStyle = "#e2e8f0";
-      const hexString = byte.toString(16).padStart(2, "0").toUpperCase();
-      ctx.fillText(hexString, centerX, 8 * bitRowHeight);
     }
   }
 
