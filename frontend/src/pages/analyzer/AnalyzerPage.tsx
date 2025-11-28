@@ -2,15 +2,20 @@ import React, { useContext } from "react";
 import { WithRouter } from "@utils";
 import { AnalogAnalyzer } from "./AnalogAnalyzer";
 import { DigitalAnalyzer } from "./DigitalAnalyzer";
-import { useAnalyzer, ProtocolContext } from "@contexts";
+import { useAnalyzer, ProtocolContext, useSerialContext } from "@contexts";
 import "@styles/analyzer.css";
 
 const BASE_ADDR = 0x18000;
 const RESTART_REG = BASE_ADDR + 0x14;
 
 const AnalyzerPage: React.FC = () => {
-  const { analyzerType, dataSource, setAnalyzerType, setDataSource } =
-    useAnalyzer();
+  const {
+    analyzerType,
+    dataSource,
+    setAnalyzerType,
+    setDataSource,
+    clearDigitalData,
+  } = useAnalyzer();
   const protocolContext = useContext(ProtocolContext);
 
   const sendRestartCSR = async () => {
@@ -19,6 +24,7 @@ const AnalyzerPage: React.FC = () => {
       return;
     }
 
+    const { serialTerminal } = useSerialContext();
     const { writeCSR, readCSR } = protocolContext;
 
     try {
@@ -30,6 +36,13 @@ const AnalyzerPage: React.FC = () => {
         for (let i = 0; i < 256; i++) {
           await readCSR("0x38000");
         }
+        const currentMessageIds = new Set<string>(
+          serialTerminal.messages
+            .map((msg) => msg.id)
+            .filter(Boolean) as string[],
+        );
+
+        clearDigitalData(currentMessageIds);
       }
       console.log("[Manual Trigger] Restart request sent");
     } catch (error) {
