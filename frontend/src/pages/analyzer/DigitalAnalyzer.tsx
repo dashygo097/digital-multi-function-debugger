@@ -44,6 +44,8 @@ export const DigitalAnalyzer: React.FC<DigitalAnalyzerProps> = ({
       console.log("Clearing message ID:", id);
     }
     clearDigitalData(currentMessageIds);
+
+    console.log(byteData);
   };
 
   const applyClockDiv = async () => {

@@ -64,7 +64,7 @@ const AnalyzerPage: React.FC = () => {
     if (analyzerType === "analog") {
       return `Showing 1 analog channel from the UDP data source`;
     }
-    return `Showing 8 digital channels from the '${dataSource}' data source`;
+    return `Showing 4 digital channels from the '${dataSource}' data source`;
   };
 
   return (

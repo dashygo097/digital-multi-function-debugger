@@ -103,8 +103,8 @@ export class DigitalWaveformChart extends React.Component<DigitalWaveformChartPr
       const x = labelWidth + i * stepX;
       const centerX = x + stepX / 2;
 
-      // Draw 8 bit waveforms
-      for (let bit = 0; bit < 8; bit++) {
+      // Draw 4 bit waveforms
+      for (let bit = 0; bit < 4; bit++) {
         const yOffset = (7 - bit) * bitRowHeight;
         const yHigh = yOffset + bitRowHeight * 0.25;
         const yLow = yOffset + bitRowHeight * 0.75;
@@ -128,7 +128,7 @@ export class DigitalWaveformChart extends React.Component<DigitalWaveformChartPr
       // Draw Hex value
       ctx.fillStyle = "#e2e8f0";
       const hexString = byte.toString(16).padStart(2, "0").toUpperCase();
-      ctx.fillText(hexString, centerX, 8 * bitRowHeight + hexRowHeight / 2);
+      ctx.fillText(hexString, centerX, 8 * bitRowHeight);
     }
   }
 

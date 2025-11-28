@@ -125,7 +125,7 @@ const reducer = (state: AnalyzerState, action: Action): AnalyzerState => {
       const combinedData = [...state.analog.channelData[0], ...ch1Samples];
       const truncatedData = combinedData.slice(-MAX_SAMPLES_ANALOG);
       const newSpectrumData = state.analog.showSpectrum
-        ? fft.calculate(truncatedData.slice(-FFT_SIZE))
+        ? fft.calculate(truncatedData.slice(-FFT_SIZE))                                                                                                                                              
         : state.analog.spectrumData;
       const newProcessedIds = new Set(state.analog.processedMessageIds).add(
         messageId,
@@ -307,7 +307,7 @@ export const AnalyzerProvider = ({ children }: { children: ReactNode }) => {
           .map((hp) => parseInt(hp, 16))
           .filter((n) => !isNaN(n));
         if (bytes.length > 0) {
-          addDigitalBytes([bytes[-1]], msg.id);
+          addDigitalBytes(bytes, msg.id);
         }
       }
     }
