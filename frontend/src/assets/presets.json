@@ -595,32 +595,26 @@
   },
   {
     "name": "ILA_CTRL",
-    "address": "0x38000",
-    "description": " [0]: enable, [2:1]: trigger mode, [6:3]: trigger mask",
+    "address": "0x3800C",
+    "description": " [0]: enable, [1] clear",
     "section": "ila"
   },
   {
     "name": "ILA_CLK_DIV",
-    "address": "0x38004",
+    "address": "0x38010",
     "description": " Clock divider",
     "section": "ila"
   },
   {
     "name": "ILA_STATUS",
-    "address": "0x38008",
-    "description": " [0]: capturing, [1]: triggered, [2]: fifo_full, [3]: fifo_empty",
+    "address": "0x38004",
+    "description": " [3]: !fifoEmpty, [2] fifoFull, [1]: enabled, [0] clearRe",
     "section": "ila"
   },
   {
     "name": "FIFO_DATA",
-    "address": "0x38010",
+    "address": "0x38000",
     "description": "FIFO read data",
-    "section": "ila"
-  },
-  {
-    "name": "FIFO_COUNTER",
-    "address": "0x38014",
-    "description": "FIFO count",
     "section": "ila"
   }
 ]
